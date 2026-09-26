@@ -114,7 +114,7 @@ def test_other_equations_finish_on_cpu(equation: str, tmp_path: Path, monkeypatc
     assert len(result.history) == 2
     assert all(math.isfinite(row.loss) for row in result.history)
     if equation == "burgers":
-        assert result.history[-1].loss_bc == 0.0
+        assert result.history[-1].loss_bc > 0.0
     else:
         assert result.config.n_ic == 0
 
@@ -129,6 +129,76 @@ def test_paths_must_stay_inside_the_working_directory(tmp_path: Path, monkeypatc
         train_loop(_tiny(checkpoint_dir="../ckpts"))
     with pytest.raises(ValueError, match="relative"):
         load_checkpoint(Path("/tmp/checkpoint.pt"))
+
+
+def test_checkpoint_interval_skips_intermediate_epochs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pinnforge.training import train_loop
+
+    monkeypatch.chdir(tmp_path)
+    train_loop(_tiny(epochs=4, checkpoint_interval=2, checkpoint_dir="ckpts", log_path="metrics.jsonl"))
+    assert (tmp_path / "ckpts" / "epoch_0000.pt").is_file()
+    assert (tmp_path / "ckpts" / "epoch_0002.pt").is_file()
+    assert (tmp_path / "ckpts" / "epoch_0004.pt").is_file()
+    assert not (tmp_path / "ckpts" / "epoch_0001.pt").exists()
+    assert not (tmp_path / "ckpts" / "epoch_0003.pt").exists()
+
+
+def test_resume_matches_an_uninterrupted_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import torch
+
+    from pinnforge.training import train_loop
+
+    monkeypatch.chdir(tmp_path)
+    full = train_loop(_tiny(epochs=4, seed=1, checkpoint_dir="full", log_path="full.jsonl"))
+    train_loop(_tiny(epochs=2, seed=1, checkpoint_dir="mid", log_path="mid.jsonl"))
+    resumed = train_loop(
+        _tiny(
+            epochs=4,
+            seed=1,
+            checkpoint_dir="resumed",
+            log_path="resumed.jsonl",
+            resume_from="mid/checkpoint.pt",
+        )
+    )
+    assert [row.epoch for row in resumed.history] == list(range(5))
+    assert resumed.history == full.history
+    for key, value in full.model.state_dict().items():
+        assert torch.equal(value, resumed.model.state_dict()[key])
+
+
+def test_manifest_logs_distinct_rng_streams(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import json
+
+    import numpy as np
+
+    from pinnforge.sampling import (
+        SampleConfig,
+        default_spec,
+        points_sha256,
+        sample_equation,
+        stream_generator,
+    )
+    from pinnforge.training import train_loop
+
+    monkeypatch.chdir(tmp_path)
+    config = _tiny(epochs=1, seed=0, n_interior=8, n_ic=4)
+    train_loop(config)
+    manifest = json.loads((tmp_path / "ckpts" / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["format"] == "pinnforge.manifest.v1"
+    sequences = [manifest["streams"][name]["seed_sequence"] for name in ("train", "validation", "test")]
+    assert len({tuple(item) for item in sequences}) == 3
+    assert manifest["environment"]["pinnforge"]
+    assert "torch" in manifest["environment"]
+    spec = default_spec("harmonic")
+    sample = SampleConfig(n_interior=8, n_ic=4, n_bc=0, seed=0, method="uniform")
+    validation = sample_equation(spec, sample, rng=stream_generator(0, "validation")).interior
+    assert points_sha256(validation) == manifest["validation_interior_sha256"]
+    train_points = sample_equation(spec, sample, rng=stream_generator(0, "train")).interior
+    test_points = sample_equation(spec, sample, rng=stream_generator(0, "test")).interior
+    assert not np.array_equal(train_points, test_points)
+    assert not np.array_equal(train_points, validation)
 
 
 def test_load_rejects_a_foreign_payload(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

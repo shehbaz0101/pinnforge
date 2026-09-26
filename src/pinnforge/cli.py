@@ -178,7 +178,23 @@ def build_parser() -> argparse.ArgumentParser:
     )
     train.add_argument("--w-pde", type=float, default=None, help="Weight on residual MSE (default: 1).")
     train.add_argument("--w-ic", type=float, default=None, help="Weight on the initial-condition penalty (default: 1).")
-    train.add_argument("--w-bc", type=float, default=None, help="Weight on the Dirichlet penalty (default: 1).")
+    train.add_argument(
+        "--w-bc",
+        type=float,
+        default=None,
+        help="Weight on the Dirichlet, Neumann, and periodic penalties (default: 1).",
+    )
+    train.add_argument(
+        "--checkpoint-interval",
+        type=int,
+        default=None,
+        help="Epochs between tagged checkpoints. Epoch 0 and the last epoch are always written (default: 1).",
+    )
+    train.add_argument(
+        "--resume-from",
+        default=None,
+        help="Relative .pt checkpoint to resume. Loads weights, Adam state, and the torch RNG state.",
+    )
     train.add_argument(
         "--method",
         choices=list(SAMPLE_METHODS),
@@ -531,6 +547,7 @@ def _eval_with_torch(args: argparse.Namespace, config: object) -> int:
     print(f"relative_l2: {_format_metric(result.relative_l2)}")
     print(f"residual_mean_abs: {result.residual_mean_abs:.8e}")
     print(f"residual_max_abs: {result.residual_max_abs:.8e}")
+    _print_condition_metrics(result)
     if args.write_json is not None:
         print(f"json: {Path(args.write_json).as_posix()}")
     return 0
@@ -592,6 +609,7 @@ def _run_with_torch(config: object) -> int:
     print(f"relative_l2: {_format_metric(result.evaluation.relative_l2)}")
     print(f"residual_mean_abs: {result.evaluation.residual_mean_abs:.8e}")
     print(f"residual_max_abs: {result.evaluation.residual_max_abs:.8e}")
+    _print_condition_metrics(result.evaluation)
     if result.eval_json is not None:
         print(f"json: {Path(config.eval_json).as_posix()}")
     return 0
@@ -674,6 +692,18 @@ def _check_train_paths(config: object) -> None:
 
     resolve_inside_cwd(config.checkpoint_dir, label="checkpoint_dir")
     resolve_inside_cwd(config.log_path, suffix=".jsonl", label="log_path")
+    resume_from = getattr(config, "resume_from", None)
+    if resume_from is not None:
+        resolve_inside_cwd(resume_from, suffix=".pt", label="resume_from")
+
+
+def _print_condition_metrics(result: object) -> None:
+    print(f"max_abs_error: {_format_metric(getattr(result, 'max_abs_error', None))}")
+    print(f"ic_error: {_format_metric(getattr(result, 'ic_error', None))}")
+    print(f"bc_error: {_format_metric(getattr(result, 'bc_error', None))}")
+    rng = getattr(result, "rng", None)
+    name = rng.get("name") if isinstance(rng, dict) else None
+    print(f"rng_stream: {name if isinstance(name, str) else 'unavailable'}")
 
 
 def _install_offline_guard() -> None:
@@ -778,6 +808,8 @@ def _train_config(args: argparse.Namespace):
         "w_bc": args.w_bc,
         "method": args.method,
         "checkpoint_dir": args.checkpoint_dir,
+        "checkpoint_interval": args.checkpoint_interval,
+        "resume_from": args.resume_from,
         "log_path": args.log_path,
         "device": args.device,
     }

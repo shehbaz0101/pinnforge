@@ -49,6 +49,9 @@ pinnforge = "pinnforge.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"pinnforge.data" = ["configs/*.yaml", "configs/*.json"]
+
 [tool.ruff]
 target-version = "py311"
 line-length = 100

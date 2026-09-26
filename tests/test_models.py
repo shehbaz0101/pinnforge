@@ -41,6 +41,8 @@ def test_mlp_rejects_bad_widths_and_activation() -> None:
         MLP(1, (True,))  # type: ignore[arg-type]
     with pytest.raises(ValueError, match="activation"):
         MLP(1, (4,), activation="gelu")
+    with pytest.raises(ValueError, match="strong-form"):
+        MLP(1, (4,), activation="relu")
     linear = MLP(1, ())
     import torch
 

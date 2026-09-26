@@ -241,6 +241,87 @@ def test_eval_paths_stay_inside_the_working_directory(tmp_path: Path, monkeypatc
     assert "residual_mean_abs" in text
 
 
+def test_zero_field_has_zero_residual_and_full_relative_error() -> None:
+    """u ≡ 0 solves u'' + ω² u = 0 but misses u(0) = 1.
+
+    Residual-only evaluation would report a perfect model. The relative
+    field error is 1 (100%) and the held-out initial-condition error is 1.
+    """
+
+    import torch
+
+    from pinnforge.evaluation import EvalConfig, evaluate_model
+    from pinnforge.sampling import default_spec
+
+    spec = default_spec("harmonic")
+
+    def zeros(coords: torch.Tensor) -> torch.Tensor:
+        return torch.zeros(coords.shape[0], 1, dtype=coords.dtype, device=coords.device)
+
+    result = evaluate_model(zeros, spec, EvalConfig(n_interior=16, seed=0))
+    assert result.residual_max_abs < 1e-8
+    assert result.relative_l2 == pytest.approx(1.0)
+    assert result.l2 is not None and result.l2 > 0.5
+    assert result.max_abs_error is not None and result.max_abs_error > 0.5
+    assert result.ic_error == pytest.approx(1.0)
+    assert result.bc_error is None
+    assert result.rng is not None and result.rng["name"] == "test"
+
+
+def test_poisson_boundary_error_is_reported_on_held_out_faces() -> None:
+    import math
+
+    import torch
+
+    from pinnforge.evaluation import EvalConfig, evaluate_model
+    from pinnforge.sampling import default_spec
+
+    spec = default_spec("poisson")
+
+    def manufactured(coords: torch.Tensor) -> torch.Tensor:
+        return torch.sin(coords[:, 0:1] * math.pi) / (math.pi**2)
+
+    exact = evaluate_model(manufactured, spec, EvalConfig(n_interior=8, seed=1))
+    assert exact.bc_error is not None and exact.bc_error < 1e-8
+    assert exact.bc_errors is not None and exact.bc_errors["dirichlet"] < 1e-8
+    assert exact.ic_error is None
+    assert exact.max_abs_error is not None and exact.max_abs_error < 1e-8
+
+    def wrong(coords: torch.Tensor) -> torch.Tensor:
+        return torch.ones(coords.shape[0], 1, dtype=coords.dtype, device=coords.device)
+
+    missed = evaluate_model(wrong, spec, EvalConfig(n_interior=8, seed=1))
+    assert missed.bc_error is not None and missed.bc_error > 0.5
+    assert missed.reference == "analytical"
+    assert missed.max_abs_error is not None and missed.max_abs_error > 0.5
+
+
+def test_unmatched_poisson_reference_is_unavailable() -> None:
+    import torch
+
+    from pinnforge.equations import BoundaryCondition, Interval, PoissonToySpec
+    from pinnforge.evaluation import EvalConfig, evaluate_model
+
+    spec = PoissonToySpec(
+        dimensions=1,
+        source="sin_pi_x",
+        x=Interval(lower=0.0, upper=0.5),
+        boundary_conditions=[
+            BoundaryCondition(variable="x", kind="dirichlet", side="min", value=0.0),
+            BoundaryCondition(variable="x", kind="dirichlet", side="max", value=0.0),
+        ],
+    )
+
+    def zeros(coords: torch.Tensor) -> torch.Tensor:
+        return torch.zeros(coords.shape[0], 1, dtype=coords.dtype, device=coords.device)
+
+    result = evaluate_model(zeros, spec, EvalConfig(n_interior=4, n_bc=2, seed=0))
+    assert result.reference == "unavailable"
+    assert result.l2 is None
+    assert result.relative_l2 is None
+    assert result.max_abs_error is None
+
+
 def test_same_eval_seed_repeats() -> None:
     import torch
 

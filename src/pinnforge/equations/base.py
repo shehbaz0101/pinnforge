@@ -159,10 +159,11 @@ class BoundaryCondition(ConditionDescriptor):
     ``variable`` is the axis the face is constant in (``x``, ``y``, or
     ``t``). ``side`` is which end of that variable's interval.
 
-    Dirichlet prescribes the field value. Neumann prescribes the derivative
-    with respect to ``variable``; Day 1 stores the number and does not fix a
-    sign beyond that. Periodic identifies the two ends of ``variable`` and
-    omits both ``side`` and ``value``.
+    Dirichlet prescribes the field value. Neumann prescribes the outward
+    normal derivative: on side ``max`` that is ``∂/∂variable``, and on
+    side ``min`` it is ``-∂/∂variable``. Periodic identifies the two ends
+    of ``variable`` and omits both ``side`` and ``value``. The loss
+    matches the field and ``∂/∂variable`` at those ends.
 
     The descriptor does not evaluate a residual.
     """
