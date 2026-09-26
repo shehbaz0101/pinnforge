@@ -5,7 +5,7 @@ ODE and PDE residuals. It trains a small network on the residual, scores a
 checkpoint against an analytical or manufactured field, and serves that path
 on localhost. An offline demo trains a checked-in sample on CPU.
 
-**Status:** v0.1.0 remains the tagged freeze. Stage 1 correctness is unreleased and keeps the `0.1.0` version string. See [STAGE1_REPORT.md](STAGE1_REPORT.md).
+**Status:** v0.1.0 remains the tagged freeze. Stage 1 correctness and the Stage 2 Burgers reference are unreleased and keep the `0.1.0` version string. See [STAGE1_REPORT.md](STAGE1_REPORT.md) and [STAGE2_REPORT.md](STAGE2_REPORT.md).
 
 ## Days 1–10
 
@@ -67,11 +67,21 @@ bind a port. Nothing in the suite downloads weights.
 Correctness and packaging on top of the v0.1.0 freeze. The version string is still `0.1.0` because the CLI and import tests pin that string. This branch does not move the `v0.1.0` tag.
 
 - Periodic penalties match the field and the derivative along the periodic axis at both endpoints, at each boundary row's other coordinates. Neumann penalties match the outward normal derivative. A condition the penalty cannot represent raises. `w_bc = 0` still drops boundary enforcement, on purpose.
-- A Poisson reference is returned only when it matches the source, the domain, and every prescribed boundary condition. Source `one` on `[0, 1]` with zero Dirichlet ends is `x(1 - x) / 2`. Anything else with no match is unavailable. Burgers is still `NotImplementedError`.
+- A Poisson reference is returned only when it matches the source, the domain, and every prescribed boundary condition. Source `one` on `[0, 1]` with zero Dirichlet ends is `x(1 - x) / 2`. Anything else with no match is unavailable. The Burgers evaluation hook is still `NotImplementedError`.
 - Train, validation, and test draws use separate `SeedSequence` streams. `pinnforge sample` still uses `numpy.random.default_rng(seed)`. The validation draw is hashed into `manifest.json` and is not in the loss.
 - Evaluation reports held-out initial and boundary errors, plus relative and max field error beside the residual. A zero field on the default oscillator has a near-zero residual and relative L2 of 1.
 - Demo configs ship in `pinnforge.data` and are read with `importlib.resources`. The repository `samples/` tree remains the checkout fallback.
 - `relu` is rejected for the strong-form residual. `tanh` and `silu` stay. Checkpoints record an interval, a run manifest, Adam state, and the torch RNG, and resume when that state is present. Loads use `weights_only=True`.
+
+## Stage 2
+
+A Fourier reference for periodic viscous Burgers, separate from the coordinate-PINN trainer. [STAGE2_REPORT.md](STAGE2_REPORT.md) has the method, the convergence numbers, and the pilot manifest.
+
+- Dealiased (3/2 rule) Fourier derivatives with `k_m = 2π m / L` on `L = 2`, and ETDRK4 in float64. Cole–Hopf and a second-order finite-difference scheme are the cross-checks.
+- On the pilot settings (`N = 256`, `dt = 1e-3`) the convergence initial condition at `ν = 0.05` differs from an `N = 1024`, `dt = 2.5e-4` run by about `1.09e-12` in final-time relative L2. The preregistered label tolerance is `1e-8`.
+- The pilot is 512 train / 128 validation / 128 test trajectories, split by problem instance before any windowing. Normalization statistics are fit on the training fields only and are not applied to the files. The arrays are about 147 MiB and are gitignored; `docs/stage2/pilot_manifest.json` records seeds, hashes, and the split.
+- Viscosity in the pilot is drawn from `[0.02, 0.10]`. A probe at `ν = 0.005` missed the `1e-8` resolution gate and is not in the labels.
+- No Fourier neural operator, physics-informed operator, or inverse-viscosity fit.
 
 ## Known limits
 
@@ -85,14 +95,15 @@ Correctness and packaging on top of the v0.1.0 freeze. The version string is sti
   TCP connects. Loopback stays open. The package does not download weights.
 - Free and public only. No API keys, no paid services, no secrets, and no
   private data.
-- Burgers has no reference field. Evaluation reports residual metrics and
-  boundary penalties, not a field error.
+- Burgers evaluation still has no reference field. It reports residual
+  metrics and boundary penalties, not a field error. Spectral trajectories
+  are a separate package and are not loaded by `pinnforge eval`.
 - `w_bc = 0` does not enforce boundary conditions. An eval config with
   `n_bc = 0` or `n_ic = 0` does not score that condition.
 - Resume requires a checkpoint that stored the optimizer, the torch RNG,
   and the metrics history, and that matches the equation, counts, widths,
-  activation, learning rate, and seed. There is no spectral Burgers
-  reference and no neural operator.
+  activation, learning rate, and seed. There is no neural operator. The
+  spectral Burgers solver is not part of checkpoint resume.
 
 ## Release tag
 

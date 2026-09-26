@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+Stage 2 periodic Burgers reference. The version string stays `0.1.0`. The coordinate-PINN Burgers hook still raises `NotImplementedError`.
+
+- Dealiased Fourier spectral solver with ETDRK4 for `u_t + u u_x = ν u_xx` on `x ∈ [-1, 1]`, `t ∈ [0, 1]`, in `pinnforge.reference.numerical`.
+- Cole–Hopf and finite-difference cross-checks, plus a convergence study under `docs/stage2/`.
+- Seeded low-frequency initial conditions, viscosities in `[0.02, 0.10]`, and a 512/128/128 pilot split by problem instance. The manifest is committed. The trajectory arrays are regenerated with `python -m pinnforge.reference.numerical pilot`.
+
 Stage 1 correctness. The version string stays `0.1.0`.
 
 - Soft penalties for outward Neumann flux and for periodic equality of the field and its derivative at paired endpoints. A training spec whose boundary condition cannot be represented is rejected.
