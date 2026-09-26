@@ -20,7 +20,8 @@ Freeze Project C at v0.1.0. No new product surface. Authentication stays out of 
 
 ## Failed
 
-- Nothing in the Day 10 scope is a new runtime path. The freeze is documentation plus the existing `0.1.0` version string. Local pytest and ruff results are recorded once this note's tree has been checked.
+- Nothing in the Day 10 scope is a new runtime path. The freeze is documentation plus the existing `0.1.0` version string.
+- On Python 3.12.3, with the CPU torch wheel installed, `pytest -m "not ml"` passed (190 passed, 6 skipped; those skips are the missing-torch cases) and the full suite passed (271 passed, 6 skipped). `ruff check .` passed with the existing rule selection (E4, E7, E9, F, I). `pinnforge version` printed `pinnforge 0.1.0`. `pinnforge demo --epochs 1` wrote the harmonic summary and exited 0. Python 3.11 was not executed in this environment. CI still runs the suite on 3.11 and 3.12.
 
 ## Tomorrow
 
