@@ -4,7 +4,9 @@ Day 1 ships equation schemas, a harmonic-oscillator closed form, and a CLI
 stub. Day 2 adds seeded collocation, initial-condition, and boundary
 samplers. Day 3 adds an MLP and residual operators. Day 4 trains that
 residual with Adam. Day 5 scores a checkpoint or an in-memory model
-against a reference field and the residual. The model, residual, loss,
+against a reference field and the residual. Day 6 loads an experiment
+config that selects a built-in equation, optionally overrides its
+parameters, and drives train then eval. The model, residual, loss,
 training, and evaluation modules import torch and raise
 :class:`~pinnforge.ml_import.InstallHint` when the optional ``ml`` extra
 is missing. Importing this package does not import torch.
@@ -12,9 +14,12 @@ is missing. Importing this package does not import torch.
 
 from pinnforge.equations import (
     Burgers1DSpec,
+    EquationInfo,
     HarmonicOscillatorSpec,
     PoissonToySpec,
+    build_equation,
     get_equation,
+    list_equations,
     parse_equation,
     registered_equations,
 )
@@ -26,12 +31,15 @@ __version__ = "0.1.0"
 __all__ = [
     "Burgers1DSpec",
     "CollocationBatch",
+    "EquationInfo",
     "HarmonicOscillatorSpec",
     "InstallHint",
     "PoissonToySpec",
     "SampleConfig",
     "__version__",
+    "build_equation",
     "get_equation",
+    "list_equations",
     "parse_equation",
     "registered_equations",
     "sample_equation",
