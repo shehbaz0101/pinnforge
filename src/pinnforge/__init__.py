@@ -6,10 +6,12 @@ samplers. Day 3 adds an MLP and residual operators. Day 4 trains that
 residual with Adam. Day 5 scores a checkpoint or an in-memory model
 against a reference field and the residual. Day 6 loads an experiment
 config that selects a built-in equation, optionally overrides its
-parameters, and drives train then eval. The model, residual, loss,
+parameters, and drives train then eval. Day 7 serves that catalog and
+the train-then-eval path on localhost. The model, residual, loss,
 training, and evaluation modules import torch and raise
 :class:`~pinnforge.ml_import.InstallHint` when the optional ``ml`` extra
-is missing. Importing this package does not import torch.
+is missing. The HTTP app imports FastAPI when the optional ``api`` extra
+is installed. Importing this package does not import torch or FastAPI.
 """
 
 from pinnforge.equations import (
