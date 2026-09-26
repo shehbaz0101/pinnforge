@@ -1,4 +1,4 @@
-"""Score a model on an interior batch.
+"""Score a model on a held-out batch.
 
 :func:`evaluate_model` accepts any callable with the residual signature,
 including an in-memory :class:`~pinnforge.models.MLP`.
@@ -6,13 +6,19 @@ including an in-memory :class:`~pinnforge.models.MLP`.
 network against the spec stored in that file. Checkpoints written before
 the spec field existed use the built-in problem for the equation id.
 
-Field error uses the harmonic closed form or a Poisson manufactured
-field. Burgers has no field reference, so only the residual stats are
-filled in.
+Interior points use the test RNG stream, not the training stream, so a
+shared integer seed does not redraw the training rows. Field error uses
+the harmonic closed form or a Poisson field that matches the boundary
+data. Burgers has no field reference. Held-out initial-condition and
+boundary errors are reported beside the residual even when the residual
+is zero.
 """
 
 from __future__ import annotations
 
+import math
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
 
@@ -23,11 +29,30 @@ from pinnforge.equations.burgers import Burgers1DSpec
 from pinnforge.equations.harmonic import HarmonicOscillatorSpec
 from pinnforge.equations.poisson import PoissonToySpec
 from pinnforge.evaluation.record import EvalResult, ResidualHistogram
+from pinnforge.losses.conditions import (
+    boundary_coverage_gaps,
+    dirichlet_boundary_loss,
+    initial_condition_loss,
+    neumann_boundary_loss,
+    periodic_boundary_loss,
+)
 from pinnforge.ml_import import require_torch
-from pinnforge.reference import burgers_reference, displacement, poisson_reference
+from pinnforge.reference import (
+    ReferenceUnavailable,
+    burgers_reference,
+    displacement,
+    poisson_reference,
+)
 from pinnforge.residuals import residual_from_field
 from pinnforge.residuals.field import evaluate_field, prepare_coords
-from pinnforge.sampling import SampleConfig, resolve_equation_id, sample_equation
+from pinnforge.sampling import (
+    SampleConfig,
+    resolve_equation_id,
+    sample_equation,
+    stream_generator,
+    stream_identity,
+)
+from pinnforge.sampling.draw import boundary_faces
 from pinnforge.specs.eval import EvalConfig
 from pinnforge.training import load_checkpoint
 
@@ -41,11 +66,12 @@ def evaluate_model(
 ) -> EvalResult:
     """Score ``model`` on a fresh interior batch for ``spec``.
 
-    The batch uses ``config`` (or :class:`EvalConfig` defaults) and draws
-    no initial or boundary points. Mean and max absolute residual are
-    taken on those interior points. ``l2`` and ``relative_l2`` compare
-    the predicted field with the reference on the same points when one
-    exists.
+    The batch uses ``config`` (or :class:`EvalConfig` defaults) and the
+    test RNG stream. Mean and max absolute residual are taken on the
+    interior points. ``l2``, ``relative_l2``, and ``max_abs_error``
+    compare the predicted field with the reference on those points when
+    a matched reference exists. ``ic_error`` and ``bc_error`` use
+    held-out condition rows from the same stream.
 
     The model is set to ``eval`` for the forward pass when it is a
     ``torch.nn.Module``, then restored to the mode it had on entry.
@@ -64,21 +90,33 @@ def evaluate_model(
     _require_spec(spec)
     if not callable(model):
         raise TypeError("model must be callable")
+    n_ic, n_bc = _held_out_counts(spec, config)
     sample = SampleConfig(
         n_interior=config.n_interior,
-        n_ic=0,
-        n_bc=0,
+        n_ic=n_ic,
+        n_bc=n_bc,
         seed=config.seed,
         method=config.method,
     )
-    coords = sample_equation(spec, sample).interior
-    field, prepared = _forward(model, coords)
-    residual = residual_from_field(field, prepared, spec)
+    batch = sample_equation(spec, sample, rng=stream_generator(config.seed, "test"))
+    if n_bc > 0:
+        gaps = boundary_coverage_gaps(batch, spec)
+        if gaps:
+            names = ", ".join(gaps)
+            raise ValueError(
+                f"evaluation did not sample every prescribed boundary face ({names}). "
+                "Increase n_bc or leave it unset."
+            )
+    coords = batch.interior
+    with _eval_mode(model):
+        field, prepared = _forward(model, coords)
+        residual = residual_from_field(field, prepared, spec)
+        ic_error, bc_error, bc_errors = _condition_errors(model, batch, spec)
     residual_np = residual.detach().cpu().numpy().reshape(-1)
     predicted = field.detach().cpu().numpy().reshape(-1)
     if not np.isfinite(residual_np).all() or not np.isfinite(predicted).all():
         raise ValueError("evaluation values must be finite")
-    reference_name, l2, relative_l2 = _field_scores(spec, coords, predicted)
+    reference_name, l2, relative_l2, max_abs_error = _field_scores(spec, coords, predicted)
     absolute = np.abs(residual_np)
     counts, edges = np.histogram(absolute, bins=config.bins)
     return EvalResult(
@@ -96,6 +134,11 @@ def evaluate_model(
             counts=tuple(int(value) for value in counts),
             edges=tuple(float(value) for value in edges),
         ),
+        max_abs_error=max_abs_error,
+        ic_error=ic_error,
+        bc_error=bc_error,
+        bc_errors=bc_errors,
+        rng=stream_identity(config.seed, "test"),
     )
 
 
@@ -134,39 +177,100 @@ def evaluate_checkpoint(
 
 def _forward(model: object, coords: np.ndarray) -> tuple[torch.Tensor, torch.Tensor]:
     tensor = torch.tensor(coords, dtype=torch.float64)
+    prepared = prepare_coords(tensor, model)
+    return evaluate_field(model, prepared), prepared
+
+
+@contextmanager
+def _eval_mode(model: object) -> Iterator[None]:
     module = model if isinstance(model, torch.nn.Module) else None
     training = bool(module.training) if module is not None else False
     if module is not None:
         module.eval()
     try:
-        prepared = prepare_coords(tensor, model)
-        return evaluate_field(model, prepared), prepared
+        yield
     finally:
         if module is not None and training:
             module.train()
+
+
+def _held_out_counts(spec: EquationSpec, config: EvalConfig) -> tuple[int, int]:
+    if config.n_ic is None:
+        n_ic = 0 if isinstance(spec, PoissonToySpec) else 8
+    else:
+        n_ic = config.n_ic
+    conditions = tuple(getattr(spec, "boundary_conditions", ()))
+    if config.n_bc is None:
+        n_bc = len(boundary_faces(conditions))
+    else:
+        n_bc = config.n_bc
+    return n_ic, n_bc
+
+
+def _condition_errors(
+    model: object,
+    batch: object,
+    spec: EquationSpec,
+) -> tuple[float | None, float | None, dict[str, float] | None]:
+    from pinnforge.sampling import CollocationBatch
+
+    if not isinstance(batch, CollocationBatch):
+        raise TypeError("batch must be a CollocationBatch")
+    has_ic = not isinstance(spec, PoissonToySpec)
+    if has_ic and batch.ic.shape[0] > 0:
+        ic_error = _sqrt_penalty(initial_condition_loss(model, batch, spec))
+    else:
+        ic_error = None
+    conditions = tuple(getattr(spec, "boundary_conditions", ()))
+    kinds = {condition.kind for condition in conditions}
+    if not kinds or batch.bc.shape[0] == 0:
+        return ic_error, None, None
+    detail: dict[str, float] = {}
+    total: torch.Tensor | None = None
+    for kind, penalty in (
+        ("dirichlet", dirichlet_boundary_loss),
+        ("neumann", neumann_boundary_loss),
+        ("periodic", periodic_boundary_loss),
+    ):
+        if kind not in kinds:
+            continue
+        term = penalty(model, batch, spec)
+        detail[kind] = _sqrt_penalty(term)
+        total = term if total is None else total + term
+    if total is None:
+        return ic_error, None, None
+    return ic_error, _sqrt_penalty(total), detail
+
+
+def _sqrt_penalty(penalty: torch.Tensor) -> float:
+    value = float(torch.sqrt(penalty.detach()).cpu())
+    if not math.isfinite(value):
+        raise ValueError("condition error must be finite")
+    return value
 
 
 def _field_scores(
     spec: EquationSpec,
     coords: np.ndarray,
     predicted: np.ndarray,
-) -> tuple[str, float | None, float | None]:
+) -> tuple[str, float | None, float | None, float | None]:
     reference = _reference_values(spec, coords)
     if reference is None:
-        return "unavailable", None, None
+        return "unavailable", None, None, None
     if reference.shape != predicted.shape or not np.isfinite(reference).all():
         raise ValueError("reference values must be finite and match the prediction")
     difference = predicted - reference
     l2 = float(np.sqrt(np.mean(np.square(difference))))
+    max_abs = float(np.max(np.abs(difference)))
     denom = float(np.sqrt(np.mean(np.square(reference))))
-    if not np.isfinite(l2):
-        raise ValueError("l2 must be finite")
+    if not np.isfinite(l2) or not np.isfinite(max_abs):
+        raise ValueError("field error must be finite")
     if denom == 0.0:
-        return "analytical", l2, None
+        return "analytical", l2, None, max_abs
     relative = l2 / denom
     if not np.isfinite(relative):
         raise ValueError("relative l2 must be finite")
-    return "analytical", l2, relative
+    return "analytical", l2, relative, max_abs
 
 
 def _reference_values(spec: EquationSpec, coords: np.ndarray) -> np.ndarray | None:
@@ -182,7 +286,10 @@ def _reference_values(spec: EquationSpec, coords: np.ndarray) -> np.ndarray | No
         return np.asarray(values, dtype=np.float64).reshape(-1)
     if isinstance(spec, PoissonToySpec):
         columns = [coords[:, index] for index in range(coords.shape[1])]
-        values = poisson_reference(spec, *columns)
+        try:
+            values = poisson_reference(spec, *columns)
+        except ReferenceUnavailable:
+            return None
         return np.asarray(values, dtype=np.float64).reshape(-1)
     if isinstance(spec, Burgers1DSpec):
         return _burgers_reference(spec, coords)

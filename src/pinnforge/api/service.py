@@ -172,6 +172,8 @@ def _eval_config(body: EvalRequest) -> EvalConfig:
 def _check_train_paths(config: TrainConfig) -> None:
     resolve_inside_cwd(config.checkpoint_dir, label="checkpoint_dir")
     resolve_inside_cwd(config.log_path, suffix=".jsonl", label="log_path")
+    if config.resume_from is not None:
+        resolve_inside_cwd(config.resume_from, suffix=".pt", label="resume_from")
 
 
 def _train_summary(config: TrainConfig, final: object, checkpoint: str, log: str) -> TrainSummary:

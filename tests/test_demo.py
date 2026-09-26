@@ -19,6 +19,18 @@ from pinnforge.offline import OfflineError
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_package_data_matches_repo_samples() -> None:
+    from importlib.resources import files
+
+    from pinnforge.demo import read_bundled_sample
+
+    packaged = files("pinnforge.data") / "configs"
+    for name in ("harmonic.yaml", "burgers.yaml", "poisson.json"):
+        text = (packaged / name).read_text(encoding="utf-8")
+        assert text == (ROOT / "samples" / "configs" / name).read_text(encoding="utf-8")
+        assert read_bundled_sample(f"samples/configs/{name}") == text
+
+
 def test_sample_paths_match_checked_in_files() -> None:
     samples = bundled_samples_dir()
     assert samples == ROOT / "samples"

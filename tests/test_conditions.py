@@ -135,6 +135,103 @@ def test_dirichlet_burgers_ends_match_the_sine_profile() -> None:
     assert _value(dirichlet_boundary_loss(profile, batch, spec)) < 1e-12
 
 
+def test_neumann_uses_the_outward_derivative_and_not_the_dirichlet_term() -> None:
+    import torch
+
+    from pinnforge.losses import neumann_boundary_loss, soft_penalty
+
+    spec = PoissonToySpec(
+        dimensions=1,
+        source=PoissonSource.ONE,
+        x=Interval(lower=0.0, upper=1.0),
+        boundary_conditions=[
+            BoundaryCondition(variable="x", kind="dirichlet", side="min", value=0.0),
+            BoundaryCondition(variable="x", kind="neumann", side="max", value=5.0),
+            BoundaryCondition(variable="x", kind="neumann", side="min", value=-5.0),
+        ],
+    )
+    batch = sample_equation(spec, SampleConfig(n_interior=2, n_ic=0, n_bc=6, seed=5))
+
+    def slope(coords: torch.Tensor) -> torch.Tensor:
+        return 5.0 * coords[:, 0:1]
+
+    matched = soft_penalty(slope, batch, spec)
+    assert _value(matched.dirichlet) < 1e-12
+    assert _value(matched.neumann) < 1e-10
+    # A constant has zero derivative. Outward flux is 0, not the prescribed 5 and -5.
+    missed = neumann_boundary_loss(_constant(2.0), batch, spec)
+    assert _value(missed) == pytest.approx(25.0)
+
+
+def test_periodic_burgers_matches_value_and_derivative_at_the_same_time() -> None:
+    import numpy as np
+    import torch
+
+    from pinnforge.losses import periodic_boundary_loss, soft_penalty
+    from pinnforge.sampling import CollocationBatch, default_spec
+
+    spec = default_spec("burgers")
+    batch = sample_equation(spec, SampleConfig(n_interior=4, n_ic=4, n_bc=4, seed=2))
+
+    def linear(coords: torch.Tensor) -> torch.Tensor:
+        return coords[:, 0:1]
+
+    def squares(coords: torch.Tensor) -> torch.Tensor:
+        return coords[:, 0:1] ** 2
+
+    def periodic_profile(coords: torch.Tensor) -> torch.Tensor:
+        return torch.sin(coords[:, 0:1] * math.pi)
+
+    assert _value(periodic_boundary_loss(linear, batch, spec)) > 0.1
+    assert _value(periodic_boundary_loss(squares, batch, spec)) > 0.1
+    assert _value(periodic_boundary_loss(periodic_profile, batch, spec)) < 1e-10
+    penalty = soft_penalty(periodic_profile, batch, spec)
+    assert _value(penalty.dirichlet) == 0.0
+    assert _value(penalty.periodic) < 1e-10
+    # Min and max faces below do not share t. A correct penalty mirrors each
+    # row onto both ends at that row's own t. Zipping the two faces compares
+    # different times and does not vanish for u = sin(pi x) * (1 + t).
+    paired = CollocationBatch(
+        equation_id="burgers_1d",
+        axis_names=("x", "t"),
+        lower=np.array([-1.0, 0.0]),
+        upper=np.array([1.0, 1.0]),
+        method="uniform",
+        seed=0,
+        interior=np.array([[0.0, 0.3]]),
+        ic=np.array([[0.2, 0.0]]),
+        bc=np.array([[-1.0, 0.2], [1.0, 0.8]]),
+        bc_variable=("x", "x"),
+        bc_side=("min", "max"),
+    )
+
+    def same_time(coords: torch.Tensor) -> torch.Tensor:
+        return torch.sin(coords[:, 0:1] * math.pi) * (1.0 + coords[:, 1:2])
+
+    assert _value(periodic_boundary_loss(same_time, paired, spec)) < 1e-10
+    assert _value(periodic_boundary_loss(linear, paired, spec)) > 0.1
+
+
+def test_training_rejects_a_periodic_spec_with_no_boundary_samples(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pinnforge.training import TrainConfig, train_loop
+
+    monkeypatch.chdir(tmp_path)
+    config = TrainConfig(
+        equation_id="burgers",
+        epochs=1,
+        n_interior=4,
+        n_ic=2,
+        n_bc=0,
+        hidden_widths=(4, 4),
+        checkpoint_dir="ckpts",
+        log_path="metrics.jsonl",
+    )
+    with pytest.raises(ValueError, match="periodic"):
+        train_loop(config)
+
+
 def test_penalty_rejects_a_mismatched_batch() -> None:
     from pinnforge.losses import soft_penalty
     from pinnforge.sampling import default_spec

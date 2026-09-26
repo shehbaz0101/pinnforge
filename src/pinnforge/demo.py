@@ -52,10 +52,12 @@ class DemoResult:
 
 
 def bundled_samples_dir() -> Path | None:
-    """Return the checked-in ``samples/`` directory, or ``None`` when it is absent.
+    """Return the repository ``samples/`` directory, or ``None`` when it is absent.
 
-    The search walks parents of this file so an editable install finds the
-    repository ``samples/`` next to ``src/``.
+    The search walks parents of this file so a checkout or an editable
+    install that still has the repository tree can find ``samples/``.
+    Installed wheels do not include that directory. They ship the same
+    files as package data; :func:`read_bundled_sample` reads those first.
     """
 
     start = Path(__file__).resolve().parent
@@ -156,6 +158,9 @@ def format_demo_summary(
     _require_finite("loss_bc", final.loss_bc)
     _require_finite("l2", result.evaluation.l2)
     _require_finite("relative_l2", result.evaluation.relative_l2)
+    _require_finite("max_abs_error", result.evaluation.max_abs_error)
+    _require_finite("ic_error", result.evaluation.ic_error)
+    _require_finite("bc_error", result.evaluation.bc_error)
     _require_finite("residual_mean_abs", result.evaluation.residual_mean_abs)
     _require_finite("residual_max_abs", result.evaluation.residual_max_abs)
     lines = [
@@ -178,6 +183,10 @@ def format_demo_summary(
         f"reference: {result.evaluation.reference}",
         f"l2: {_format_metric(result.evaluation.l2)}",
         f"relative_l2: {_format_metric(result.evaluation.relative_l2)}",
+        f"max_abs_error: {_format_metric(result.evaluation.max_abs_error)}",
+        f"ic_error: {_format_metric(result.evaluation.ic_error)}",
+        f"bc_error: {_format_metric(result.evaluation.bc_error)}",
+        f"rng_stream: {_rng_name(result.evaluation.rng)}",
         f"residual_mean_abs: {result.evaluation.residual_mean_abs:.8e}",
         f"residual_max_abs: {result.evaluation.residual_max_abs:.8e}",
     ]
@@ -201,6 +210,41 @@ def _run(config: ExperimentConfig) -> RunResult:
     return run_experiment(config)
 
 
+def read_bundled_sample(relative: str) -> str | None:
+    """Return the text of a checked-in sample, or ``None`` if it is missing.
+
+    Package data is preferred so an installed wheel works from an empty
+    working directory. The repository ``samples/`` tree is the fallback
+    for a checkout whose package data was not installed.
+    """
+
+    name = Path(relative).name
+    packaged = _read_package_config(name)
+    if packaged is not None:
+        return packaged
+    bundled = _bundled_config(relative)
+    if bundled is None:
+        return None
+    try:
+        return bundled.read_text(encoding="utf-8")
+    except OSError:
+        return None
+
+
+def _read_package_config(name: str) -> str | None:
+    try:
+        from importlib.resources import files
+    except ImportError:
+        return None
+    resource = files("pinnforge.data") / "configs" / name
+    try:
+        if not resource.is_file():
+            return None
+        return resource.read_text(encoding="utf-8")
+    except (FileNotFoundError, OSError):
+        return None
+
+
 def _place_sample_config(relative: str) -> str:
     """Return ``relative`` once that file exists inside the sandbox root."""
 
@@ -209,12 +253,12 @@ def _place_sample_config(relative: str) -> str:
         return relative
     if destination.exists():
         raise ValueError(f"sample config is not a file: {relative}")
-    bundled = _bundled_config(relative)
-    if bundled is None:
+    text = read_bundled_sample(relative)
+    if text is None:
         raise ValueError(f"sample config not found: {relative}")
     try:
         destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_text(bundled.read_text(encoding="utf-8"), encoding="utf-8")
+        destination.write_text(text, encoding="utf-8")
     except OSError as exc:
         raise ValueError(f"could not place sample config {relative}: {exc}") from exc
     return relative
@@ -252,6 +296,15 @@ def _require_finite(name: str, value: float | None) -> None:
         return
     if not math.isfinite(value):
         raise ValueError(f"demo {name} is not finite")
+
+
+def _rng_name(rng: dict[str, object] | None) -> str:
+    if rng is None:
+        return "unavailable"
+    name = rng.get("name")
+    if not isinstance(name, str) or name == "":
+        return "unavailable"
+    return name
 
 
 def _format_metric(value: float | None) -> str:
