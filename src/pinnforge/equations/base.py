@@ -1,7 +1,7 @@
 """Shared domain, initial-condition, and boundary-condition types.
 
-Day 1 stores descriptors. It does not sample collocation points or build a
-residual. Later days can extend these models; unknown fields are rejected
+These models are descriptors. They do not draw points or build a residual.
+Sampling lives in :mod:`pinnforge.sampling`. Unknown fields are rejected
 so a typo does not pass as a new parameter.
 """
 

@@ -26,8 +26,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.3"]
-# Day 3+ MLP and training. Day 1 tests do not import torch, and CI does not
-# install this extra (the default wheel is large and Day 1 does not need it).
+# Day 3+ MLP and training. Tests do not import torch, and CI does not
+# install this extra (the default wheel is large and the sampler does not need it).
 ml = ["torch>=2.2,<3"]
 # Optional. CI runs `ruff check` with the selection below. Not required to
 # import or run PINNForge.
