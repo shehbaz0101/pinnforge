@@ -43,6 +43,7 @@ def test_help_and_version_flags(capsys: pytest.CaptureFixture[str]) -> None:
     assert "residual" in help_text
     assert "train" in help_text
     assert "eval" in help_text
+    assert "run" in help_text
     with pytest.raises(SystemExit) as version_exit:
         main(["--version"])
     assert version_exit.value.code == 0
@@ -70,7 +71,8 @@ def test_import_does_not_load_torch() -> None:
     env = os.environ.copy()
     env["PYTHONPATH"] = str(ROOT / "src")
     code = (
-        "import pinnforge, pinnforge.reference, pinnforge.sampling, pinnforge.ml_import, pinnforge.cli, sys; "
+        "import pinnforge, pinnforge.reference, pinnforge.sampling, pinnforge.experiments, "
+        "pinnforge.specs, pinnforge.ml_import, pinnforge.cli, sys; "
         "assert 'torch' not in sys.modules; "
         "assert pinnforge.__version__ == '0.1.0'"
     )

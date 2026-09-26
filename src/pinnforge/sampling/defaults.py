@@ -21,15 +21,10 @@ from pinnforge.equations.base import (
 from pinnforge.equations.burgers import Burgers1DSpec
 from pinnforge.equations.harmonic import HarmonicOscillatorSpec
 from pinnforge.equations.poisson import PoissonSource, PoissonToySpec
+from pinnforge.equations.registry import equation_alias_map, resolve_equation_id
 
-EQUATION_ALIASES: dict[str, str] = {
-    "harmonic": "harmonic_oscillator",
-    "harmonic_oscillator": "harmonic_oscillator",
-    "burgers": "burgers_1d",
-    "burgers_1d": "burgers_1d",
-    "poisson": "poisson_toy",
-    "poisson_toy": "poisson_toy",
-}
+# Short CLI names and canonical ids. The registry catalog is the source.
+EQUATION_ALIASES: dict[str, str] = equation_alias_map()
 
 # Used when the CLI omits ``--n-ic`` or ``--n-bc``. The harmonic default
 # spec has no boundary conditions, so its boundary count stays at zero.
@@ -38,16 +33,6 @@ CLI_COUNT_DEFAULTS: dict[str, dict[str, int]] = {
     "burgers_1d": {"n_ic": 16, "n_bc": 16},
     "poisson_toy": {"n_ic": 0, "n_bc": 16},
 }
-
-
-def resolve_equation_id(name: str) -> str:
-    """Map a CLI name such as ``harmonic`` to an ``equation_id``."""
-
-    try:
-        return EQUATION_ALIASES[name]
-    except KeyError:
-        known = ", ".join(sorted(EQUATION_ALIASES))
-        raise ValueError(f"unknown equation {name!r}; known: {known}") from None
 
 
 def default_spec(name: str, *, dimensions: Literal[1, 2] | None = None) -> EquationSpec:

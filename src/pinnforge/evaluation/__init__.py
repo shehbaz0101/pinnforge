@@ -8,8 +8,8 @@ metrics only.
 """
 
 from pinnforge.evaluation.api import evaluate_checkpoint, evaluate_model
-from pinnforge.evaluation.config import EvalConfig
 from pinnforge.evaluation.record import EVAL_FORMAT, EvalResult, ResidualHistogram, write_eval_json
+from pinnforge.specs.eval import EvalConfig
 
 __all__ = [
     "EVAL_FORMAT",

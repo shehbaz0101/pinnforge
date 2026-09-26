@@ -13,7 +13,15 @@ from pinnforge.equations.base import (
 from pinnforge.equations.burgers import BURGERS_PROFILES, Burgers1DSpec
 from pinnforge.equations.harmonic import HarmonicOscillatorSpec
 from pinnforge.equations.poisson import PoissonSource, PoissonToySpec
-from pinnforge.equations.registry import get_equation, parse_equation, registered_equations
+from pinnforge.equations.registry import (
+    EquationInfo,
+    build_equation,
+    get_equation,
+    list_equations,
+    parse_equation,
+    registered_equations,
+    resolve_equation_id,
+)
 
 __all__ = [
     "BURGERS_PROFILES",
@@ -22,6 +30,7 @@ __all__ = [
     "Burgers1DSpec",
     "CollocationDomain",
     "ConditionDescriptor",
+    "EquationInfo",
     "EquationSpec",
     "HarmonicOscillatorSpec",
     "Interval",
@@ -29,7 +38,10 @@ __all__ = [
     "PoissonToySpec",
     "ProfileInitialCondition",
     "StateInitialCondition",
+    "build_equation",
     "get_equation",
+    "list_equations",
     "parse_equation",
     "registered_equations",
+    "resolve_equation_id",
 ]
