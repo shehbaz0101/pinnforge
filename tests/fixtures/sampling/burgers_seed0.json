@@ -1,0 +1,161 @@
+{
+  "format": "pinnforge.sample.v1",
+  "spec": {
+    "equation_id": "burgers_1d",
+    "nu": 0.003183098861837907,
+    "x": {
+      "lower": -1.0,
+      "upper": 1.0
+    },
+    "t": {
+      "lower": 0.0,
+      "upper": 1.0
+    },
+    "initial_condition": {
+      "description": "",
+      "kind": "profile",
+      "variable": "t",
+      "profile": "negative_sin_pi_x",
+      "params": {}
+    },
+    "boundary_conditions": [
+      {
+        "description": "",
+        "variable": "x",
+        "kind": "periodic",
+        "side": null,
+        "value": null,
+        "component": "u"
+      }
+    ]
+  },
+  "config": {
+    "n_interior": 8,
+    "n_ic": 4,
+    "n_bc": 4,
+    "seed": 0,
+    "method": "uniform"
+  },
+  "batch": {
+    "equation_id": "burgers_1d",
+    "method": "uniform",
+    "seed": 0,
+    "bounds": [
+      {
+        "name": "x",
+        "lower": -1.0,
+        "upper": 1.0
+      },
+      {
+        "name": "t",
+        "lower": 0.0,
+        "upper": 1.0
+      }
+    ],
+    "counts": {
+      "interior": 8,
+      "ic": 4,
+      "bc": 4
+    },
+    "interior": [
+      [
+        0.2739233746429086,
+        0.2697867137638703
+      ],
+      [
+        -0.9180529521276106,
+        0.016527635528529094
+      ],
+      [
+        0.6265404784005448,
+        0.9127555772777217
+      ],
+      [
+        0.21327155153435973,
+        0.7294965609839984
+      ],
+      [
+        0.08724998293084574,
+        0.9350724237877682
+      ],
+      [
+        0.6317071082430643,
+        0.002738500170148095
+      ],
+      [
+        0.7148085531751387,
+        0.033585575305464355
+      ],
+      [
+        0.45931089285988813,
+        0.17565562060255901
+      ]
+    ],
+    "ic": [
+      [
+        0.7263578446997732,
+        0.0
+      ],
+      [
+        0.08292244049818343,
+        0.0
+      ],
+      [
+        -0.40057621892523043,
+        0.0
+      ],
+      [
+        -0.1546255576046831,
+        0.0
+      ]
+    ],
+    "bc": [
+      [
+        -1.0,
+        0.028319671145462966
+      ],
+      [
+        -1.0,
+        0.12428327649956394
+      ],
+      [
+        1.0,
+        0.6706244146936303
+      ],
+      [
+        1.0,
+        0.6471895115742501
+      ]
+    ],
+    "bc_variable": [
+      "x",
+      "x",
+      "x",
+      "x"
+    ],
+    "bc_side": [
+      "min",
+      "min",
+      "max",
+      "max"
+    ],
+    "labels": [
+      "interior",
+      "interior",
+      "interior",
+      "interior",
+      "interior",
+      "interior",
+      "interior",
+      "interior",
+      "ic",
+      "ic",
+      "ic",
+      "ic",
+      "bc",
+      "bc",
+      "bc",
+      "bc"
+    ]
+  }
+}
