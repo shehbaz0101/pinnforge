@@ -1,13 +1,20 @@
-"""Soft initial-condition and Dirichlet penalties.
+"""Soft initial-condition and boundary penalties.
 
 These are mean-squared differences between the network field and the
-values stored on the Day 1 spec. Rows come from a
+values stored on the spec. Rows come from a
 :class:`~pinnforge.sampling.CollocationBatch`: ``ic`` for the initial
-condition, and ``bc`` rows whose face is Dirichlet. Neumann and periodic
-faces are not penalized.
+condition, and ``bc`` rows for Dirichlet and Neumann faces.
 
-Day 4 adds these terms to the residual loss and runs the optimizer. This
-module only returns the penalties.
+Periodic conditions do not zip the independently sampled min and max
+faces. Those faces do not share the other coordinates. Each boundary
+row is mirrored onto both endpoints of its periodic axis, and the
+penalty matches the field and its derivative with respect to that axis
+at that same free coordinate (the same time, for Burgers).
+
+Neumann values are outward normal derivatives. On side ``max`` that is
+``∂/∂variable``. On side ``min`` it is ``-∂/∂variable``. A condition
+whose kind or component this module cannot enforce raises
+``ValueError`` instead of being omitted.
 """
 
 from __future__ import annotations
@@ -34,35 +41,49 @@ torch = require_torch()
 
 @dataclass(frozen=True, slots=True)
 class SoftPenalty:
-    """Unweighted initial and Dirichlet penalties.
+    """Unweighted initial and boundary penalties.
 
-    Both tensors are 0-d. :meth:`total` adds them with weight 1 each.
-    Day 4 chooses training weights and does not have to use :meth:`total`.
-    Poisson has no initial condition, so ``initial`` is zero. A batch with
-    no Dirichlet rows has ``dirichlet`` zero.
+    All four tensors are 0-d. :meth:`boundary` adds the Dirichlet,
+    Neumann, and periodic terms. :meth:`total` adds that sum to the
+    initial-condition term. Poisson has no initial condition, so
+    ``initial`` is zero. A term is zero when the spec prescribes none
+    of that kind or the batch has no rows for it.
     """
 
     initial: torch.Tensor
     dirichlet: torch.Tensor
+    neumann: torch.Tensor
+    periodic: torch.Tensor
+
+    def boundary(self) -> torch.Tensor:
+        """Sum of the Dirichlet, Neumann, and periodic penalties."""
+
+        return self.dirichlet + self.neumann + self.periodic
 
     def total(self) -> torch.Tensor:
-        """Sum of the two penalties."""
+        """Sum of the initial-condition penalty and :meth:`boundary`."""
 
-        return self.initial + self.dirichlet
+        return self.initial + self.boundary()
 
 
 def soft_penalty(model: object, batch: CollocationBatch, spec: EquationSpec) -> SoftPenalty:
-    """Initial-condition and Dirichlet penalties for one batch.
+    """Initial-condition and boundary penalties for one batch.
 
-    ``batch`` selects the rows. Prescribed numbers come from ``spec``:
-    harmonic ``(u, du_dt)``, a Burgers profile name, and Dirichlet
-    ``value`` fields. The two penalties are separate so a later trainer
-    can weight them.
+    ``batch`` selects the rows. Prescribed numbers come from ``spec``.
+    The four penalties are separate so a trainer can weight the initial
+    condition apart from the boundary terms.
+
+    Raises:
+        ValueError: a boundary condition kind or component is not
+            enforced by this module.
     """
 
+    _require_supported_conditions(spec)
     return SoftPenalty(
         initial=initial_condition_loss(model, batch, spec),
         dirichlet=dirichlet_boundary_loss(model, batch, spec),
+        neumann=neumann_boundary_loss(model, batch, spec),
+        periodic=periodic_boundary_loss(model, batch, spec),
     )
 
 
@@ -101,11 +122,12 @@ def dirichlet_boundary_loss(
 
     Each Dirichlet component contributes its own mean square, and those
     means are added. ``u`` is the field. ``du_dt`` (harmonic boundary
-    data) is the time derivative. Neumann and periodic rows are skipped.
-    No Dirichlet rows yields zero.
+    data) is the time derivative. Neumann and periodic rows are not
+    scored here. No Dirichlet rows yields zero.
     """
 
     _require_pair(batch, spec)
+    _require_supported_conditions(spec)
     grouped = _dirichlet_rows(batch, spec)
     if not grouped or batch.bc.shape[0] == 0:
         return zero_scalar(model)
@@ -123,6 +145,111 @@ def dirichlet_boundary_loss(
         names = ", ".join(sorted(unknown))
         raise ValueError(f"unsupported Dirichlet component: {names}")
     return total
+
+
+def neumann_boundary_loss(
+    model: object,
+    batch: CollocationBatch,
+    spec: EquationSpec,
+) -> torch.Tensor:
+    """Mean-squared outward-normal penalty on Neumann faces.
+
+    The stored value is the outward flux. Side ``max`` compares
+    ``∂component/∂variable`` with that value. Side ``min`` compares
+    ``-∂component/∂variable`` with it. Component ``u`` is the field.
+    Component ``du_dt`` is the time derivative, so the flux is a second
+    derivative. No Neumann rows yields zero.
+    """
+
+    _require_pair(batch, spec)
+    _require_supported_conditions(spec)
+    grouped = _neumann_groups(batch, spec)
+    if not grouped or batch.bc.shape[0] == 0:
+        return zero_scalar(model)
+    prepared = prepare_coords(_tensor(batch.bc, model), model)
+    field = evaluate_field(model, prepared)
+    grads = derivative_wrt(field, prepared)
+    total = zero_scalar(model)
+    for component, rows in grouped.items():
+        slope = _component_jacobian(component, grads, prepared, spec)
+        total = total + _neumann_mse(slope, rows, spec)
+    return total
+
+
+def periodic_boundary_loss(
+    model: object,
+    batch: CollocationBatch,
+    spec: EquationSpec,
+) -> torch.Tensor:
+    """Match the field and its axial derivative at both periodic ends.
+
+    The sampler draws the min face and the max face independently, so
+    those rows are not pairs. Every boundary row whose variable is the
+    periodic axis is copied onto both endpoints while the other
+    coordinates stay fixed. For Burgers that other coordinate is time,
+    so the match is at one time. The penalty is the mean square of the
+    value gap plus the mean square of the derivative gap. Component
+    ``u`` uses the field and ``∂u/∂variable``. Component ``du_dt`` uses
+    ``u_t`` and its derivative along the periodic axis.
+    """
+
+    _require_pair(batch, spec)
+    _require_supported_conditions(spec)
+    conditions = [item for item in _boundary_conditions(spec) if item.kind == "periodic"]
+    if not conditions or batch.bc.shape[0] == 0:
+        return zero_scalar(model)
+    coords = _tensor(batch.bc, model)
+    bounds = {axis.name: axis.bounds for axis in spec.collocation_domain().axes}
+    total = zero_scalar(model)
+    for condition in conditions:
+        indices = [
+            index
+            for index, variable in enumerate(batch.bc_variable)
+            if variable == condition.variable
+        ]
+        if not indices:
+            continue
+        chosen = coords.index_select(
+            0, torch.tensor(indices, dtype=torch.long, device=coords.device)
+        )
+        axis = _axis_index(spec, condition.variable)
+        left = chosen.clone()
+        right = chosen.clone()
+        left[:, axis] = float(bounds[condition.variable].lower)
+        right[:, axis] = float(bounds[condition.variable].upper)
+        left_value, left_slope = _endpoint_state(model, left, spec, condition.component, condition.variable)
+        right_value, right_slope = _endpoint_state(
+            model, right, spec, condition.component, condition.variable
+        )
+        total = total + _mse(left_value, right_value) + _mse(left_slope, right_slope)
+    return total
+
+
+def boundary_coverage_gaps(batch: CollocationBatch, spec: EquationSpec) -> tuple[str, ...]:
+    """Names of prescribed faces that ``batch`` does not sample.
+
+    A periodic condition needs one row on its variable. Dirichlet and
+    Neumann each need one row on that variable and side. An empty tuple
+    means every prescribed face has a sample. This does not score the
+    field.
+    """
+
+    _require_pair(batch, spec)
+    _require_supported_conditions(spec)
+    gaps: list[str] = []
+    for condition in _boundary_conditions(spec):
+        if condition.kind == "periodic":
+            covered = any(variable == condition.variable for variable in batch.bc_variable)
+            if not covered:
+                gaps.append(f"periodic {condition.variable}")
+            continue
+        covered = any(
+            variable == condition.variable and side == condition.side
+            for variable, side in zip(batch.bc_variable, batch.bc_side, strict=True)
+        )
+        if not covered:
+            gaps.append(f"{condition.kind} {condition.variable} {condition.side}")
+    return tuple(gaps)
 
 
 def _harmonic_initial(
@@ -154,6 +281,107 @@ def _burgers_profile(spec: Burgers1DSpec, x: torch.Tensor) -> torch.Tensor:
     if profile == "sin_pi_x":
         return torch.sin(x * math.pi)
     raise ValueError(f"unknown Burgers profile {profile!r}")
+
+
+def _boundary_conditions(spec: EquationSpec) -> tuple[BoundaryCondition, ...]:
+    conditions = getattr(spec, "boundary_conditions", None)
+    if conditions is None:
+        raise TypeError(f"{type(spec).__name__} has no boundary conditions list")
+    found = tuple(conditions)
+    for condition in found:
+        if not isinstance(condition, BoundaryCondition):
+            raise TypeError("boundary conditions must be BoundaryCondition descriptors")
+    return found
+
+
+def _require_supported_conditions(spec: EquationSpec) -> None:
+    names = _axis_names(spec)
+    for condition in _boundary_conditions(spec):
+        if condition.kind not in {"dirichlet", "neumann", "periodic"}:
+            raise ValueError(
+                f"unsupported boundary condition {condition.kind!r}; "
+                "prescribed physics is not skipped"
+            )
+        if condition.component not in {"u", "du_dt"}:
+            raise ValueError(f"unsupported boundary component {condition.component!r}")
+        if condition.component == "du_dt" and "t" not in names:
+            raise ValueError("du_dt boundary data requires a time axis")
+
+
+def _neumann_groups(
+    batch: CollocationBatch,
+    spec: EquationSpec,
+) -> dict[str, list[tuple[int, float, str, str]]]:
+    lookup: dict[tuple[str, str], list[tuple[str, float]]] = {}
+    for condition in _boundary_conditions(spec):
+        if condition.kind != "neumann":
+            continue
+        if condition.side is None or condition.value is None:
+            raise ValueError("Neumann boundary conditions require side and value")
+        lookup.setdefault((condition.variable, condition.side), []).append(
+            (condition.component, float(condition.value))
+        )
+    grouped: dict[str, list[tuple[int, float, str, str]]] = {}
+    rows = zip(range(len(batch.bc_variable)), batch.bc_variable, batch.bc_side, strict=True)
+    for index, variable, side in rows:
+        for component, value in lookup.get((variable, side), ()):
+            grouped.setdefault(component, []).append((index, value, variable, side))
+    return grouped
+
+
+def _component_jacobian(
+    component: str,
+    grads: torch.Tensor,
+    prepared: torch.Tensor,
+    spec: EquationSpec,
+) -> torch.Tensor:
+    """Jacobian of the boundary component. Shape ``(n, d)``."""
+
+    if component == "u":
+        return grads
+    if component == "du_dt":
+        time_axis = _axis_index(spec, "t")
+        speed = grads[:, time_axis : time_axis + 1]
+        return derivative_wrt(speed, prepared)
+    raise ValueError(f"unsupported boundary component {component!r}")
+
+
+def _neumann_mse(
+    slope: torch.Tensor,
+    rows: list[tuple[int, float, str, str]],
+    spec: EquationSpec,
+) -> torch.Tensor:
+    outward = []
+    targets: list[float] = []
+    for index, value, variable, side in rows:
+        axis = _axis_index(spec, variable)
+        raw = slope[index, axis]
+        outward.append(raw if side == "max" else -raw)
+        targets.append(value)
+    prediction = torch.stack(outward).unsqueeze(-1)
+    target = torch.tensor(targets, dtype=prediction.dtype, device=prediction.device).unsqueeze(-1)
+    return _mse(prediction, target)
+
+
+def _endpoint_state(
+    model: object,
+    coords: torch.Tensor,
+    spec: EquationSpec,
+    component: str,
+    variable: str,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    prepared = prepare_coords(coords, model)
+    field = evaluate_field(model, prepared)
+    grads = derivative_wrt(field, prepared)
+    axis = _axis_index(spec, variable)
+    if component == "u":
+        return field, grads[:, axis : axis + 1]
+    if component == "du_dt":
+        time_axis = _axis_index(spec, "t")
+        speed = grads[:, time_axis : time_axis + 1]
+        second = derivative_wrt(speed, prepared)
+        return speed, second[:, axis : axis + 1]
+    raise ValueError(f"unsupported periodic component {component!r}")
 
 
 def _dirichlet_rows(
@@ -206,8 +434,12 @@ def _tensor(values: object, model: object) -> torch.Tensor:
     return torch.tensor(values, dtype=dtype, device=device)
 
 
+def _axis_names(spec: EquationSpec) -> list[str]:
+    return [axis.name for axis in spec.collocation_domain().axes]
+
+
 def _axis_index(spec: EquationSpec, name: str) -> int:
-    names = [axis.name for axis in spec.collocation_domain().axes]
+    names = _axis_names(spec)
     try:
         return names.index(name)
     except ValueError:

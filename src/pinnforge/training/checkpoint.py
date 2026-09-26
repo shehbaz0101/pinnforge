@@ -3,14 +3,15 @@
 A checkpoint is a small ``torch.save`` dict: a format tag, the epoch,
 the :class:`~pinnforge.specs.train.TrainConfig` as JSON-ready
 data, the model ``state_dict``, and, for checkpoints written by the
-current trainer, the equation spec. Optimizer state is not stored.
-``load_checkpoint`` rebuilds the MLP from that spec (or the built-in
-spec when an older file omitted it) and the saved widths, then loads
-the weights onto CPU.
+current trainer, the equation spec, Adam state, torch RNG state, and
+metrics history. ``load_checkpoint`` rebuilds the MLP from that spec
+(or the built-in spec when an older file omitted it) and the saved
+widths, then loads the weights onto CPU with ``weights_only=True``.
 """
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -40,6 +41,9 @@ class LoadedCheckpoint:
     epoch: int
     path: Path
     spec: EquationSpec
+    optimizer_state: dict[str, object] | None = None
+    torch_rng: torch.Tensor | None = None
+    history: tuple[dict[str, object], ...] | None = None
 
 
 def save_checkpoint(
@@ -49,6 +53,8 @@ def save_checkpoint(
     directory: str | Path,
     *,
     spec: EquationSpec | None = None,
+    optimizer: torch.optim.Optimizer | None = None,
+    history: Sequence[Mapping[str, object]] | None = None,
 ) -> Path:
     """Write ``checkpoint.pt`` and ``epoch_XXXX.pt`` under ``directory``.
 
@@ -59,7 +65,9 @@ def save_checkpoint(
     ``spec``, when set, is stored as JSON so a later load rebuilds the
     problem that was trained, including parameter overrides. The format
     tag stays ``pinnforge.checkpoint.v1``. Checkpoints written before
-    that field existed omit it and load the built-in spec.
+    that field existed omit it and load the built-in spec. ``optimizer``
+    and ``history``, when set, are stored so a later run can resume.
+    The torch RNG state is stored with them.
 
     Raises:
         TypeError: ``model`` or ``config`` has the wrong type, or
@@ -89,6 +97,11 @@ def save_checkpoint(
     }
     if spec is not None:
         payload["spec"] = spec.model_dump(mode="json")
+    payload["torch_rng"] = torch.get_rng_state()
+    if optimizer is not None:
+        payload["optimizer"] = optimizer.state_dict()
+    if history is not None:
+        payload["history"] = [dict(row) for row in history]
     latest = resolved / "checkpoint.pt"
     tagged = resolved / f"epoch_{epoch:04d}.pt"
     torch.save(payload, latest)
@@ -110,7 +123,7 @@ def load_checkpoint(path: str | Path) -> LoadedCheckpoint:
     """
 
     resolved = resolve_inside_cwd(path, suffix=".pt")
-    payload = torch.load(resolved, map_location="cpu", weights_only=False)
+    payload = _load_payload(resolved)
     if not isinstance(payload, dict):
         raise ValueError("checkpoint must be a dict")
     if payload.get("format") != CHECKPOINT_FORMAT:
@@ -130,7 +143,47 @@ def load_checkpoint(path: str | Path) -> LoadedCheckpoint:
     model.load_state_dict(state)
     model.to(torch.device("cpu"))
     model.eval()
-    return LoadedCheckpoint(model=model, config=config, epoch=epoch, path=resolved, spec=spec)
+    optimizer_state = payload.get("optimizer")
+    if optimizer_state is not None and not isinstance(optimizer_state, dict):
+        raise ValueError("checkpoint optimizer state must be a dict")
+    torch_rng = payload.get("torch_rng")
+    if torch_rng is not None and not isinstance(torch_rng, torch.Tensor):
+        raise ValueError("checkpoint torch RNG state must be a tensor")
+    history = _history_from_payload(payload.get("history"))
+    return LoadedCheckpoint(
+        model=model,
+        config=config,
+        epoch=epoch,
+        path=resolved,
+        spec=spec,
+        optimizer_state=None if optimizer_state is None else dict(optimizer_state),
+        torch_rng=None if torch_rng is None else torch_rng.detach().cpu(),
+        history=history,
+    )
+
+
+def _load_payload(path: Path) -> object:
+    """Load a checkpoint with the restricted unpickler."""
+
+    try:
+        return torch.load(path, map_location="cpu", weights_only=True)
+    except TypeError as exc:
+        if "weights_only" not in str(exc):
+            raise
+        return torch.load(path, map_location="cpu")
+
+
+def _history_from_payload(raw: object) -> tuple[dict[str, object], ...] | None:
+    if raw is None:
+        return None
+    if not isinstance(raw, list):
+        raise ValueError("checkpoint history must be a list")
+    rows: list[dict[str, object]] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            raise ValueError("checkpoint history entries must be dicts")
+        rows.append(dict(item))
+    return tuple(rows)
 
 
 def _require_matching_spec(spec: EquationSpec, config: TrainConfig) -> None:

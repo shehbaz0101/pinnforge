@@ -20,7 +20,7 @@ from pinnforge.equations.burgers import Burgers1DSpec
 from pinnforge.equations.harmonic import HarmonicOscillatorSpec
 from pinnforge.equations.poisson import PoissonToySpec
 from pinnforge.sampling.config import SAMPLE_METHODS, SampleConfig, SampleMethod
-from pinnforge.sampling.draw import sample_boundary, sample_collocation
+from pinnforge.sampling.draw import require_rng, sample_boundary, sample_collocation
 
 SpecT = TypeVar("SpecT", bound=EquationSpec)
 
@@ -136,25 +136,42 @@ def format_summary(batch: CollocationBatch) -> str:
     return "\n".join(lines) + "\n"
 
 
-def sample_equation(spec: EquationSpec, config: SampleConfig) -> CollocationBatch:
+def sample_equation(
+    spec: EquationSpec,
+    config: SampleConfig,
+    *,
+    rng: np.random.Generator | None = None,
+) -> CollocationBatch:
     """Sample ``spec`` with ``config``.
 
+    ``rng``, when set, draws the batch instead of
+    ``numpy.random.default_rng(config.seed)``. Training and evaluation
+    pass a named stream from :mod:`pinnforge.sampling.streams`. The
+    batch still records ``config.seed``. Omitting ``rng`` keeps the
+    historical single stream, including the prefix overlap between a
+    short draw and a longer draw that share that seed.
+
     Raises:
-        TypeError: ``spec`` is not a Day 1 equation spec, or ``config`` is
-            not a :class:`SampleConfig`.
+        TypeError: ``spec`` is not a Day 1 equation spec, ``config`` is
+            not a :class:`SampleConfig`, or ``rng`` is not a Generator.
         ValueError: the counts do not fit the spec.
     """
 
     if isinstance(spec, HarmonicOscillatorSpec):
-        return sample_harmonic(spec, config)
+        return sample_harmonic(spec, config, rng=rng)
     if isinstance(spec, Burgers1DSpec):
-        return sample_burgers(spec, config)
+        return sample_burgers(spec, config, rng=rng)
     if isinstance(spec, PoissonToySpec):
-        return sample_poisson(spec, config)
+        return sample_poisson(spec, config, rng=rng)
     raise TypeError("spec must be a HarmonicOscillatorSpec, Burgers1DSpec, or PoissonToySpec")
 
 
-def sample_harmonic(spec: HarmonicOscillatorSpec, config: SampleConfig) -> CollocationBatch:
+def sample_harmonic(
+    spec: HarmonicOscillatorSpec,
+    config: SampleConfig,
+    *,
+    rng: np.random.Generator | None = None,
+) -> CollocationBatch:
     """Collocation batch for the harmonic oscillator.
 
     Initial-condition rows sit at ``t = time.lower``. Boundary rows follow
@@ -164,10 +181,15 @@ def sample_harmonic(spec: HarmonicOscillatorSpec, config: SampleConfig) -> Collo
     spec = _require_spec(spec, HarmonicOscillatorSpec)
     config = _require_config(config)
     fixed = {spec.initial_condition.variable: float(spec.time.lower)}
-    return _sample_parts(spec, config, ic_fixed=fixed)
+    return _sample_parts(spec, config, ic_fixed=fixed, rng=rng)
 
 
-def sample_burgers(spec: Burgers1DSpec, config: SampleConfig) -> CollocationBatch:
+def sample_burgers(
+    spec: Burgers1DSpec,
+    config: SampleConfig,
+    *,
+    rng: np.random.Generator | None = None,
+) -> CollocationBatch:
     """Collocation batch for viscous Burgers.
 
     Initial-condition rows sit at ``t = t.lower`` with ``x`` drawn on the
@@ -177,10 +199,15 @@ def sample_burgers(spec: Burgers1DSpec, config: SampleConfig) -> CollocationBatc
     spec = _require_spec(spec, Burgers1DSpec)
     config = _require_config(config)
     fixed = {spec.initial_condition.variable: float(spec.t.lower)}
-    return _sample_parts(spec, config, ic_fixed=fixed)
+    return _sample_parts(spec, config, ic_fixed=fixed, rng=rng)
 
 
-def sample_poisson(spec: PoissonToySpec, config: SampleConfig) -> CollocationBatch:
+def sample_poisson(
+    spec: PoissonToySpec,
+    config: SampleConfig,
+    *,
+    rng: np.random.Generator | None = None,
+) -> CollocationBatch:
     """Collocation batch for the Poisson toy.
 
     The problem is elliptic, so ``n_ic`` must be 0. Boundary rows lie on
@@ -192,7 +219,7 @@ def sample_poisson(spec: PoissonToySpec, config: SampleConfig) -> CollocationBat
 
     spec = _require_spec(spec, PoissonToySpec)
     config = _require_config(config)
-    return _sample_parts(spec, config, ic_fixed=None)
+    return _sample_parts(spec, config, ic_fixed=None, rng=rng)
 
 
 def _sample_parts(
@@ -200,6 +227,7 @@ def _sample_parts(
     config: SampleConfig,
     *,
     ic_fixed: Mapping[str, float] | None,
+    rng: np.random.Generator | None = None,
 ) -> CollocationBatch:
     raw_conditions = getattr(spec, "boundary_conditions", None)
     if raw_conditions is None:
@@ -208,15 +236,17 @@ def _sample_parts(
     if config.n_bc > 0 and not conditions:
         raise ValueError(f"{spec.equation_id} has no boundary conditions; n_bc must be 0")
     domain = spec.collocation_domain()
-    rng = np.random.default_rng(config.seed)
-    interior = sample_collocation(domain, config.n_interior, rng, config.method)
+    generator = require_rng(rng) if rng is not None else np.random.default_rng(config.seed)
+    interior = sample_collocation(domain, config.n_interior, generator, config.method)
     if ic_fixed is None:
         if config.n_ic != 0:
             raise ValueError(f"{spec.equation_id} has no initial condition; n_ic must be 0")
         ic = np.empty((0, len(domain.axes)), dtype=np.float64)
     else:
-        ic = sample_collocation(domain, config.n_ic, rng, config.method, fixed=dict(ic_fixed))
-    bc, variables, sides = sample_boundary(domain, conditions, config.n_bc, rng, config.method)
+        ic = sample_collocation(domain, config.n_ic, generator, config.method, fixed=dict(ic_fixed))
+    bc, variables, sides = sample_boundary(
+        domain, conditions, config.n_bc, generator, config.method
+    )
     lower = np.array([axis.bounds.lower for axis in domain.axes], dtype=np.float64)
     upper = np.array([axis.bounds.upper for axis in domain.axes], dtype=np.float64)
     return CollocationBatch(

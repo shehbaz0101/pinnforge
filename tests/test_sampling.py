@@ -23,6 +23,7 @@ from pinnforge.equations import (
 from pinnforge.sampling import (
     POINT_LABELS,
     SAMPLE_METHODS,
+    STREAM_NAMES,
     SampleConfig,
     batch_from_dict,
     batch_to_dict,
@@ -35,6 +36,7 @@ from pinnforge.sampling import (
     sample_equation,
     sample_harmonic,
     sample_poisson,
+    stream_generator,
     write_sample_record,
 )
 
@@ -503,6 +505,33 @@ def test_offline_fixture_matches_sampler(name: str) -> None:
     assert saved.dtype == np.float64
     assert saved.ndim == 2
     np.testing.assert_array_equal(saved, fresh.coordinates())
+
+
+def test_named_streams_differ_at_the_same_seed_and_count() -> None:
+    """Train points must not be the eval points when the integer seed matches.
+
+    The historical sampler uses one ``default_rng(seed)`` stream. A short
+    uniform draw is then the prefix of a longer draw. Named streams break
+    that overlap at the same count, so the check does not depend on drawing
+    more evaluation points than training points.
+    """
+
+    spec = default_spec("harmonic")
+    config = SampleConfig(n_interior=8, n_ic=4, n_bc=0, seed=0, method="uniform")
+    draws = {
+        name: sample_equation(spec, config, rng=stream_generator(0, name)).interior
+        for name in STREAM_NAMES
+    }
+    assert len({array.tobytes() for array in draws.values()}) == 3
+    shared = sample_equation(spec, config).interior
+    longer = sample_equation(
+        spec, config.model_copy(update={"n_interior": 16})
+    ).interior
+    np.testing.assert_array_equal(shared, longer[:8])
+    for name, array in draws.items():
+        assert array.shape == shared.shape
+        assert not np.array_equal(array, shared), name
+        assert not np.array_equal(array, longer[:8]), name
 
 
 def test_harmonic_fixture_ic_is_the_initial_time() -> None:

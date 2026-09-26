@@ -75,6 +75,16 @@ class HistogramBody(BaseModel):
     edges: list[float]
 
 
+class RngStreamBody(BaseModel):
+    """Identity of one NumPy stream. ``seed_sequence`` is not a secret."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    seed: int
+    seed_sequence: list[int]
+
+
 class EvalBody(BaseModel):
     """``pinnforge.eval.v1`` record returned by eval and run."""
 
@@ -90,6 +100,11 @@ class EvalBody(BaseModel):
     reference: str
     l2: float | None
     relative_l2: float | None
+    max_abs_error: float | None = None
+    ic_error: float | None = None
+    bc_error: float | None = None
+    bc_errors: dict[str, float] | None = None
+    rng: RngStreamBody | None = None
     residual_mean_abs: float
     residual_max_abs: float
     histogram: HistogramBody

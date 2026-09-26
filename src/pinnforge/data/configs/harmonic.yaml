@@ -1,0 +1,19 @@
+# Tiny CPU harmonic run. `pinnforge demo`
+# and `pinnforge run --config samples/configs/harmonic.yaml`
+equation: harmonic
+equation_params:
+  omega: 2.0
+train:
+  epochs: 2
+  n_interior: 8
+  n_ic: 4
+  hidden_widths: [8, 8]
+  seed: 0
+  lr: 0.01
+  checkpoint_dir: runs/harmonic/checkpoints
+  log_path: runs/harmonic/metrics.jsonl
+eval:
+  n_interior: 8
+  seed: 1
+  bins: 4
+eval_json: runs/harmonic/eval.json
