@@ -2,8 +2,8 @@
 
 The package root, equation schemas, and samplers do not import torch.
 :mod:`pinnforge.models`, :mod:`pinnforge.residuals`,
-:mod:`pinnforge.losses`, and :mod:`pinnforge.training` call
-:func:`require_torch` on import.
+:mod:`pinnforge.losses`, :mod:`pinnforge.training`, and
+:mod:`pinnforge.evaluation` call :func:`require_torch` on import.
 """
 
 from __future__ import annotations
@@ -14,8 +14,8 @@ from types import ModuleType
 class InstallHint(ImportError):
     """Torch is not installed.
 
-    The MLP, residual operators, condition penalties, and training loop
-    need the optional ``ml`` extra::
+    The MLP, residual operators, condition penalties, training loop, and
+    evaluation need the optional ``ml`` extra::
 
         pip install -e ".[ml]"
 
@@ -25,8 +25,9 @@ class InstallHint(ImportError):
     def __init__(self, message: str | None = None) -> None:
         if message is None:
             message = (
-                "PINNForge models, residuals, condition losses, and the training "
-                "loop need torch from the optional ml extra. Install it with: "
+                "PINNForge models, residuals, condition losses, the training "
+                "loop, and evaluation need torch from the optional ml extra. "
+                "Install it with: "
                 'pip install -e ".[ml]"'
             )
         super().__init__(message)
