@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 pytest.importorskip("fastapi")
-pytest.importorskip("httpx")
+pytest.importorskip("httpx2")
 
 pytestmark = pytest.mark.ml
 

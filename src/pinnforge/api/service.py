@@ -1,7 +1,8 @@
 """Equation catalog and train / eval / run calls for the HTTP API.
 
-Path checks use the Day 6 sandbox and run before torch is imported.
-Importing this module does not import torch or FastAPI.
+Path checks use the sandbox root and run before torch is imported.
+The root is the working directory, or ``PINNFORGE_DATA_ROOT`` when that
+is set. Importing this module does not import torch or FastAPI.
 """
 
 from __future__ import annotations
@@ -133,7 +134,7 @@ def eval_request(body: EvalRequest) -> EvalResponse:
             missing, or the equation does not match.
     """
 
-    resolve_inside_cwd(body.checkpoint, suffix=".pt")
+    resolve_inside_cwd(body.checkpoint, suffix=".pt", label="checkpoint")
     if body.write_json is not None:
         resolve_output_path(body.write_json)
     evaluate_checkpoint, write_eval_json = _import_evaluate()
@@ -169,8 +170,8 @@ def _eval_config(body: EvalRequest) -> EvalConfig:
 
 
 def _check_train_paths(config: TrainConfig) -> None:
-    resolve_inside_cwd(config.checkpoint_dir)
-    resolve_inside_cwd(config.log_path, suffix=".jsonl")
+    resolve_inside_cwd(config.checkpoint_dir, label="checkpoint_dir")
+    resolve_inside_cwd(config.log_path, suffix=".jsonl", label="log_path")
 
 
 def _train_summary(config: TrainConfig, final: object, checkpoint: str, log: str) -> TrainSummary:
