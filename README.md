@@ -12,11 +12,11 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-Core dependencies are pydantic and numpy. Tests need the `dev` extra (`pytest`). Lint needs the `lint` extra (`ruff`). The `ml` extra declares torch for a later network and is not required to import the package or to sample. CI does not install it.
+Core dependencies are pydantic and numpy. Tests need the `dev` extra (`pytest`). Lint needs the `lint` extra (`ruff`). The `ml` extra installs torch for the MLP and residual operators. Schemas, sampling, and `pinnforge sample` do not need it. Default CI skips the torch tests; a separate job installs a CPU wheel and runs them.
 
 ## What works today
 
-`pinnforge version` prints `pinnforge 0.1.0`. `pinnforge equations` lists `burgers_1d`, `harmonic_oscillator`, and `poisson_toy`. `pinnforge sample` draws a seeded collocation batch and prints counts and bounds. `--output` writes a JSON record to a relative path in the working directory. The same commands work as `python -m pinnforge`.
+`pinnforge version` prints `pinnforge 0.1.0`. `pinnforge equations` lists `burgers_1d`, `harmonic_oscillator`, and `poisson_toy`. `pinnforge sample` draws a seeded collocation batch and prints counts and bounds. `--output` writes a JSON record to a relative path in the working directory. With the `ml` extra, `pinnforge residual --equation harmonic --seed 0` builds a tiny untrained MLP and prints its residual MSE. The same commands work as `python -m pinnforge`.
 
 The pydantic specs describe:
 
@@ -28,6 +28,7 @@ The pydantic specs describe:
 pinnforge version
 pinnforge equations
 pinnforge sample --equation harmonic --n-interior 64 --seed 0
+pinnforge residual --equation harmonic --seed 0
 ```
 
 ```python
@@ -46,17 +47,23 @@ That displacement is `A cos(ω(t - t0)) + B sin(ω(t - t0))`, with `A` the initi
 
 ## Later
 
-A small MLP, training, evaluation, a persisted run registry, a local API, hardening, a demo, and the v0.1.0 freeze. See [docs/architecture.md](docs/architecture.md). Day notes: [docs/daily/day01.md](docs/daily/day01.md), [docs/daily/day02.md](docs/daily/day02.md).
+Training, evaluation, a persisted run registry, a local API, hardening, a demo, and the v0.1.0 freeze. The MLP and residual operators are Day 3; the training loop is Day 4. See [docs/architecture.md](docs/architecture.md). Day notes: [docs/daily/day01.md](docs/daily/day01.md), [docs/daily/day02.md](docs/daily/day02.md), [docs/daily/day03.md](docs/daily/day03.md).
 
 ## Tests
 
 ```bash
 pip install -e ".[dev,lint]"
-pytest
+pytest -m "not ml"
 ruff check .
 ```
 
-No test uses the network. Torch is not imported.
+Residual tests need torch. `pytest -m "not ml"` is what default CI runs.
+
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+pip install -e ".[dev]"
+pytest
+```
 
 ## License
 
