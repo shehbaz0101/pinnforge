@@ -42,6 +42,7 @@ def test_help_and_version_flags(capsys: pytest.CaptureFixture[str]) -> None:
     assert "sample" in help_text
     assert "residual" in help_text
     assert "train" in help_text
+    assert "eval" in help_text
     with pytest.raises(SystemExit) as version_exit:
         main(["--version"])
     assert version_exit.value.code == 0

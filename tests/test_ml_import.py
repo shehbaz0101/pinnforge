@@ -39,7 +39,7 @@ def test_torch_modules_raise_install_hint_without_torch() -> None:
     code = (
         "import pinnforge\n"
         "from pinnforge.ml_import import InstallHint\n"
-        "for name in ('pinnforge.models', 'pinnforge.residuals', 'pinnforge.losses', 'pinnforge.training'):\n"
+        "for name in ('pinnforge.models', 'pinnforge.residuals', 'pinnforge.losses', 'pinnforge.training', 'pinnforge.evaluation'):\n"
         "    try:\n"
         "        __import__(name)\n"
         "    except InstallHint as exc:\n"
@@ -68,6 +68,18 @@ def test_train_command_needs_the_ml_extra(capsys: pytest.CaptureFixture[str]) ->
     from pinnforge.cli import main
 
     assert main(["train", "--equation", "harmonic", "--epochs", "1"]) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "ml" in captured.err
+    assert "pip install" in captured.err
+
+
+def test_eval_command_needs_the_ml_extra(capsys: pytest.CaptureFixture[str]) -> None:
+    if _torch_installed():
+        pytest.skip("torch is installed")
+    from pinnforge.cli import main
+
+    assert main(["eval", "--checkpoint", "checkpoints/checkpoint.pt", "--equation", "harmonic"]) == 1
     captured = capsys.readouterr()
     assert captured.out == ""
     assert "ml" in captured.err
