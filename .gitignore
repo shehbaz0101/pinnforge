@@ -23,3 +23,7 @@ htmlcov/
 .idea/
 .vscode/
 .DS_Store
+
+# Local training output from `pinnforge train`
+checkpoints/
+metrics.jsonl
