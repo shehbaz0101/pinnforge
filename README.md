@@ -1,6 +1,6 @@
 # PINNForge
 
-PINNForge is a sandbox for physics-informed neural networks on a few classic ODE and PDE residuals. Day 1 is the installable package, the equation schemas, and a closed form for the harmonic oscillator. Training comes later.
+PINNForge is a sandbox for physics-informed neural networks on a few classic ODE and PDE residuals. Day 1 is the installable package, the equation schemas, and a closed form for the harmonic oscillator. Day 4 trains a small network on the residual with Adam.
 
 ## Install
 
@@ -12,11 +12,11 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-Core dependencies are pydantic and numpy. Tests need the `dev` extra (`pytest`). Lint needs the `lint` extra (`ruff`). The `ml` extra installs torch for the MLP and residual operators. Schemas, sampling, and `pinnforge sample` do not need it. Default CI skips the torch tests; a separate job installs a CPU wheel and runs them.
+Core dependencies are pydantic and numpy. Tests need the `dev` extra (`pytest`). Lint needs the `lint` extra (`ruff`). The `ml` extra installs torch for the MLP, residual operators, and the training loop. Schemas, sampling, and `pinnforge sample` do not need it. Default CI skips the torch tests; a separate job installs a CPU wheel and runs them.
 
 ## What works today
 
-`pinnforge version` prints `pinnforge 0.1.0`. `pinnforge equations` lists `burgers_1d`, `harmonic_oscillator`, and `poisson_toy`. `pinnforge sample` draws a seeded collocation batch and prints counts and bounds. `--output` writes a JSON record to a relative path in the working directory. With the `ml` extra, `pinnforge residual --equation harmonic --seed 0` builds a tiny untrained MLP and prints its residual MSE. The same commands work as `python -m pinnforge`.
+`pinnforge version` prints `pinnforge 0.1.0`. `pinnforge equations` lists `burgers_1d`, `harmonic_oscillator`, and `poisson_toy`. `pinnforge sample` draws a seeded collocation batch and prints counts and bounds. `--output` writes a JSON record to a relative path in the working directory. With the `ml` extra, `pinnforge residual --equation harmonic --seed 0` builds a tiny untrained MLP and prints its residual MSE. `pinnforge train --equation harmonic --epochs 50 --seed 0` runs Adam on a fixed seeded batch, writes `metrics.jsonl`, and saves a CPU checkpoint under `checkpoints/`. The same commands work as `python -m pinnforge`.
 
 The pydantic specs describe:
 
@@ -29,6 +29,7 @@ pinnforge version
 pinnforge equations
 pinnforge sample --equation harmonic --n-interior 64 --seed 0
 pinnforge residual --equation harmonic --seed 0
+pinnforge train --equation harmonic --epochs 50 --seed 0
 ```
 
 ```python
@@ -47,7 +48,7 @@ That displacement is `A cos(ω(t - t0)) + B sin(ω(t - t0))`, with `A` the initi
 
 ## Later
 
-Training, evaluation, a persisted run registry, a local API, hardening, a demo, and the v0.1.0 freeze. The MLP and residual operators are Day 3; the training loop is Day 4. See [docs/architecture.md](docs/architecture.md). Day notes: [docs/daily/day01.md](docs/daily/day01.md), [docs/daily/day02.md](docs/daily/day02.md), [docs/daily/day03.md](docs/daily/day03.md).
+Evaluation, a persisted run registry, a local API, hardening, a demo, and the v0.1.0 freeze. The training loop is Day 4. See [docs/architecture.md](docs/architecture.md). Day notes: [docs/daily/day01.md](docs/daily/day01.md), [docs/daily/day02.md](docs/daily/day02.md), [docs/daily/day03.md](docs/daily/day03.md), [docs/daily/day04.md](docs/daily/day04.md).
 
 ## Tests
 
@@ -57,7 +58,7 @@ pytest -m "not ml"
 ruff check .
 ```
 
-Residual tests need torch. `pytest -m "not ml"` is what default CI runs.
+Residual and training tests need torch. `pytest -m "not ml"` is what default CI runs.
 
 ```bash
 pip install torch --index-url https://download.pytorch.org/whl/cpu

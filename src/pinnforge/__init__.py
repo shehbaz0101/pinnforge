@@ -2,10 +2,11 @@
 
 Day 1 ships equation schemas, a harmonic-oscillator closed form, and a CLI
 stub. Day 2 adds seeded collocation, initial-condition, and boundary
-samplers. Day 3 adds an MLP and residual operators; those modules import
+samplers. Day 3 adds an MLP and residual operators. Day 4 trains that
+residual with Adam. The model, residual, loss, and training modules import
 torch and raise :class:`~pinnforge.ml_import.InstallHint` when the
 optional ``ml`` extra is missing. Importing this package does not import
-torch. Training is Day 4.
+torch.
 """
 
 from pinnforge.equations import (
