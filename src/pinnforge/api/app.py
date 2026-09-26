@@ -34,6 +34,7 @@ from pinnforge.api.schemas import (
     HealthResponse,
     RunRequest,
     RunResponse,
+    TrainSummary,
 )
 from pinnforge.specs.train import TrainConfig
 

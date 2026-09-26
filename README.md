@@ -12,7 +12,7 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-Core dependencies are pydantic, numpy, and PyYAML. Tests need the `dev` extra (`pytest`, and `httpx` for the API client). Lint needs the `lint` extra (`ruff`). The `ml` extra installs torch for the MLP, residual operators, the training loop, and evaluation. The `api` extra installs FastAPI and uvicorn for `pinnforge serve`. Schemas, sampling, experiment files, and `pinnforge sample` do not need torch or FastAPI. Default CI skips the torch tests; a separate job installs a CPU wheel and runs them. Both jobs install the `api` extra.
+Core dependencies are pydantic, numpy, and PyYAML. Tests need the `dev` extra (`pytest`, and `httpx2` for the API client). Lint needs the `lint` extra (`ruff`). The `ml` extra installs torch for the MLP, residual operators, the training loop, and evaluation. The `api` extra installs FastAPI and uvicorn for `pinnforge serve`. Schemas, sampling, experiment files, and `pinnforge sample` do not need torch or FastAPI. Default CI skips the torch tests; a separate job installs a CPU wheel and runs them. Both jobs install the `api` extra.
 
 ## What works today
 
