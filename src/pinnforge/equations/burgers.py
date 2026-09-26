@@ -12,8 +12,9 @@ force that interval. Neither profile takes parameters.
 Boundary conditions are on ``x`` only. A periodic condition covers both
 ends and cannot be combined with Dirichlet or Neumann data on ``x``.
 
-:func:`pinnforge.reference.burgers.reference_solution` is the evaluation
-hook and raises ``NotImplementedError`` on Day 1.
+:func:`pinnforge.reference.burgers.reference_solution` raises
+``NotImplementedError``. Evaluation scores Burgers with residual metrics
+only.
 """
 
 from __future__ import annotations

@@ -12,8 +12,10 @@ in 2D and forbidden in 1D. Boundary conditions name the spatial faces.
 Neumann-only data leaves a constant null space; the schema still accepts
 it and records the conditions as given.
 
-:func:`pinnforge.reference.poisson.reference_solution` is the evaluation
-hook and raises ``NotImplementedError`` on Day 1.
+:func:`pinnforge.reference.poisson.reference_solution` returns a
+manufactured field for each named source. The sinusoidal fields match
+homogeneous Dirichlet data on the unit interval. The ``one`` field is a
+particular solution and does not.
 """
 
 from __future__ import annotations

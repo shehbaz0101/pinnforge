@@ -1,7 +1,8 @@
-"""Analytical and fixed reference hooks.
+"""Analytical and manufactured reference hooks.
 
-The harmonic oscillator is implemented. Burgers and Poisson validate their
-specs and then raise ``NotImplementedError``.
+The harmonic oscillator is a closed form. Poisson named sources have
+manufactured fields. Burgers validates the spec and then raises
+``NotImplementedError``.
 """
 
 from pinnforge.reference.burgers import reference_solution as burgers_reference
