@@ -26,9 +26,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.3"]
-# Day 3 MLP and residuals, and the Day 4 training loop. Default CI does
-# not install this extra. A separate job installs a CPU torch wheel and
-# runs the ml-marked tests.
+# Day 3 MLP and residuals, the Day 4 training loop, and Day 5 evaluation.
+# Default CI does not install this extra. A separate job installs a CPU
+# torch wheel and runs the ml-marked tests.
 ml = ["torch>=2.2,<3"]
 # Optional. CI runs `ruff check` with the selection below. Not required to
 # import or run PINNForge.

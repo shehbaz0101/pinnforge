@@ -6,8 +6,9 @@ spec and prints counts and bounds. ``--output`` writes a JSON record to a
 relative path inside the working directory. ``residual`` prints the mean
 squared residual of a tiny untrained MLP. ``train`` runs Adam on that
 residual plus the soft penalties and writes ``metrics.jsonl`` and a
-checkpoint. ``residual`` and ``train`` import torch and need the optional
-``ml`` extra.
+checkpoint. ``eval`` loads a checkpoint and prints L2 and residual
+metrics. ``residual``, ``train``, and ``eval`` import torch and need the
+optional ``ml`` extra.
 """
 
 from __future__ import annotations
@@ -170,6 +171,43 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Training device (default: cpu).",
     )
+    evaluate = subparsers.add_parser(
+        "eval",
+        help="Score a checkpoint against a reference and the residual (needs the ml extra)",
+    )
+    evaluate.add_argument(
+        "--checkpoint",
+        required=True,
+        type=Path,
+        help="Relative checkpoint.pt path inside the working directory.",
+    )
+    evaluate.add_argument(
+        "--equation",
+        required=True,
+        choices=sorted(EQUATION_ALIASES),
+        help="Equation name. It must match the checkpoint. harmonic, burgers, and poisson are the short names.",
+    )
+    evaluate.add_argument(
+        "--n-interior",
+        type=int,
+        default=None,
+        help="Interior points for the eval batch (default: 64).",
+    )
+    evaluate.add_argument("--seed", type=int, default=None, help="Seed for the eval batch (default: 0).")
+    evaluate.add_argument(
+        "--bins",
+        type=int,
+        default=None,
+        help="Histogram bins for |residual| (default: 10).",
+    )
+    evaluate.add_argument(
+        "--write-json",
+        type=Path,
+        help=(
+            "Write the eval record to this relative path. It must end in .json and "
+            "stay inside the working directory."
+        ),
+    )
     return parser
 
 
@@ -189,6 +227,8 @@ def main(argv: list[str] | None = None) -> int:
         return _residual(parser, args)
     if args.command == "train":
         return _train(parser, args)
+    if args.command == "eval":
+        return _eval(parser, args)
     parser.error(f"unknown command {args.command}")
     return 2
 
@@ -313,6 +353,77 @@ def _train(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
         print(f"lr: {final.lr:.8e}")
         return 0
     return 2
+
+
+def _eval(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
+    """Load a checkpoint and print L2 and residual metrics.
+
+    Torch is imported here so ``version``, ``equations``, and ``sample``
+    stay importable without the ``ml`` extra.
+    """
+
+    from pinnforge.ml_import import InstallHint
+
+    try:
+        from pinnforge.evaluation import evaluate_checkpoint, write_eval_json
+    except InstallHint as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    except ModuleNotFoundError as exc:
+        if exc.name != "torch":
+            raise
+        print(str(InstallHint()), file=sys.stderr)
+        return 1
+    try:
+        if args.write_json is not None:
+            resolve_output_path(args.write_json)
+        config = _eval_config(args)
+        result = evaluate_checkpoint(args.checkpoint, config, equation=args.equation)
+        if args.write_json is not None:
+            write_eval_json(result, args.write_json)
+    except ValidationError as exc:
+        parser.error(_format_validation(exc))
+    except ValueError as exc:
+        parser.error(str(exc))
+    else:
+        print(f"equation: {result.equation_id}")
+        print(f"checkpoint: {result.checkpoint}")
+        print(f"method: {result.method}")
+        print(f"seed: {result.seed}")
+        print(f"n_interior: {result.n_interior}")
+        print(f"reference: {result.reference}")
+        print(f"l2: {_format_metric(result.l2)}")
+        print(f"relative_l2: {_format_metric(result.relative_l2)}")
+        print(f"residual_mean_abs: {result.residual_mean_abs:.8e}")
+        print(f"residual_max_abs: {result.residual_max_abs:.8e}")
+        if args.write_json is not None:
+            print(f"json: {Path(args.write_json).as_posix()}")
+        return 0
+    return 2
+
+
+def _eval_config(args: argparse.Namespace):
+    """Build an :class:`~pinnforge.evaluation.EvalConfig` from CLI flags.
+
+    Omitted flags keep the EvalConfig defaults.
+    """
+
+    from pinnforge.evaluation import EvalConfig
+
+    payload: dict[str, object] = {}
+    if args.n_interior is not None:
+        payload["n_interior"] = args.n_interior
+    if args.seed is not None:
+        payload["seed"] = args.seed
+    if args.bins is not None:
+        payload["bins"] = args.bins
+    return EvalConfig.model_validate(payload)
+
+
+def _format_metric(value: float | None) -> str:
+    if value is None:
+        return "unavailable"
+    return f"{value:.8e}"
 
 
 def _train_config(args: argparse.Namespace):
