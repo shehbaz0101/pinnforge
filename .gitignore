@@ -28,3 +28,7 @@ htmlcov/
 checkpoints/
 metrics.jsonl
 runs/
+
+# Regenerated Burgers pilot arrays (about 150 MiB at the full split).
+# The manifest and the generation command are in STAGE2_REPORT.md.
+artifacts/burgers_pilot/
