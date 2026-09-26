@@ -7,8 +7,10 @@ relative path inside the working directory. ``residual`` prints the mean
 squared residual of a tiny untrained MLP. ``train`` runs Adam on that
 residual plus the soft penalties and writes ``metrics.jsonl`` and a
 checkpoint. ``eval`` loads a checkpoint and prints L2 and residual
-metrics. ``residual``, ``train``, and ``eval`` import torch and need the
-optional ``ml`` extra.
+metrics. ``residual``, ``train``, ``eval``, and ``run`` import torch and need
+the optional ``ml`` extra. ``run --config`` trains and then evaluates
+from a relative YAML or JSON experiment file. The flag-based ``train``
+and ``eval`` commands are unchanged.
 """
 
 from __future__ import annotations
@@ -208,6 +210,20 @@ def build_parser() -> argparse.ArgumentParser:
             "stay inside the working directory."
         ),
     )
+    run = subparsers.add_parser(
+        "run",
+        help="Train then evaluate from a YAML or JSON experiment config",
+    )
+    run.add_argument(
+        "--config",
+        required=True,
+        type=Path,
+        help=(
+            "Relative .yaml, .yml, or .json experiment file. It must stay inside "
+            "the working directory. The file selects the equation and the train "
+            "and eval settings."
+        ),
+    )
     return parser
 
 
@@ -229,6 +245,8 @@ def main(argv: list[str] | None = None) -> int:
         return _train(parser, args)
     if args.command == "eval":
         return _eval(parser, args)
+    if args.command == "run":
+        return _run(parser, args)
     parser.error(f"unknown command {args.command}")
     return 2
 
@@ -398,6 +416,66 @@ def _eval(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
         print(f"residual_max_abs: {result.residual_max_abs:.8e}")
         if args.write_json is not None:
             print(f"json: {Path(args.write_json).as_posix()}")
+        return 0
+    return 2
+
+
+def _run(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
+    """Train then evaluate the experiment in ``--config``.
+
+    The config path is checked before torch is imported, so a path that
+    escapes the working directory fails the same way with or without the
+    ``ml`` extra. Torch is imported only after that check.
+    """
+
+    from pinnforge.experiments import load_experiment_config
+    from pinnforge.ml_import import InstallHint
+
+    try:
+        config = load_experiment_config(args.config)
+    except ValidationError as exc:
+        parser.error(_format_validation(exc))
+    except ValueError as exc:
+        parser.error(str(exc))
+    try:
+        from pinnforge.experiments.run import run_experiment
+    except InstallHint as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    except ModuleNotFoundError as exc:
+        if exc.name != "torch":
+            raise
+        print(str(InstallHint()), file=sys.stderr)
+        return 1
+    try:
+        result = run_experiment(config)
+    except ValidationError as exc:
+        parser.error(_format_validation(exc))
+    except ValueError as exc:
+        parser.error(str(exc))
+    else:
+        final = result.train.history[-1]
+        print(f"equation: {config.equation.equation_id}")
+        print(f"seed: {config.train.seed}")
+        print(f"epochs: {config.train.epochs}")
+        print(f"device: {config.train.device}")
+        print(f"checkpoint: {result.evaluation.checkpoint}")
+        print(f"log: {Path(config.train.log_path).as_posix()}")
+        print(f"loss: {final.loss:.8e}")
+        print(f"loss_pde: {final.loss_pde:.8e}")
+        print(f"loss_ic: {final.loss_ic:.8e}")
+        print(f"loss_bc: {final.loss_bc:.8e}")
+        print(f"lr: {final.lr:.8e}")
+        print(f"method: {result.evaluation.method}")
+        print(f"eval_seed: {result.evaluation.seed}")
+        print(f"n_interior: {result.evaluation.n_interior}")
+        print(f"reference: {result.evaluation.reference}")
+        print(f"l2: {_format_metric(result.evaluation.l2)}")
+        print(f"relative_l2: {_format_metric(result.evaluation.relative_l2)}")
+        print(f"residual_mean_abs: {result.evaluation.residual_mean_abs:.8e}")
+        print(f"residual_max_abs: {result.evaluation.residual_max_abs:.8e}")
+        if result.eval_json is not None:
+            print(f"json: {Path(config.eval_json).as_posix()}")
         return 0
     return 2
 

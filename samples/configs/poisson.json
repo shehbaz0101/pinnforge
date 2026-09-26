@@ -1,0 +1,22 @@
+{
+  "equation": "poisson",
+  "equation_params": {
+    "source": "sin_pi_x"
+  },
+  "train": {
+    "epochs": 2,
+    "n_interior": 8,
+    "n_bc": 4,
+    "hidden_widths": [8, 8],
+    "seed": 0,
+    "lr": 0.01,
+    "checkpoint_dir": "runs/poisson/checkpoints",
+    "log_path": "runs/poisson/metrics.jsonl"
+  },
+  "eval": {
+    "n_interior": 8,
+    "seed": 1,
+    "bins": 4
+  },
+  "eval_json": "runs/poisson/eval.json"
+}
