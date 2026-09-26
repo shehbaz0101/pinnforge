@@ -2,9 +2,10 @@
 
 Day 1 ships equation schemas, a harmonic-oscillator closed form, and a CLI
 stub. Day 2 adds seeded collocation, initial-condition, and boundary
-samplers. The MLP, training, and the local API are later days.
-Importing this package does not import torch. The optional ``ml`` extra is
-where torch will live.
+samplers. Day 3 adds an MLP and residual operators; those modules import
+torch and raise :class:`~pinnforge.ml_import.InstallHint` when the
+optional ``ml`` extra is missing. Importing this package does not import
+torch. Training is Day 4.
 """
 
 from pinnforge.equations import (
@@ -15,6 +16,7 @@ from pinnforge.equations import (
     parse_equation,
     registered_equations,
 )
+from pinnforge.ml_import import InstallHint
 from pinnforge.sampling import CollocationBatch, SampleConfig, sample_equation
 
 __version__ = "0.1.0"
@@ -23,6 +25,7 @@ __all__ = [
     "Burgers1DSpec",
     "CollocationBatch",
     "HarmonicOscillatorSpec",
+    "InstallHint",
     "PoissonToySpec",
     "SampleConfig",
     "__version__",

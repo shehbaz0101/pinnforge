@@ -3,13 +3,15 @@
 ``version`` prints the package version. ``equations`` lists registered
 equation ids. ``sample`` draws a seeded collocation batch for a built-in
 spec and prints counts and bounds. ``--output`` writes a JSON record to a
-relative path inside the working directory. None of these commands trains
-a network or imports torch.
+relative path inside the working directory. ``residual`` prints the mean
+squared residual of a tiny untrained MLP; it imports torch and needs the
+optional ``ml`` extra. None of these commands trains a network.
 """
 
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 from pydantic import ValidationError
@@ -27,6 +29,9 @@ from pinnforge.sampling import (
     write_sample_record,
 )
 from pinnforge.sampling.defaults import CLI_COUNT_DEFAULTS, EQUATION_ALIASES
+
+_RESIDUAL_INTERIOR = 16
+_RESIDUAL_HIDDEN = (8, 8)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -81,6 +86,22 @@ def build_parser() -> argparse.ArgumentParser:
             "stay inside the working directory."
         ),
     )
+    residual = subparsers.add_parser(
+        "residual",
+        help="Print residual MSE of a tiny untrained MLP (needs the ml extra)",
+    )
+    residual.add_argument(
+        "--equation",
+        required=True,
+        choices=sorted(EQUATION_ALIASES),
+        help="Equation name. harmonic, burgers, and poisson are the short names.",
+    )
+    residual.add_argument(
+        "--seed",
+        type=int,
+        default=0,
+        help="Seed for the sampler and the untrained network (default: 0).",
+    )
     return parser
 
 
@@ -96,6 +117,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "sample":
         return _sample(parser, args)
+    if args.command == "residual":
+        return _residual(parser, args)
     parser.error(f"unknown command {args.command}")
     return 2
 
@@ -124,6 +147,56 @@ def _sample(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
         parser.error(str(exc))
     else:
         print(format_summary(batch), end="")
+        return 0
+    return 2
+
+
+def _residual(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
+    """Build an untrained MLP, sample interior points, and print residual MSE.
+
+    The network is not optimized. Day 4 is the training loop. Torch is
+    imported here so ``version``, ``equations``, and ``sample`` stay
+    importable without the ``ml`` extra.
+    """
+
+    from pinnforge.ml_import import InstallHint
+
+    try:
+        import torch
+
+        from pinnforge.models import mlp_from_spec
+        from pinnforge.residuals import mean_squared_residual
+    except InstallHint as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    except ModuleNotFoundError as exc:
+        if exc.name != "torch":
+            raise
+        print(str(InstallHint()), file=sys.stderr)
+        return 1
+    try:
+        equation_id = resolve_equation_id(args.equation)
+        config = SampleConfig(
+            n_interior=_RESIDUAL_INTERIOR,
+            n_ic=0,
+            n_bc=0,
+            seed=args.seed,
+            method="uniform",
+        )
+        spec = default_spec(equation_id)
+        batch = sample_equation(spec, config)
+        torch.manual_seed(args.seed)
+        model = mlp_from_spec(spec, _RESIDUAL_HIDDEN)
+        coords = torch.tensor(batch.interior, dtype=torch.float32)
+        mse = mean_squared_residual(model, coords, spec)
+    except ValidationError as exc:
+        parser.error(_format_validation(exc))
+    except ValueError as exc:
+        parser.error(str(exc))
+    else:
+        print(f"equation: {spec.equation_id}")
+        print(f"seed: {args.seed}")
+        print(f"residual_mse: {float(mse.detach()):.8e}")
         return 0
     return 2
 
