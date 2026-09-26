@@ -1,4 +1,4 @@
-"""Offline guard for serve, train, eval, and run.
+"""Offline guard for serve, train, eval, run, and demo.
 
 PINNForge does not download datasets or weights. :func:`install_offline_guard`
 wraps socket connect so a non-loopback TCP connection raises

@@ -7,15 +7,17 @@ relative path inside the sandbox root. ``residual`` prints the mean
 squared residual of a tiny untrained MLP. ``train`` runs Adam on that
 residual plus the soft penalties and writes ``metrics.jsonl`` and a
 checkpoint. ``eval`` loads a checkpoint and prints L2 and residual
-metrics. ``residual``, ``train``, ``eval``, and ``run`` import torch and need
-the optional ``ml`` extra. ``run --config`` trains and then evaluates
-from a relative YAML or JSON experiment file. The flag-based ``train``
-and ``eval`` commands are unchanged. ``serve`` starts the localhost
-HTTP API and needs the optional ``api`` extra. It binds to
+metrics. ``residual``, ``train``, ``eval``, ``run``, and ``demo`` import torch
+and need the optional ``ml`` extra. ``run --config`` trains and then
+evaluates from a relative YAML or JSON experiment file. ``demo`` does
+that for a checked-in sample under ``samples/configs/`` (harmonic by
+default) and prints the loss and the reference error. The flag-based
+``train`` and ``eval`` commands are unchanged. ``serve`` starts the
+localhost HTTP API and needs the optional ``api`` extra. It binds to
 ``127.0.0.1`` and refuses ``0.0.0.0`` unless ``--allow-remote`` is set.
 ``POST /train``, ``POST /eval``, and ``POST /run`` share a rate limit.
-``serve``, ``train``, ``eval``, and ``run`` refuse non-loopback TCP
-connects.
+``serve``, ``train``, ``eval``, ``run``, and ``demo`` refuse
+non-loopback TCP connects.
 """
 
 from __future__ import annotations
@@ -252,6 +254,27 @@ def build_parser() -> argparse.ArgumentParser:
             "and eval settings."
         ),
     )
+    demo = subparsers.add_parser(
+        "demo",
+        parents=[path_flags],
+        help="Train a short CPU sample and print the reference error (needs the ml extra)",
+    )
+    demo.add_argument(
+        "--equation",
+        default="harmonic",
+        choices=sorted(EQUATION_ALIASES),
+        help=(
+            "Sample to run (default: harmonic). harmonic uses "
+            "samples/configs/harmonic.yaml, poisson uses samples/configs/poisson.json, "
+            "and burgers uses samples/configs/burgers.yaml."
+        ),
+    )
+    demo.add_argument(
+        "--epochs",
+        type=int,
+        default=None,
+        help="Replace the sample epoch count. Must be from 1 to 5. The sample file is not rewritten.",
+    )
     serve = subparsers.add_parser(
         "serve",
         parents=[path_flags],
@@ -316,6 +339,8 @@ def main(argv: list[str] | None = None) -> int:
         return _eval(parser, args)
     if args.command == "run":
         return _run(parser, args)
+    if args.command == "demo":
+        return _demo(parser, args)
     if args.command == "serve":
         return _serve(parser, args)
     parser.error(f"unknown command {args.command}")
@@ -570,6 +595,36 @@ def _run_with_torch(config: object) -> int:
     if result.eval_json is not None:
         print(f"json: {Path(config.eval_json).as_posix()}")
     return 0
+
+
+def _demo(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
+    """Train a checked-in sample and print the loss and the reference error.
+
+    The sample path is resolved inside the sandbox root before torch is
+    imported. ``--epochs`` replaces the count in memory. The offline
+    guard is installed before the training import, including when the
+    ``ml`` extra is missing.
+    """
+
+    from pinnforge.demo import DemoDependencyError, execute_demo, load_demo_experiment
+
+    try:
+        with _data_root_env(args):
+            config_path, config = load_demo_experiment(args.equation, epochs=args.epochs)
+            _install_offline_guard()
+            try:
+                result = execute_demo(config_path, config)
+            except DemoDependencyError as exc:
+                print(str(exc), file=sys.stderr)
+                return 1
+    except ValidationError as exc:
+        parser.error(_format_validation(exc))
+    except ValueError as exc:
+        parser.error(str(exc))
+    else:
+        print(result.summary, end="")
+        return 0
+    return 2
 
 
 def _serve(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
