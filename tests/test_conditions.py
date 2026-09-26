@@ -35,6 +35,14 @@ def _constant(value: float):
     return field
 
 
+def _value(tensor: object) -> float:
+    import torch
+
+    if not isinstance(tensor, torch.Tensor):
+        raise TypeError("expected a tensor")
+    return float(tensor.detach())
+
+
 def test_harmonic_exact_initial_and_derivative_boundary_are_near_zero() -> None:
     from pinnforge.losses import soft_penalty
 
@@ -49,12 +57,12 @@ def test_harmonic_exact_initial_and_derivative_boundary_are_near_zero() -> None:
     )
     batch = sample_equation(spec, SampleConfig(n_interior=4, n_ic=5, n_bc=4, seed=1))
     penalty = soft_penalty(_constant(3.0), batch, spec)
-    assert float(penalty.initial) < 1e-12
-    assert float(penalty.dirichlet) < 1e-12
-    assert float(penalty.total()) < 1e-12
+    assert _value(penalty.initial) < 1e-12
+    assert _value(penalty.dirichlet) < 1e-12
+    assert _value(penalty.total()) < 1e-12
     shifted = soft_penalty(_constant(0.0), batch, spec)
-    assert float(shifted.initial) > 1.0
-    assert float(shifted.dirichlet) > 1.0
+    assert _value(shifted.initial) > 1.0
+    assert _value(shifted.dirichlet) > 1.0
 
 
 def test_burgers_profile_penalty_and_periodic_dirichlet_is_zero() -> None:
@@ -70,10 +78,10 @@ def test_burgers_profile_penalty_and_periodic_dirichlet_is_zero() -> None:
         return -torch.sin(coords[:, 0:1] * math.pi)
 
     matched = soft_penalty(profile, batch, spec)
-    assert float(matched.initial) < 1e-12
-    assert float(matched.dirichlet) == 0.0
+    assert _value(matched.initial) < 1e-12
+    assert _value(matched.dirichlet) == 0.0
     missed = initial_condition_loss(_constant(0.0), batch, spec)
-    assert float(missed) > 0.0
+    assert _value(missed) > 0.0
 
 
 def test_poisson_dirichlet_uses_prescribed_values_and_skips_neumann() -> None:
@@ -96,12 +104,12 @@ def test_poisson_dirichlet_uses_prescribed_values_and_skips_neumann() -> None:
         return torch.sin(coords[:, 0:1] * math.pi) / (math.pi**2)
 
     penalty = soft_penalty(manufactured, batch, spec)
-    assert float(penalty.initial) == 0.0
-    assert float(initial_condition_loss(manufactured, batch, spec)) == 0.0
-    assert float(penalty.dirichlet) < 1e-12
+    assert _value(penalty.initial) == 0.0
+    assert _value(initial_condition_loss(manufactured, batch, spec)) == 0.0
+    assert _value(penalty.dirichlet) < 1e-12
     # A constant 2 matches neither end of the manufactured field, but the
     # Neumann face must not be scored as Dirichlet data valued at 5.
-    assert float(dirichlet_boundary_loss(_constant(2.0), batch, spec)) == pytest.approx(4.0)
+    assert _value(dirichlet_boundary_loss(_constant(2.0), batch, spec)) == pytest.approx(4.0)
 
 
 def test_dirichlet_burgers_ends_match_the_sine_profile() -> None:
@@ -124,7 +132,7 @@ def test_dirichlet_burgers_ends_match_the_sine_profile() -> None:
     def profile(coords: torch.Tensor) -> torch.Tensor:
         return torch.sin(coords[:, 0:1] * math.pi)
 
-    assert float(dirichlet_boundary_loss(profile, batch, spec)) < 1e-12
+    assert _value(dirichlet_boundary_loss(profile, batch, spec)) < 1e-12
 
 
 def test_penalty_rejects_a_mismatched_batch() -> None:

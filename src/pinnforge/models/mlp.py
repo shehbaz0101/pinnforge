@@ -80,7 +80,7 @@ class MLP(nn.Module):
         self.activation = _activation_name(activation)
         widths = (self.in_features, *self.hidden_widths, self.out_features)
         blocks: list[nn.Module] = []
-        for index, (left, right) in enumerate(zip(widths, widths[1:], strict=True)):
+        for index, (left, right) in enumerate(zip(widths, widths[1:])):
             blocks.append(nn.Linear(left, right))
             if index < len(widths) - 2:
                 blocks.append(_ACTIVATION_TYPES[self.activation]())

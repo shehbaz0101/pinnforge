@@ -60,7 +60,7 @@ def test_harmonic_exact_callable_residual_is_near_zero() -> None:
     field = _exact_harmonic(spec)
     values = residual(field, times, spec)
     assert values.shape == (9, 1)
-    assert torch.max(torch.abs(values)).item() < 1e-8
+    assert torch.max(torch.abs(values.detach())).item() < 1e-8
     import numpy as np
 
     numpy_u = displacement(times.detach().numpy().reshape(-1), spec)
@@ -79,7 +79,7 @@ def test_harmonic_closed_form_tensor_residual_is_near_zero() -> None:
     field = _exact_harmonic(spec)(time)
     values = harmonic_residual_from_field(field, time, spec)
     assert values.shape == (7, 1)
-    assert torch.max(torch.abs(values)).item() < 1e-8
+    assert torch.max(torch.abs(values.detach())).item() < 1e-8
 
 
 def test_burgers_linear_field_residual_equals_x() -> None:
@@ -116,7 +116,7 @@ def test_poisson_manufactured_residuals_are_near_zero() -> None:
 
     values_1d = poisson_residual(field_1d, x, spec_1d)
     assert values_1d.shape == (8, 1)
-    assert torch.max(torch.abs(values_1d)).item() < 1e-8
+    assert torch.max(torch.abs(values_1d.detach())).item() < 1e-8
 
     spec_2d = default_spec("poisson", dimensions=2)
     xy = torch.tensor([[0.2, 0.3], [0.5, 0.5], [0.8, 0.1]], dtype=torch.float64)
@@ -128,7 +128,7 @@ def test_poisson_manufactured_residuals_are_near_zero() -> None:
 
     values_2d = poisson_residual(field_2d, xy, spec_2d)
     assert values_2d.shape == (3, 1)
-    assert torch.max(torch.abs(values_2d)).item() < 1e-8
+    assert torch.max(torch.abs(values_2d.detach())).item() < 1e-8
 
 
 @pytest.mark.parametrize(
@@ -159,9 +159,18 @@ def test_untrained_network_residual_shape_and_backward(
     assert loss.ndim == 0
     assert torch.isfinite(loss)
     loss.backward()
-    gradients = [parameter.grad for parameter in model.parameters()]
-    assert all(gradient is not None for gradient in gradients)
-    assert sum(float(gradient.abs().sum()) for gradient in gradients if gradient is not None) > 0.0
+    # Poisson's residual is −Δu − f, so an additive output bias has no
+    # gradient. Every other parameter must receive one.
+    connected = 0.0
+    for name, parameter in model.named_parameters():
+        output_bias = name.endswith("bias") and tuple(parameter.shape) == (1,)
+        if parameter.grad is None:
+            assert output_bias
+            continue
+        connected += float(parameter.grad.abs().sum())
+        if not output_bias:
+            assert float(parameter.grad.abs().sum()) > 0.0
+    assert connected > 0.0
 
 
 def test_residual_rejects_the_wrong_coordinate_width() -> None:
