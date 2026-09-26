@@ -1,6 +1,6 @@
 # Architecture
 
-PINNForge trains a small network on a classic residual and scores it against an analytical or fixed reference. The package version is 0.1.0. The pre-release freeze is Day 10. This tree has the Day 1 equation schemas and harmonic closed form, the Day 2 samplers, the Day 3 MLP and residual operators, the Day 4 Adam trainer, the Day 5 evaluation metrics, the Day 6 experiment config, the Day 7 localhost HTTP API, the Day 8 path sandbox, rate limit, and offline guard, and the Day 9 offline demo.
+PINNForge trains a small network on a classic residual and scores it against an analytical or fixed reference. The package version is 0.1.0. Day 10 freezes that version. [PROJECT_STATUS.md](../PROJECT_STATUS.md) is the status note. This tree has the Day 1 equation schemas and harmonic closed form, the Day 2 samplers, the Day 3 MLP and residual operators, the Day 4 Adam trainer, the Day 5 evaluation metrics, the Day 6 experiment config, the Day 7 localhost HTTP API, the Day 8 path sandbox, rate limit, and offline guard, and the Day 9 offline demo.
 
 Importing `pinnforge` loads pydantic specs and the numpy samplers. It does not import torch or FastAPI. Torch is the optional `ml` extra. FastAPI and uvicorn are the optional `api` extra. `pinnforge.models`, `pinnforge.residuals`, `pinnforge.losses`, `pinnforge.training`, and `pinnforge.evaluation` raise `InstallHint` when torch is missing. `pinnforge.specs` and `pinnforge.experiments` validate train, eval, and experiment files without torch. `pinnforge.api` imports FastAPI only when the app is built. Default CI runs `pytest -m "not ml"` without torch and with the `api` extra installed. A separate job installs a CPU wheel and runs the full suite, including the residual, training, eval, `pinnforge run`, and HTTP train/eval/run tests.
 
@@ -64,6 +64,6 @@ Day 9 is one command over the Day 6 train-then-eval path. `pinnforge demo` loads
 6. **Day 7 — Serve.** Done. Localhost FastAPI app and `pinnforge serve`. Health, equation catalog, train, eval, and run. Loopback by default. `0.0.0.0` needs `--allow-remote`. No authentication. See [daily/day07.md](daily/day07.md).
 7. **Day 8 — Harden.** Done. Path sandbox root, per-client rate limit on the train/eval/run routes, and an offline socket guard. See [daily/day08.md](daily/day08.md).
 8. **Day 9 — Demo.** Done. `pinnforge demo` trains a checked-in sample and prints the loss and the reference error. See [daily/day09.md](daily/day09.md).
-9. **Day 10 — Freeze.** v0.1.0 pre-release freeze: status note and changelog.
+9. **Day 10 — Freeze.** Done. v0.1.0 status note and changelog. See [daily/day10.md](daily/day10.md).
 
-Day 10 is still the plan. This tree does not implement it.
+v0.1.0 stops here. Authentication stays out of this release.
