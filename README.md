@@ -1,6 +1,19 @@
 # PINNForge
 
-PINNForge is a sandbox for physics-informed neural networks on a few classic ODE and PDE residuals. Day 1 is the installable package, the equation schemas, and a closed form for the harmonic oscillator. Day 4 trains a small network on the residual with Adam. Day 5 scores a checkpoint against that closed form, or against a manufactured Poisson field, and always reports the interior residual. Day 6 reads one experiment file and runs that train-then-eval path. Day 7 serves the equation catalog and that same path on localhost. Day 8 keeps those file paths inside a sandbox root, rate-limits the train, eval, and run routes, and refuses outbound TCP from that path.
+PINNForge is a sandbox for physics-informed neural networks on a few classic ODE and PDE residuals. Day 1 is the installable package, the equation schemas, and a closed form for the harmonic oscillator. Day 4 trains a small network on the residual with Adam. Day 5 scores a checkpoint against that closed form, or against a manufactured Poisson field, and always reports the interior residual. Day 6 reads one experiment file and runs that train-then-eval path. Day 7 serves the equation catalog and that same path on localhost. Day 8 keeps those file paths inside a sandbox root, rate-limits the train, eval, and run routes, and refuses outbound TCP from that path. Day 9 runs that train-then-eval path from a checked-in sample in one command.
+
+## Quickstart
+
+Python 3.11 or newer. From a clone:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[ml,api]"
+pinnforge demo
+```
+
+That command trains `samples/configs/harmonic.yaml` on CPU (2 epochs, a width-(8, 8) network) and prints the loss and the error against the closed form. It does not open a network connection. `--equation poisson` uses `samples/configs/poisson.json`. `--equation burgers` uses `samples/configs/burgers.yaml` and prints residual metrics, because Burgers has no reference field. `--epochs 1` shortens the run. `--data-root` sets the sandbox root from Day 8.
 
 ## Install
 
@@ -16,7 +29,7 @@ Core dependencies are pydantic, numpy, and PyYAML. Tests need the `dev` extra (`
 
 ## What works today
 
-`pinnforge version` prints `pinnforge 0.1.0`. `pinnforge equations` lists `burgers_1d`, `harmonic_oscillator`, and `poisson_toy`. `pinnforge sample` draws a seeded collocation batch and prints counts and bounds. `--output` writes a JSON record to a relative path in the working directory. With the `ml` extra, `pinnforge residual --equation harmonic --seed 0` builds a tiny untrained MLP and prints its residual MSE. `pinnforge train --equation harmonic --epochs 50 --seed 0` runs Adam on a fixed seeded batch, writes `metrics.jsonl`, and saves a CPU checkpoint under `checkpoints/`. `pinnforge eval --checkpoint checkpoints/checkpoint.pt --equation harmonic` prints L2 and residual metrics for that checkpoint. `--write-json` adds a record with a residual histogram. `pinnforge run --config samples/configs/harmonic.yaml` trains and then evaluates from one relative YAML or JSON file. `pinnforge serve` listens on `127.0.0.1:8000` and exposes that catalog, train, eval, and run path over HTTP. The same commands work as `python -m pinnforge`.
+`pinnforge version` prints `pinnforge 0.1.0`. `pinnforge equations` lists `burgers_1d`, `harmonic_oscillator`, and `poisson_toy`. `pinnforge sample` draws a seeded collocation batch and prints counts and bounds. `--output` writes a JSON record to a relative path in the working directory. With the `ml` extra, `pinnforge residual --equation harmonic --seed 0` builds a tiny untrained MLP and prints its residual MSE. `pinnforge train --equation harmonic --epochs 50 --seed 0` runs Adam on a fixed seeded batch, writes `metrics.jsonl`, and saves a CPU checkpoint under `checkpoints/`. `pinnforge eval --checkpoint checkpoints/checkpoint.pt --equation harmonic` prints L2 and residual metrics for that checkpoint. `--write-json` adds a record with a residual histogram. `pinnforge run --config samples/configs/harmonic.yaml` trains and then evaluates from one relative YAML or JSON file. `pinnforge demo` runs that path on a checked-in sample and prints the same scores. `pinnforge serve` listens on `127.0.0.1:8000` and exposes that catalog, train, eval, and run path over HTTP. The same commands work as `python -m pinnforge`.
 
 The pydantic specs describe:
 
@@ -32,6 +45,7 @@ pinnforge residual --equation harmonic --seed 0
 pinnforge train --equation harmonic --epochs 50 --seed 0
 pinnforge eval --checkpoint checkpoints/checkpoint.pt --equation harmonic
 pinnforge run --config samples/configs/harmonic.yaml
+pinnforge demo
 pinnforge serve
 ```
 
@@ -58,7 +72,7 @@ eval:
 eval_json: runs/harmonic/eval.json
 ```
 
-`samples/configs/harmonic.yaml` and `samples/configs/poisson.json` are tiny CPU examples. Output under `runs/` is gitignored. See [docs/daily/day06.md](docs/daily/day06.md).
+`samples/configs/harmonic.yaml`, `samples/configs/poisson.json`, and `samples/configs/burgers.yaml` are tiny CPU examples. `pinnforge demo` reads those paths. Output under `runs/` is gitignored. See [docs/daily/day06.md](docs/daily/day06.md) and [docs/daily/day09.md](docs/daily/day09.md).
 
 ```python
 from pinnforge.equations import HarmonicOscillatorSpec, Interval, StateInitialCondition
@@ -102,7 +116,7 @@ A path or document the schema rejects is HTTP 422. A valid train, eval, or run w
 
 ## Later
 
-A demo command and the v0.1.0 freeze. Path sandbox, rate limits, and the offline guard are Day 8. See [docs/architecture.md](docs/architecture.md). Day notes: [docs/daily/day01.md](docs/daily/day01.md), [docs/daily/day02.md](docs/daily/day02.md), [docs/daily/day03.md](docs/daily/day03.md), [docs/daily/day04.md](docs/daily/day04.md), [docs/daily/day05.md](docs/daily/day05.md), [docs/daily/day06.md](docs/daily/day06.md), [docs/daily/day07.md](docs/daily/day07.md), [docs/daily/day08.md](docs/daily/day08.md).
+The v0.1.0 freeze. The demo command is Day 9. Path sandbox, rate limits, and the offline guard are Day 8. See [docs/architecture.md](docs/architecture.md). Day notes: [docs/daily/day01.md](docs/daily/day01.md), [docs/daily/day02.md](docs/daily/day02.md), [docs/daily/day03.md](docs/daily/day03.md), [docs/daily/day04.md](docs/daily/day04.md), [docs/daily/day05.md](docs/daily/day05.md), [docs/daily/day06.md](docs/daily/day06.md), [docs/daily/day07.md](docs/daily/day07.md), [docs/daily/day08.md](docs/daily/day08.md), [docs/daily/day09.md](docs/daily/day09.md).
 
 ## Tests
 

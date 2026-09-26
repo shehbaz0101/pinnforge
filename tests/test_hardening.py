@@ -198,7 +198,14 @@ def test_train_eval_and_run_install_the_offline_guard(
     with pytest.raises(RuntimeError, match="stopped-run"):
         main(["run", "--config", "exp.json"])
 
-    assert calls == ["guard", "guard", "guard"]
+    def run_experiment(config: object) -> object:
+        raise RuntimeError("stopped-demo")
+
+    runner.run_experiment = run_experiment  # type: ignore[attr-defined]
+    with pytest.raises(RuntimeError, match="stopped-demo"):
+        main(["demo", "--epochs", "1"])
+
+    assert calls == ["guard", "guard", "guard", "guard"]
 
 
 def test_importing_the_package_does_not_install_the_offline_guard() -> None:

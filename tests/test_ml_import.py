@@ -107,6 +107,18 @@ def test_run_command_needs_the_ml_extra(
     assert "pip install" in captured.err
 
 
+def test_demo_command_needs_the_ml_extra(capsys: pytest.CaptureFixture[str]) -> None:
+    if _torch_installed():
+        pytest.skip("torch is installed")
+    from pinnforge.cli import main
+
+    assert main(["demo", "--epochs", "1"]) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "ml" in captured.err
+    assert "pip install" in captured.err
+
+
 def test_residual_command_needs_the_ml_extra(capsys: pytest.CaptureFixture[str]) -> None:
     if _torch_installed():
         pytest.skip("torch is installed")

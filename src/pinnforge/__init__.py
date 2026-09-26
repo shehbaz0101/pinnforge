@@ -9,7 +9,9 @@ config that selects a built-in equation, optionally overrides its
 parameters, and drives train then eval. Day 7 serves that catalog and
 the train-then-eval path on localhost. Day 8 keeps user paths inside a
 sandbox root, rate-limits the train, eval, and run routes, and refuses
-non-loopback TCP connects on those commands. The model, residual, loss,
+non-loopback TCP connects on those commands. Day 9 adds ``pinnforge demo``,
+which trains a checked-in sample on CPU and prints the reference error.
+The model, residual, loss,
 training, and evaluation modules import torch and raise
 :class:`~pinnforge.ml_import.InstallHint` when the optional ``ml`` extra
 is missing. The HTTP app imports FastAPI when the optional ``api`` extra
