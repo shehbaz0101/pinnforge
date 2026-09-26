@@ -14,8 +14,10 @@ from pinnforge.equations.burgers import Burgers1DSpec
 def reference_solution(spec: Burgers1DSpec, x: object, t: object) -> object:
     """Return u(x, t) for a validated Burgers problem.
 
-    ``x`` and ``t`` are the sample coordinates passed by evaluation. They
-    are not read. Spectral trajectories are a separate module.
+``x`` and ``t`` are the sample coordinates passed by evaluation. They
+are not read. Spectral trajectories are a separate module. A data-only
+Fourier neural operator on windows of those trajectories is
+:mod:`pinnforge.operator`. This function does not call it.
 
     Raises:
         TypeError: ``spec`` is not a :class:`Burgers1DSpec`.

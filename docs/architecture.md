@@ -18,7 +18,7 @@ Importing `pinnforge` loads pydantic specs and the numpy samplers. It does not i
 | Penalties | Soft mean-squared initial, Dirichlet, outward-Neumann, and periodic terms. Periodic matches the field and its derivative along that axis at both endpoints, at each boundary row's other coordinates. An unsupported condition raises. `w_bc = 0` drops the boundary terms on purpose. |
 | Trainer | Adam on one batch from the train RNG stream. The validation stream is hashed into `manifest.json` and is not in the loss. Loss is `w_pde *` residual MSE plus weighted initial and boundary penalties. Checkpoints store weights, the spec, Adam state, the torch RNG, and history, and load with `weights_only=True`. |
 | Eval | Test-stream collocation, including held-out initial and boundary rows when the equation has them. Residual mean and max, L2, relative L2, max absolute field error when a reference exists, and held-out IC and BC errors. |
-| CLI | `pinnforge version`, `pinnforge equations`, `pinnforge sample`, `pinnforge residual`, `pinnforge train`, `pinnforge eval`, `pinnforge run --config`, `pinnforge demo`, and `pinnforge serve`. Residual, train, eval, run, and demo need torch. Serve needs the `api` extra and binds to `127.0.0.1`. |
+| CLI | `pinnforge version`, `pinnforge equations`, `pinnforge sample`, `pinnforge residual`, `pinnforge train`, `pinnforge eval`, `pinnforge run --config`, `pinnforge demo`, `pinnforge serve`, and `pinnforge fno`. Residual, train, eval, run, demo, and `fno train`/`fno eval` need torch. Serve needs the `api` extra and binds to `127.0.0.1`. `fno` is the data-only Burgers operator, not the coordinate-PINN trainer. |
 | Config | `ExperimentConfig` loads a relative YAML or JSON file: equation id or inline spec, optional parameter overrides, nested train and eval settings, MLP widths, and relative output paths. |
 | API | `GET /health`, `GET /equations`, `GET /equations/{id_or_alias}`, `POST /train`, `POST /eval`, and `POST /run`. Paths stay inside the sandbox root. Those three POSTs share a per-client rate limit (HTTP 429). The process refuses non-loopback TCP connects. `0.0.0.0` is refused unless `pinnforge serve --allow-remote` is set. |
 
@@ -61,6 +61,10 @@ The tagged v0.1.0 tree skipped Neumann and periodic penalties, returned `u = -x�
 ## Stage 2 Burgers reference
 
 `pinnforge.reference.numerical` integrates periodic viscous Burgers on `x ∈ [-1, 1]`, `t ∈ [0, 1]` with a dealiased Fourier method and ETDRK4. It does not train a network and it is not called by `evaluate_model`. `pinnforge demo --equation burgers` still prints residual metrics. The convergence numbers, the pilot manifest, and the generation commands are in [STAGE2_REPORT.md](../STAGE2_REPORT.md).
+
+## Stage 3 data-only FNO
+
+`pinnforge.operator` cuts temporal windows from those trajectories after the instance split in `docs/stage2/pilot_manifest.json`. A 1D Fourier neural operator maps the input window plus a viscosity channel to the following window. The loss is mean squared error in the manifest's normalized `u`. Relative L2 for model selection and for the test score is computed after denormalizing. `pinnforge fno` and `python -m pinnforge.operator` are the commands. They do not call `reference_solution`, and `evaluate_model` does not call them. Measured test error, the window length, and the claims that are out of scope are in [STAGE3_REPORT.md](../STAGE3_REPORT.md).
 
 ## Later days
 

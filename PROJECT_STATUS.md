@@ -5,7 +5,7 @@ ODE and PDE residuals. It trains a small network on the residual, scores a
 checkpoint against an analytical or manufactured field, and serves that path
 on localhost. An offline demo trains a checked-in sample on CPU.
 
-**Status:** v0.1.0 remains the tagged freeze. Stage 1 correctness and the Stage 2 Burgers reference are unreleased and keep the `0.1.0` version string. See [STAGE1_REPORT.md](STAGE1_REPORT.md) and [STAGE2_REPORT.md](STAGE2_REPORT.md).
+**Status:** v0.1.0 remains the tagged freeze. Stage 1 correctness, the Stage 2 Burgers reference, and the Stage 3 data-only FNO baseline are unreleased and keep the `0.1.0` version string. See [STAGE1_REPORT.md](STAGE1_REPORT.md), [STAGE2_REPORT.md](STAGE2_REPORT.md), and [STAGE3_REPORT.md](STAGE3_REPORT.md).
 
 ## Days 1–10
 
@@ -81,7 +81,16 @@ A Fourier reference for periodic viscous Burgers, separate from the coordinate-P
 - On the pilot settings (`N = 256`, `dt = 1e-3`) the convergence initial condition at `ν = 0.05` differs from an `N = 1024`, `dt = 2.5e-4` run by about `1.09e-12` in final-time relative L2. The preregistered label tolerance is `1e-8`.
 - The pilot is 512 train / 128 validation / 128 test trajectories, split by problem instance before any windowing. Normalization statistics are fit on the training fields only and are not applied to the files. The arrays are about 147 MiB and are gitignored; `docs/stage2/pilot_manifest.json` records seeds, hashes, and the split.
 - Viscosity in the pilot is drawn from `[0.02, 0.10]`. A probe at `ν = 0.005` missed the `1e-8` resolution gate and is not in the labels.
-- No Fourier neural operator, physics-informed operator, or inverse-viscosity fit.
+- No physics-informed operator loss and no inverse-viscosity fit. The data-only Fourier neural operator is Stage 3.
+
+## Stage 3
+
+A data-only 1D Fourier neural operator on windows cut from the Stage 2 pilot. [STAGE3_REPORT.md](STAGE3_REPORT.md) has the commands and the measured test error.
+
+- The train, validation, and test split is the instance split in `docs/stage2/pilot_manifest.json`. Windows are cut after that assignment. `u` uses the training mean and standard deviation recorded in the manifest. Viscosity is a spatially constant input channel, normalized by the training-split mean and population standard deviation of `ν`.
+- The default window is 8 input frames and 8 target frames with stride 8 (`save_dt = 0.01`, so the lead time is 0.08). The loss is mean squared error in normalized `u`. The checkpoint is the epoch with the lowest validation mean relative L2. Test instances are not used for that choice.
+- On the reported CPU run (width 32, 16 modes, 4 layers, seed 0, epoch 24) the test mean relative L2 is about `2.65e-3`. A persistence baseline on the same windows is about `6.64e-2`. That is a measured fit on this pilot, not a physics-informed model and not a match to the `1e-8` label gate.
+- `pinnforge.reference.burgers.reference_solution` still raises `NotImplementedError`. `pinnforge eval` does not load these windows.
 
 ## Known limits
 
@@ -97,13 +106,16 @@ A Fourier reference for periodic viscous Burgers, separate from the coordinate-P
   private data.
 - Burgers evaluation still has no reference field. It reports residual
   metrics and boundary penalties, not a field error. Spectral trajectories
-  are a separate package and are not loaded by `pinnforge eval`.
+  are a separate package and are not loaded by `pinnforge eval`. The Stage 3
+  FNO scores windows from those trajectories; it is not wired into
+  `pinnforge eval`.
 - `w_bc = 0` does not enforce boundary conditions. An eval config with
   `n_bc = 0` or `n_ic = 0` does not score that condition.
 - Resume requires a checkpoint that stored the optimizer, the torch RNG,
   and the metrics history, and that matches the equation, counts, widths,
-  activation, learning rate, and seed. There is no neural operator. The
-  spectral Burgers solver is not part of checkpoint resume.
+  activation, learning rate, and seed. The spectral Burgers solver and the
+  data-only FNO use their own files. They are not part of coordinate-PINN
+  checkpoint resume. The FNO checkpoint does not resume an Adam run.
 
 ## Release tag
 

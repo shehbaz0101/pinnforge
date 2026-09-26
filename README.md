@@ -36,7 +36,7 @@ Core dependencies are pydantic, numpy, and PyYAML. Tests need the `dev` extra (`
 The pydantic specs describe:
 
 - **Harmonic oscillator.** `u'' + ω² u = 0`, with `omega` or both `k` and `m`, a time interval, initial state `(u, du_dt)`, and optional boundary descriptors. Evaluation compares the network with the closed form.
-- **Burgers 1D.** `u_t + u u_x = ν u_xx`, with viscosity, x and t bounds, a named initial profile, and boundary descriptors. The evaluation reference raises `NotImplementedError`, so `pinnforge eval` and `pinnforge demo --equation burgers` report residual metrics only. Periodic trajectory labels are a separate Fourier solver: `python -m pinnforge.reference.numerical`. See [STAGE2_REPORT.md](STAGE2_REPORT.md).
+- **Burgers 1D.** `u_t + u u_x = ν u_xx`, with viscosity, x and t bounds, a named initial profile, and boundary descriptors. The evaluation reference raises `NotImplementedError`, so `pinnforge eval` and `pinnforge demo --equation burgers` report residual metrics only. Periodic trajectory labels are a separate Fourier solver: `python -m pinnforge.reference.numerical`. See [STAGE2_REPORT.md](STAGE2_REPORT.md). A data-only 1D Fourier neural operator on windows of those trajectories is `pinnforge fno` (`python -m pinnforge.operator`). See [STAGE3_REPORT.md](STAGE3_REPORT.md). It does not add a physics residual, and it does not supply the missing Burgers reference field.
 - **Poisson toy.** `-Δu = f` in 1D or 2D, with a named source and boundary descriptors. Each named source has a manufactured field. `sin_pi_x` is `u = sin(π x) / π²`, which matches the default Dirichlet ends on `[0, 1]`.
 
 ```bash
