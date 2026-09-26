@@ -9,12 +9,14 @@ them, and those packages still import torch.
 """
 
 from pinnforge.specs.eval import EvalConfig
-from pinnforge.specs.paths import resolve_inside_cwd
+from pinnforge.specs.paths import PathSandboxError, resolve_inside_cwd, sandbox_root
 from pinnforge.specs.train import ACTIVATION_NAMES, TrainConfig
 
 __all__ = [
     "ACTIVATION_NAMES",
     "EvalConfig",
+    "PathSandboxError",
     "TrainConfig",
     "resolve_inside_cwd",
+    "sandbox_root",
 ]

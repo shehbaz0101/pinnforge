@@ -7,21 +7,30 @@
 ``POST /run`` trains and then evaluates an experiment file or an inline
 document, the same path as ``pinnforge run --config``.
 
-File paths must stay inside the working directory. A missing ``ml``
-extra is HTTP 503. A bad body or a path that escapes is HTTP 422. There
-is no authentication and no rate limit.
+File paths must stay inside the sandbox root (the working directory, or
+``PINNFORGE_DATA_ROOT``). A missing ``ml`` extra is HTTP 503. A bad body
+or a path that escapes is HTTP 422. ``POST /train``, ``POST /eval``, and
+``POST /run`` share a per-client rate limit. Over the limit the response
+is HTTP 429 with ``Retry-After``. Catalog reads are not counted. There
+is no authentication.
+
+Building the app installs an offline socket guard. Non-loopback TCP
+connects raise ``OfflineError``. Loopback stays open.
 
 ``pinnforge serve`` binds to ``127.0.0.1:8000`` and refuses ``0.0.0.0``
 and ``::`` unless ``--allow-remote`` is set. Starting uvicorn directly
-does not apply that check; pass ``--host 127.0.0.1`` in that case.
+does not apply that check; pass ``--host 127.0.0.1`` in that case. The
+offline guard still installs, because importing this module builds
+``app``.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from typing import TypeVar
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from pinnforge import __version__
@@ -36,15 +45,29 @@ from pinnforge.api.schemas import (
     RunResponse,
     TrainSummary,
 )
+from pinnforge.offline import install_offline_guard
+from pinnforge.ratelimit import LIMITED_PATHS, RateLimitConfigError, get_limiter
 from pinnforge.specs.train import TrainConfig
 
 _T = TypeVar("_T")
 
-_ERRORS: dict[int | str, dict[str, str]] = {
+_ERRORS: dict[int | str, dict[str, object]] = {
     422: {
         "description": (
-            "The body is invalid, a file is missing, or a path leaves the working directory."
+            "The body is invalid, a file is missing, or a path leaves the sandbox root."
         )
+    },
+    429: {
+        "description": (
+            "Too many requests on POST /train, POST /eval, and POST /run. "
+            "Retry-After is the wait in seconds. GET /health and GET /equations are not limited."
+        ),
+        "headers": {
+            "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {"type": "integer", "minimum": 1},
+            }
+        },
     },
     503: {"description": "Torch is not installed. Install the optional ml extra."},
 }
@@ -59,10 +82,13 @@ def create_app() -> FastAPI:
         description=(
             "Local research API for the equation catalog, a CPU train, "
             "an evaluation, and a train-then-eval experiment. "
-            "Paths must stay inside the working directory. "
+            "Paths must stay inside the sandbox root. "
+            "POST /train, POST /eval, and POST /run share a per-client rate limit. "
+            "The process refuses non-loopback TCP connects. "
             "pinnforge serve listens on 127.0.0.1 unless --allow-remote is set."
         ),
     )
+    app.add_middleware(_RateLimitMiddleware)
 
     @app.get("/health", response_model=HealthResponse)
     def health() -> HealthResponse:
@@ -120,7 +146,52 @@ def create_app() -> FastAPI:
 
         return _call(lambda: service.eval_request(body))
 
+    install_offline_guard()
     return app
+
+
+class _RateLimitMiddleware:
+    """Count expensive POSTs. Leave catalog reads, including health, alone."""
+
+    def __init__(self, app: Callable[..., Awaitable[None]]) -> None:
+        self._app = app
+
+    async def __call__(self, scope: dict[str, object], receive: object, send: object) -> None:
+        if scope.get("type") == "http" and scope.get("method") == "POST":
+            path = scope.get("path")
+            if isinstance(path, str) and path in LIMITED_PATHS:
+                blocked = _limited_response(scope)
+                if blocked is not None:
+                    await blocked(scope, receive, send)
+                    return
+        await self._app(scope, receive, send)
+
+
+def _limited_response(scope: dict[str, object]) -> JSONResponse | None:
+    try:
+        limiter = get_limiter()
+    except RateLimitConfigError as exc:
+        return JSONResponse(status_code=500, content={"detail": str(exc)})
+    client = scope.get("client")
+    if isinstance(client, tuple) and client and isinstance(client[0], str):
+        key = client[0]
+    else:
+        key = "global"
+    retry_after = limiter.check(key)
+    if retry_after is None:
+        return None
+    window = limiter.window_seconds
+    window_text = str(int(window)) if window == int(window) else str(window)
+    return JSONResponse(
+        status_code=429,
+        content={
+            "detail": (
+                f"rate limit exceeded: {limiter.limit} requests "
+                f"per {window_text} seconds for this client"
+            )
+        },
+        headers={"Retry-After": str(retry_after)},
+    )
 
 
 def _call(fn: Callable[[], _T]) -> _T:
