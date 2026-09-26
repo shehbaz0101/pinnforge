@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+Stage 1 correctness. The version string stays `0.1.0`.
+
+- Soft penalties for outward Neumann flux and for periodic equality of the field and its derivative at paired endpoints. A training spec whose boundary condition cannot be represented is rejected.
+- Poisson references are returned only when they match the source, the domain, and every prescribed boundary condition. Source `one` on `[0, 1]` with zero ends is `x(1 - x) / 2`.
+- Separate train, validation, and test RNG streams, logged in the run manifest. Evaluation reports held-out initial and boundary errors and relative and max field error.
+- Demo configs are package data, read with `importlib.resources`.
+- `relu` is rejected for strong-form second-derivative residuals. Checkpoints can be written on an interval, record a manifest, and resume Adam and RNG state. Loads use `weights_only=True`.
+
 ## 0.1.0 — 2026-09-26
 
 First public freeze of the physics-informed sandbox.

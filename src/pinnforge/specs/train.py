@@ -21,9 +21,23 @@ from pinnforge.sampling.defaults import CLI_COUNT_DEFAULTS, default_spec
 
 # Keep these aligned with ``pinnforge.models.ACTIVATIONS``. That tuple
 # lives in a torch-backed module, so the config cannot import it.
-ACTIVATION_NAMES: tuple[str, ...] = ("relu", "silu", "tanh")
+# ``relu`` is rejected here as well: strong-form residuals use second
+# derivatives, and a ReLU second derivative is zero almost everywhere.
+ACTIVATION_NAMES: tuple[str, ...] = ("silu", "tanh")
 
-ActivationName = Literal["relu", "silu", "tanh"]
+_RELU_ERROR = (
+    "activation 'relu' is not valid for strong-form second-derivative residuals; "
+    "its second derivative is zero almost everywhere. Use tanh or silu"
+)
+
+
+def _activation_name(value: object) -> object:
+    if value == "relu":
+        raise ValueError(_RELU_ERROR)
+    return value
+
+
+ActivationName = Annotated[Literal["silu", "tanh"], BeforeValidator(_activation_name)]
 
 
 def _reject_bool(value: object) -> object:
@@ -61,6 +75,12 @@ def _relative_log(value: object) -> str:
     return _relative_text(value, suffix=".jsonl", label="log_path")
 
 
+def _relative_checkpoint(value: object) -> str | None:
+    if value is None:
+        return None
+    return _relative_text(value, suffix=".pt", label="resume_from")
+
+
 def _relative_text(value: object, *, suffix: str | None, label: str) -> str:
     if not isinstance(value, str):
         raise ValueError(f"{label} must be a string")
@@ -87,6 +107,7 @@ Finite = Annotated[float, BeforeValidator(_finite_number)]
 HiddenWidths = Annotated[tuple[int, ...], BeforeValidator(_hidden_widths)]
 RelativeDir = Annotated[str, BeforeValidator(_relative_directory)]
 RelativeLog = Annotated[str, BeforeValidator(_relative_log)]
+RelativeCheckpoint = Annotated[str | None, BeforeValidator(_relative_checkpoint)]
 EquationId = Annotated[str, BeforeValidator(_canonical_equation)]
 
 
@@ -102,11 +123,16 @@ class TrainConfig(BaseModel):
     ``hidden_widths`` is the MLP width list passed to ``mlp_from_spec``.
     ``epochs`` is the number of Adam steps. Metrics also record epoch 0,
     the loss of the initial weights, so a run of 50 epochs writes 51
-    lines. ``w_pde``, ``w_ic``, and ``w_bc`` scale the residual MSE and
-    the two soft-penalty terms. At least one weight must be positive.
+    lines. ``w_pde``, ``w_ic``, and ``w_bc`` scale the residual MSE, the
+    initial-condition penalty, and the summed boundary penalty
+    (Dirichlet, Neumann, and periodic). At least one weight must be positive.
 
     ``checkpoint_dir`` and ``log_path`` are relative to the working
-    directory. The log path must end in ``.jsonl``.
+    directory. The log path must end in ``.jsonl``. ``checkpoint_interval``
+    is how many epochs pass between tagged checkpoints. Epoch 0 and the
+    last epoch are always written. ``resume_from``, when set, is a
+    relative ``.pt`` checkpoint whose weights, Adam state, and torch RNG
+    state continue this run.
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -126,6 +152,8 @@ class TrainConfig(BaseModel):
     device: Literal["cpu"] = "cpu"
     method: SampleMethod = "uniform"
     checkpoint_dir: RelativeDir = "checkpoints"
+    checkpoint_interval: Count = Field(default=1, ge=1)
+    resume_from: RelativeCheckpoint = None
     log_path: RelativeLog = "metrics.jsonl"
 
     @model_validator(mode="before")

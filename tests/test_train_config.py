@@ -98,6 +98,8 @@ def test_config_rejects_unknown_fields_and_is_frozen() -> None:
         {"equation_id": "poisson", "n_ic": 4},
         {"n_bc": 4},
         {"w_pde": 0, "w_ic": 0, "w_bc": 0},
+        {"activation": "relu"},
+        {"checkpoint_interval": 0},
     ],
 )
 def test_config_rejects_invalid_values(kwargs: dict[str, object]) -> None:

@@ -81,7 +81,11 @@ def test_eval_command_prints_summary_and_writes_json(
     assert lines[7].startswith("relative_l2: ")
     assert lines[8].startswith("residual_mean_abs: ")
     assert lines[9].startswith("residual_max_abs: ")
-    assert lines[10] == "json: runs/eval.json"
+    assert lines[10].startswith("max_abs_error: ")
+    assert lines[11].startswith("ic_error: ")
+    assert lines[12].startswith("bc_error: ")
+    assert lines[13] == "rng_stream: test"
+    assert lines[14] == "json: runs/eval.json"
     payload = json.loads((tmp_path / "runs" / "eval.json").read_text(encoding="utf-8"))
     assert payload["format"] == "pinnforge.eval.v1"
     assert payload["equation_id"] == "harmonic_oscillator"

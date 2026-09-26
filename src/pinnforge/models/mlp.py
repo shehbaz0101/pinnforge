@@ -4,7 +4,9 @@ The input width is the number of independent variables: ``t`` for the
 harmonic oscillator, ``(x, t)`` for Burgers, and ``x`` or ``(x, y)`` for
 the Poisson toy. The output is the scalar field ``u``. ``tanh`` is the
 default activation because its second derivative stays smooth, which is
-what the residual operators differentiate.
+what the strong-form residual operators differentiate. ``relu`` is
+rejected: its second derivative is zero almost everywhere, so a
+strong-form second-derivative residual does not see the activation.
 """
 
 from __future__ import annotations
@@ -22,9 +24,13 @@ nn = torch.nn
 
 _ACTIVATION_TYPES: dict[str, type[nn.Module]] = {
     "tanh": nn.Tanh,
-    "relu": nn.ReLU,
     "silu": nn.SiLU,
 }
+
+_RELU_ERROR = (
+    "activation 'relu' is not valid for strong-form second-derivative residuals; "
+    "its second derivative is zero almost everywhere. Use tanh or silu"
+)
 
 ACTIVATIONS: tuple[str, ...] = tuple(sorted(_ACTIVATION_TYPES))
 
@@ -128,6 +134,8 @@ def _hidden_widths(widths: Sequence[int]) -> tuple[int, ...]:
 
 
 def _activation_name(name: str) -> str:
+    if name == "relu":
+        raise ValueError(_RELU_ERROR)
     if not isinstance(name, str) or name not in _ACTIVATION_TYPES:
         known = ", ".join(ACTIVATIONS)
         raise ValueError(f"unknown activation {name!r}; known: {known}")

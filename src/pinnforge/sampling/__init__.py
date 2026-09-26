@@ -26,11 +26,18 @@ from pinnforge.sampling.io import (
     resolve_output_path,
     write_sample_record,
 )
+from pinnforge.sampling.streams import (
+    STREAM_NAMES,
+    points_sha256,
+    stream_generator,
+    stream_identity,
+)
 
 __all__ = [
     "POINT_LABELS",
     "SAMPLE_METHODS",
     "SAMPLE_RECORD_FORMAT",
+    "STREAM_NAMES",
     "CollocationBatch",
     "SampleConfig",
     "SampleMethod",
@@ -39,6 +46,7 @@ __all__ = [
     "default_spec",
     "format_summary",
     "load_sample_record",
+    "points_sha256",
     "resolve_equation_id",
     "resolve_output_path",
     "sample_boundary",
@@ -47,5 +55,7 @@ __all__ = [
     "sample_equation",
     "sample_harmonic",
     "sample_poisson",
+    "stream_generator",
+    "stream_identity",
     "write_sample_record",
 ]
