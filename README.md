@@ -2,6 +2,8 @@
 
 PINNForge is a sandbox for physics-informed neural networks on a few classic ODE and PDE residuals. Day 1 is the installable package, the equation schemas, and a closed form for the harmonic oscillator. Day 4 trains a small network on the residual with Adam. Day 5 scores a checkpoint against that closed form, or against a manufactured Poisson field, and always reports the interior residual. Day 6 reads one experiment file and runs that train-then-eval path. Day 7 serves the equation catalog and that same path on localhost. Day 8 keeps those file paths inside a sandbox root, rate-limits the train, eval, and run routes, and refuses outbound TCP from that path. Day 9 runs that train-then-eval path from a checked-in sample in one command.
 
+v0.1.0 freezes that surface. [PROJECT_STATUS.md](PROJECT_STATUS.md) lists what shipped. [CHANGELOG.md](CHANGELOG.md) is the release note.
+
 ## Quickstart
 
 Python 3.11 or newer. From a clone:
@@ -114,9 +116,11 @@ Paths in a request are relative to the sandbox root. That root is the server's w
 
 A path or document the schema rejects is HTTP 422. A valid train, eval, or run without torch is HTTP 503. A client over the rate limit is HTTP 429. See [docs/daily/day07.md](docs/daily/day07.md).
 
-## Later
+## v0.1.0
 
-The v0.1.0 freeze. The demo command is Day 9. Path sandbox, rate limits, and the offline guard are Day 8. See [docs/architecture.md](docs/architecture.md). Day notes: [docs/daily/day01.md](docs/daily/day01.md), [docs/daily/day02.md](docs/daily/day02.md), [docs/daily/day03.md](docs/daily/day03.md), [docs/daily/day04.md](docs/daily/day04.md), [docs/daily/day05.md](docs/daily/day05.md), [docs/daily/day06.md](docs/daily/day06.md), [docs/daily/day07.md](docs/daily/day07.md), [docs/daily/day08.md](docs/daily/day08.md), [docs/daily/day09.md](docs/daily/day09.md).
+Day 10 freezes the package at 0.1.0. [PROJECT_STATUS.md](PROJECT_STATUS.md) summarizes Days 1–10, the install, and the limits. [CHANGELOG.md](CHANGELOG.md) is the release note. [docs/architecture.md](docs/architecture.md) describes the components in this tree. Day notes: [docs/daily/day01.md](docs/daily/day01.md), [docs/daily/day02.md](docs/daily/day02.md), [docs/daily/day03.md](docs/daily/day03.md), [docs/daily/day04.md](docs/daily/day04.md), [docs/daily/day05.md](docs/daily/day05.md), [docs/daily/day06.md](docs/daily/day06.md), [docs/daily/day07.md](docs/daily/day07.md), [docs/daily/day08.md](docs/daily/day08.md), [docs/daily/day09.md](docs/daily/day09.md), [docs/daily/day10.md](docs/daily/day10.md).
+
+Authentication stays out of this release.
 
 ## Tests
 
