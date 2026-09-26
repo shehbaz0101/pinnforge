@@ -4,7 +4,8 @@ The harmonic oscillator is a closed form. Poisson returns a field only
 when that field matches the source and the prescribed boundary data, and
 raises :class:`~pinnforge.reference.poisson.ReferenceUnavailable`
 otherwise. Burgers validates the spec and then raises
-``NotImplementedError``.
+``NotImplementedError``. Periodic Burgers trajectories are computed in
+:mod:`pinnforge.reference.numerical`, which this hook does not call.
 """
 
 from pinnforge.reference.burgers import reference_solution as burgers_reference

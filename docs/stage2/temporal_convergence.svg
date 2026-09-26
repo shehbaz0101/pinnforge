@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="440" viewBox="0 0 720 440">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="78" y="28" font-family="sans-serif" font-size="16">Temporal convergence, ETDRK4</text>
+<line x1="78.00" y1="46" x2="78.00" y2="382" stroke="#e6e6e6"/>
+<line x1="78" y1="46.00" x2="696" y2="46.00" stroke="#e6e6e6"/>
+<text x="78.00" y="400" text-anchor="middle" font-family="sans-serif" font-size="11">2.5e-04</text>
+<text x="70" y="50.00" text-anchor="end" font-family="sans-serif" font-size="11">2.5e-10</text>
+<line x1="201.60" y1="46" x2="201.60" y2="382" stroke="#e6e6e6"/>
+<line x1="78" y1="113.20" x2="696" y2="113.20" stroke="#e6e6e6"/>
+<text x="201.60" y="400" text-anchor="middle" font-family="sans-serif" font-size="11">4.4e-04</text>
+<text x="70" y="117.20" text-anchor="end" font-family="sans-serif" font-size="11">3.8e-11</text>
+<line x1="325.20" y1="46" x2="325.20" y2="382" stroke="#e6e6e6"/>
+<line x1="78" y1="180.40" x2="696" y2="180.40" stroke="#e6e6e6"/>
+<text x="325.20" y="400" text-anchor="middle" font-family="sans-serif" font-size="11">7.6e-04</text>
+<text x="70" y="184.40" text-anchor="end" font-family="sans-serif" font-size="11">5.7e-12</text>
+<line x1="448.80" y1="46" x2="448.80" y2="382" stroke="#e6e6e6"/>
+<line x1="78" y1="247.60" x2="696" y2="247.60" stroke="#e6e6e6"/>
+<text x="448.80" y="400" text-anchor="middle" font-family="sans-serif" font-size="11">1.3e-03</text>
+<text x="70" y="251.60" text-anchor="end" font-family="sans-serif" font-size="11">8.6e-13</text>
+<line x1="572.40" y1="46" x2="572.40" y2="382" stroke="#e6e6e6"/>
+<line x1="78" y1="314.80" x2="696" y2="314.80" stroke="#e6e6e6"/>
+<text x="572.40" y="400" text-anchor="middle" font-family="sans-serif" font-size="11">2.3e-03</text>
+<text x="70" y="318.80" text-anchor="end" font-family="sans-serif" font-size="11">1.3e-13</text>
+<line x1="696.00" y1="46" x2="696.00" y2="382" stroke="#e6e6e6"/>
+<line x1="78" y1="382.00" x2="696" y2="382.00" stroke="#e6e6e6"/>
+<text x="696.00" y="400" text-anchor="middle" font-family="sans-serif" font-size="11">4.0e-03</text>
+<text x="70" y="386.00" text-anchor="end" font-family="sans-serif" font-size="11">1.9e-14</text>
+<rect x="78" y="46" width="618" height="336" fill="none" stroke="#222222"/>
+<polyline fill="none" stroke="#1f4e79" stroke-width="2" points="696.00,251.52 541.50,345.36 387.00,375.09 232.50,382.00 78.00,309.42"/>
+<circle cx="696.00" cy="251.52" r="3.5" fill="#1f4e79"/>
+<circle cx="541.50" cy="345.36" r="3.5" fill="#1f4e79"/>
+<circle cx="387.00" cy="375.09" r="3.5" fill="#1f4e79"/>
+<circle cx="232.50" cy="382.00" r="3.5" fill="#1f4e79"/>
+<circle cx="78.00" cy="309.42" r="3.5" fill="#1f4e79"/>
+<line x1="516" y1="62" x2="546" y2="62" stroke="#1f4e79" stroke-width="2"/>
+<text x="552" y="66" font-family="sans-serif" font-size="12">Cole-Hopf, N=256</text>
+<polyline fill="none" stroke="#b85c38" stroke-width="2" points="696.00,46.00 541.50,143.90 387.00,239.17 232.50,309.79"/>
+<circle cx="696.00" cy="46.00" r="3.5" fill="#b85c38"/>
+<circle cx="541.50" cy="143.90" r="3.5" fill="#b85c38"/>
+<circle cx="387.00" cy="239.17" r="3.5" fill="#b85c38"/>
+<circle cx="232.50" cy="309.79" r="3.5" fill="#b85c38"/>
+<line x1="516" y1="80" x2="546" y2="80" stroke="#b85c38" stroke-width="2"/>
+<text x="552" y="84" font-family="sans-serif" font-size="12">Unforced, N=512 vs dt=2.5e-4</text>
+<text x="387.0" y="428" text-anchor="middle" font-family="sans-serif" font-size="13">dt</text>
+<text x="18" y="214.0" text-anchor="middle" transform="rotate(-90 18 214.0)" font-family="sans-serif" font-size="13">relative L2 at t_final</text>
+</svg>

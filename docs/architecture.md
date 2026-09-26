@@ -56,7 +56,11 @@ Day 9 is one command over the Day 6 train-then-eval path. `pinnforge demo` loads
 
 ## Stage 1 correctness
 
-The tagged v0.1.0 tree skipped Neumann and periodic penalties, returned `u = -x² / 2` for every Poisson source `one`, drew train and eval points from one `default_rng` stream, and found demo configs only by walking parents of the source file. Those gaps are covered by regression tests. [STAGE1_REPORT.md](../STAGE1_REPORT.md) records the commands. The package version string is still `0.1.0`. Burgers still has no spectral reference. `docs/daily/` keeps the day-by-day notes from the freeze and is not a description of this branch.
+The tagged v0.1.0 tree skipped Neumann and periodic penalties, returned `u = -x² / 2` for every Poisson source `one`, drew train and eval points from one `default_rng` stream, and found demo configs only by walking parents of the source file. Those gaps are covered by regression tests. [STAGE1_REPORT.md](../STAGE1_REPORT.md) records the commands. The package version string is still `0.1.0`. The Burgers evaluation hook still raises `NotImplementedError`. Periodic trajectory labels are a separate Fourier package, described in [STAGE2_REPORT.md](../STAGE2_REPORT.md). `docs/daily/` keeps the day-by-day notes from the freeze and is not a description of this branch.
+
+## Stage 2 Burgers reference
+
+`pinnforge.reference.numerical` integrates periodic viscous Burgers on `x ∈ [-1, 1]`, `t ∈ [0, 1]` with a dealiased Fourier method and ETDRK4. It does not train a network and it is not called by `evaluate_model`. `pinnforge demo --equation burgers` still prints residual metrics. The convergence numbers, the pilot manifest, and the generation commands are in [STAGE2_REPORT.md](../STAGE2_REPORT.md).
 
 ## Later days
 
