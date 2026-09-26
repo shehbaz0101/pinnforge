@@ -6,13 +6,13 @@ seeded batch, minimizes the weighted residual and soft penalties, and
 writes ``metrics.jsonl`` plus a checkpoint.
 """
 
+from pinnforge.specs.train import TrainConfig
 from pinnforge.training.checkpoint import (
     CHECKPOINT_FORMAT,
     LoadedCheckpoint,
     load_checkpoint,
     save_checkpoint,
 )
-from pinnforge.training.config import TrainConfig
 from pinnforge.training.loop import TrainResult, train_loop
 from pinnforge.training.metrics import METRICS_FORMAT, EpochMetrics, read_metrics
 

@@ -1,10 +1,12 @@
 """CPU checkpoints for a later evaluation step.
 
 A checkpoint is a small ``torch.save`` dict: a format tag, the epoch,
-the :class:`~pinnforge.training.config.TrainConfig` as JSON-ready
-data, and the model ``state_dict``. Optimizer state is not stored.
-``load_checkpoint`` rebuilds the MLP from the built-in spec and the
-saved widths, then loads the weights onto CPU.
+the :class:`~pinnforge.specs.train.TrainConfig` as JSON-ready
+data, the model ``state_dict``, and, for checkpoints written by the
+current trainer, the equation spec. Optimizer state is not stored.
+``load_checkpoint`` rebuilds the MLP from that spec (or the built-in
+spec when an older file omitted it) and the saved widths, then loads
+the weights onto CPU.
 """
 
 from __future__ import annotations
@@ -12,11 +14,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from pinnforge.equations.base import EquationSpec
+from pinnforge.equations.registry import parse_equation
 from pinnforge.ml_import import require_torch
 from pinnforge.models import mlp_from_spec
 from pinnforge.sampling import default_spec
-from pinnforge.training.config import TrainConfig
-from pinnforge.training.paths import resolve_inside_cwd
+from pinnforge.specs.paths import resolve_inside_cwd
+from pinnforge.specs.train import TrainConfig
 
 torch = require_torch()
 
@@ -35,6 +39,7 @@ class LoadedCheckpoint:
     config: TrainConfig
     epoch: int
     path: Path
+    spec: EquationSpec
 
 
 def save_checkpoint(
@@ -42,6 +47,8 @@ def save_checkpoint(
     config: TrainConfig,
     epoch: int,
     directory: str | Path,
+    *,
+    spec: EquationSpec | None = None,
 ) -> Path:
     """Write ``checkpoint.pt`` and ``epoch_XXXX.pt`` under ``directory``.
 
@@ -49,16 +56,25 @@ def save_checkpoint(
     Both files hold the same payload. The return value is ``checkpoint.pt``,
     which always matches the latest epoch this function wrote.
 
+    ``spec``, when set, is stored as JSON so a later load rebuilds the
+    problem that was trained, including parameter overrides. The format
+    tag stays ``pinnforge.checkpoint.v1``. Checkpoints written before
+    that field existed omit it and load the built-in spec.
+
     Raises:
-        TypeError: ``model`` or ``config`` has the wrong type.
-        ValueError: ``epoch`` is negative, or ``directory`` escapes the
-            working directory.
+        TypeError: ``model`` or ``config`` has the wrong type, or
+            ``spec`` is not a Day 1 equation spec.
+        ValueError: ``epoch`` is negative, ``spec`` does not match
+            ``config.equation_id``, or ``directory`` escapes the working
+            directory.
     """
 
     if not isinstance(model, torch.nn.Module):
         raise TypeError("model must be a torch.nn.Module")
     if not isinstance(config, TrainConfig):
         raise TypeError("config must be a TrainConfig")
+    if spec is not None:
+        _require_matching_spec(spec, config)
     if isinstance(epoch, bool) or not isinstance(epoch, int) or epoch < 0:
         raise ValueError("epoch must be a non-negative integer")
     resolved = resolve_inside_cwd(directory)
@@ -71,6 +87,8 @@ def save_checkpoint(
         "config": config.model_dump(mode="json"),
         "state_dict": model.state_dict(),
     }
+    if spec is not None:
+        payload["spec"] = spec.model_dump(mode="json")
     latest = resolved / "checkpoint.pt"
     tagged = resolved / f"epoch_{epoch:04d}.pt"
     torch.save(payload, latest)
@@ -107,9 +125,29 @@ def load_checkpoint(path: str | Path) -> LoadedCheckpoint:
     if not isinstance(state, dict):
         raise ValueError("checkpoint state_dict must be a dict")
     config = TrainConfig.model_validate(config_data)
-    spec = default_spec(config.equation_id)
+    spec = _spec_from_payload(payload.get("spec"), config)
     model = mlp_from_spec(spec, config.hidden_widths, activation=config.activation)
     model.load_state_dict(state)
     model.to(torch.device("cpu"))
     model.eval()
-    return LoadedCheckpoint(model=model, config=config, epoch=epoch, path=resolved)
+    return LoadedCheckpoint(model=model, config=config, epoch=epoch, path=resolved, spec=spec)
+
+
+def _require_matching_spec(spec: EquationSpec, config: TrainConfig) -> None:
+    if not isinstance(spec, EquationSpec):
+        raise TypeError("spec must be an EquationSpec")
+    if spec.equation_id != config.equation_id:
+        raise ValueError(
+            f"spec equation_id {spec.equation_id} does not match "
+            f"config equation_id {config.equation_id}"
+        )
+
+
+def _spec_from_payload(raw: object, config: TrainConfig) -> EquationSpec:
+    if raw is None:
+        return default_spec(config.equation_id)
+    if not isinstance(raw, dict):
+        raise ValueError("checkpoint spec must be a dict")
+    spec = parse_equation(raw)
+    _require_matching_spec(spec, config)
+    return spec
