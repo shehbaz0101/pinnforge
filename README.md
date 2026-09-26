@@ -1,6 +1,6 @@
 # PINNForge
 
-PINNForge is a sandbox for physics-informed neural networks on a few classic ODE and PDE residuals. Day 1 is the installable package, the equation schemas, and a closed form for the harmonic oscillator. Day 4 trains a small network on the residual with Adam. Day 5 scores a checkpoint against that closed form, or against a manufactured Poisson field, and always reports the interior residual. Day 6 reads one experiment file and runs that train-then-eval path.
+PINNForge is a sandbox for physics-informed neural networks on a few classic ODE and PDE residuals. Day 1 is the installable package, the equation schemas, and a closed form for the harmonic oscillator. Day 4 trains a small network on the residual with Adam. Day 5 scores a checkpoint against that closed form, or against a manufactured Poisson field, and always reports the interior residual. Day 6 reads one experiment file and runs that train-then-eval path. Day 7 serves the equation catalog and that same path on localhost.
 
 ## Install
 
@@ -12,11 +12,11 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-Core dependencies are pydantic, numpy, and PyYAML. Tests need the `dev` extra (`pytest`). Lint needs the `lint` extra (`ruff`). The `ml` extra installs torch for the MLP, residual operators, the training loop, and evaluation. Schemas, sampling, experiment files, and `pinnforge sample` do not need it. Default CI skips the torch tests; a separate job installs a CPU wheel and runs them.
+Core dependencies are pydantic, numpy, and PyYAML. Tests need the `dev` extra (`pytest`, and `httpx` for the API client). Lint needs the `lint` extra (`ruff`). The `ml` extra installs torch for the MLP, residual operators, the training loop, and evaluation. The `api` extra installs FastAPI and uvicorn for `pinnforge serve`. Schemas, sampling, experiment files, and `pinnforge sample` do not need torch or FastAPI. Default CI skips the torch tests; a separate job installs a CPU wheel and runs them. Both jobs install the `api` extra.
 
 ## What works today
 
-`pinnforge version` prints `pinnforge 0.1.0`. `pinnforge equations` lists `burgers_1d`, `harmonic_oscillator`, and `poisson_toy`. `pinnforge sample` draws a seeded collocation batch and prints counts and bounds. `--output` writes a JSON record to a relative path in the working directory. With the `ml` extra, `pinnforge residual --equation harmonic --seed 0` builds a tiny untrained MLP and prints its residual MSE. `pinnforge train --equation harmonic --epochs 50 --seed 0` runs Adam on a fixed seeded batch, writes `metrics.jsonl`, and saves a CPU checkpoint under `checkpoints/`. `pinnforge eval --checkpoint checkpoints/checkpoint.pt --equation harmonic` prints L2 and residual metrics for that checkpoint. `--write-json` adds a record with a residual histogram. `pinnforge run --config samples/configs/harmonic.yaml` trains and then evaluates from one relative YAML or JSON file. The same commands work as `python -m pinnforge`.
+`pinnforge version` prints `pinnforge 0.1.0`. `pinnforge equations` lists `burgers_1d`, `harmonic_oscillator`, and `poisson_toy`. `pinnforge sample` draws a seeded collocation batch and prints counts and bounds. `--output` writes a JSON record to a relative path in the working directory. With the `ml` extra, `pinnforge residual --equation harmonic --seed 0` builds a tiny untrained MLP and prints its residual MSE. `pinnforge train --equation harmonic --epochs 50 --seed 0` runs Adam on a fixed seeded batch, writes `metrics.jsonl`, and saves a CPU checkpoint under `checkpoints/`. `pinnforge eval --checkpoint checkpoints/checkpoint.pt --equation harmonic` prints L2 and residual metrics for that checkpoint. `--write-json` adds a record with a residual histogram. `pinnforge run --config samples/configs/harmonic.yaml` trains and then evaluates from one relative YAML or JSON file. `pinnforge serve` listens on `127.0.0.1:8000` and exposes that catalog, train, eval, and run path over HTTP. The same commands work as `python -m pinnforge`.
 
 The pydantic specs describe:
 
@@ -32,6 +32,7 @@ pinnforge residual --equation harmonic --seed 0
 pinnforge train --equation harmonic --epochs 50 --seed 0
 pinnforge eval --checkpoint checkpoints/checkpoint.pt --equation harmonic
 pinnforge run --config samples/configs/harmonic.yaml
+pinnforge serve
 ```
 
 ## Experiment config
@@ -73,23 +74,47 @@ print(float(displacement(0.0, spec)))
 
 That displacement is `A cos(ω(t - t0)) + B sin(ω(t - t0))`, with `A` the initial `u`, `B` the initial `du_dt / ω`, and `t0` the lower end of `time`.
 
+## Local API
+
+`pinnforge serve` needs the `api` extra. Train, eval, and run on that server also need the `ml` extra. `/health` and `/equations` do not.
+
+```bash
+pip install -e ".[api,ml]"
+pinnforge serve
+```
+
+The process binds `127.0.0.1` and port `8000`. `--host` can name another address. `0.0.0.0` and `::` are refused unless `--allow-remote` is also set, so a listen on every interface has to be explicit. If you start uvicorn yourself (`uvicorn pinnforge.api:app`), that check is not applied; pass `--host 127.0.0.1`. There is no authentication and no rate limit.
+
+Paths in a request are relative to the server's working directory. A config path, checkpoint, metrics file, or eval JSON path that resolves outside that directory is rejected. `..` and symlinks are resolved before the check.
+
+| Method | Path | Body |
+| --- | --- | --- |
+| GET | `/health` | Package version. No torch. |
+| GET | `/equations` | Registry catalog: id, aliases, summary, parameter names. |
+| GET | `/equations/{id_or_alias}` | One catalog entry plus the default spec. Unknown names are 404. |
+| POST | `/train` | A `TrainConfig` JSON object. Returns the final loss and relative checkpoint path. |
+| POST | `/eval` | `checkpoint`, `equation`, and optional eval settings. `write_json` is an optional relative `.json` path. |
+| POST | `/run` | `{"config": "samples/configs/harmonic.yaml"}` or the experiment document itself, not both. Trains, then evaluates. |
+
+A path or document the schema rejects is HTTP 422. A valid train, eval, or run without torch is HTTP 503. See [docs/daily/day07.md](docs/daily/day07.md).
+
 ## Later
 
-A local API, hardening, a demo, and the v0.1.0 freeze. Experiment configs are Day 6. See [docs/architecture.md](docs/architecture.md). Day notes: [docs/daily/day01.md](docs/daily/day01.md), [docs/daily/day02.md](docs/daily/day02.md), [docs/daily/day03.md](docs/daily/day03.md), [docs/daily/day04.md](docs/daily/day04.md), [docs/daily/day05.md](docs/daily/day05.md), [docs/daily/day06.md](docs/daily/day06.md).
+Hardening, a demo, and the v0.1.0 freeze. The localhost API is Day 7. See [docs/architecture.md](docs/architecture.md). Day notes: [docs/daily/day01.md](docs/daily/day01.md), [docs/daily/day02.md](docs/daily/day02.md), [docs/daily/day03.md](docs/daily/day03.md), [docs/daily/day04.md](docs/daily/day04.md), [docs/daily/day05.md](docs/daily/day05.md), [docs/daily/day06.md](docs/daily/day06.md), [docs/daily/day07.md](docs/daily/day07.md).
 
 ## Tests
 
 ```bash
-pip install -e ".[dev,lint]"
+pip install -e ".[dev,api,lint]"
 pytest -m "not ml"
 ruff check .
 ```
 
-Residual, training, and eval tests need torch. `pytest -m "not ml"` is what default CI runs.
+Residual, training, eval, and the HTTP train/eval/run tests need torch. `pytest -m "not ml"` is what default CI runs. It includes the catalog and path-sandbox API tests.
 
 ```bash
 pip install torch --index-url https://download.pytorch.org/whl/cpu
-pip install -e ".[dev]"
+pip install -e ".[dev,api]"
 pytest
 ```
 

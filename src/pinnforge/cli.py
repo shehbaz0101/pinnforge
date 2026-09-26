@@ -10,7 +10,9 @@ checkpoint. ``eval`` loads a checkpoint and prints L2 and residual
 metrics. ``residual``, ``train``, ``eval``, and ``run`` import torch and need
 the optional ``ml`` extra. ``run --config`` trains and then evaluates
 from a relative YAML or JSON experiment file. The flag-based ``train``
-and ``eval`` commands are unchanged.
+and ``eval`` commands are unchanged. ``serve`` starts the localhost
+HTTP API and needs the optional ``api`` extra. It binds to
+``127.0.0.1`` and refuses ``0.0.0.0`` unless ``--allow-remote`` is set.
 """
 
 from __future__ import annotations
@@ -22,6 +24,7 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from pinnforge import __version__
+from pinnforge.api.bind import resolve_bind_host, resolve_port
 from pinnforge.equations import registered_equations
 from pinnforge.sampling import (
     SAMPLE_METHODS,
@@ -37,6 +40,11 @@ from pinnforge.sampling.defaults import CLI_COUNT_DEFAULTS, EQUATION_ALIASES
 
 _RESIDUAL_INTERIOR = 16
 _RESIDUAL_HIDDEN = (8, 8)
+_API_HINT = (
+    "PINNForge's HTTP API needs the optional api extra. "
+    'Install it with: pip install -e ".[api]"'
+)
+_API_MODULES = frozenset({"fastapi", "uvicorn", "starlette", "httpx"})
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -224,6 +232,29 @@ def build_parser() -> argparse.ArgumentParser:
             "and eval settings."
         ),
     )
+    serve = subparsers.add_parser(
+        "serve",
+        help="Serve the localhost HTTP API (needs the api extra)",
+    )
+    serve.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help=(
+            "Bind address (default: 127.0.0.1). 0.0.0.0 and :: are refused "
+            "unless --allow-remote is set."
+        ),
+    )
+    serve.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="TCP port (default: 8000).",
+    )
+    serve.add_argument(
+        "--allow-remote",
+        action="store_true",
+        help="Allow binding 0.0.0.0 or ::. Off by default so the API stays on localhost.",
+    )
     return parser
 
 
@@ -247,6 +278,8 @@ def main(argv: list[str] | None = None) -> int:
         return _eval(parser, args)
     if args.command == "run":
         return _run(parser, args)
+    if args.command == "serve":
+        return _serve(parser, args)
     parser.error(f"unknown command {args.command}")
     return 2
 
@@ -478,6 +511,39 @@ def _run(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
             print(f"json: {Path(config.eval_json).as_posix()}")
         return 0
     return 2
+
+
+def _serve(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
+    """Bind the HTTP API. Torch is not imported.
+
+    The host is checked before uvicorn is imported, so a wildcard bind
+    fails the same way whether or not the ``api`` extra is installed.
+    ``0.0.0.0`` and ``::`` need ``--allow-remote``.
+    """
+
+    try:
+        host = resolve_bind_host(args.host, allow_remote=args.allow_remote)
+        port = resolve_port(args.port)
+    except ValueError as exc:
+        parser.error(str(exc))
+    try:
+        import uvicorn
+
+        from pinnforge.api.app import create_app
+    except ImportError as exc:
+        if _missing_api_extra(exc):
+            print(_API_HINT, file=sys.stderr)
+            return 1
+        raise
+    uvicorn.run(create_app(), host=host, port=port)
+    return 0
+
+
+def _missing_api_extra(exc: ImportError) -> bool:
+    name = exc.name if isinstance(exc, ModuleNotFoundError) else None
+    if not isinstance(name, str) or name == "":
+        return False
+    return name.split(".", 1)[0] in _API_MODULES
 
 
 def _eval_config(args: argparse.Namespace):
