@@ -13,13 +13,16 @@ from pinnforge.equations import (
     BoundaryCondition,
     Burgers1DSpec,
     CollocationDomain,
+    EquationInfo,
     HarmonicOscillatorSpec,
     Interval,
     PoissonSource,
     PoissonToySpec,
     ProfileInitialCondition,
     StateInitialCondition,
+    build_equation,
     get_equation,
+    list_equations,
     parse_equation,
     registered_equations,
 )
@@ -319,11 +322,43 @@ def test_poisson_rejects_invalid_params(overrides: dict[str, object]) -> None:
 
 def test_registry_lists_day1_equations() -> None:
     assert registered_equations() == ("burgers_1d", "harmonic_oscillator", "poisson_toy")
+    catalog = list_equations()
+    assert tuple(info.equation_id for info in catalog) == registered_equations()
+    assert all(isinstance(info, EquationInfo) and info.summary and info.parameters for info in catalog)
+    by_id = {info.equation_id: info for info in catalog}
+    assert by_id["harmonic_oscillator"].aliases == ("harmonic",)
+    assert by_id["burgers_1d"].aliases == ("burgers",)
+    assert by_id["poisson_toy"].aliases == ("poisson",)
     assert get_equation("harmonic_oscillator") is HarmonicOscillatorSpec
+    assert get_equation("harmonic") is HarmonicOscillatorSpec
     assert get_equation("burgers_1d") is Burgers1DSpec
+    assert get_equation("burgers") is Burgers1DSpec
     assert get_equation("poisson_toy") is PoissonToySpec
+    assert get_equation("poisson") is PoissonToySpec
     with pytest.raises(KeyError, match="unknown equation"):
         get_equation("heat")
+
+
+def test_build_equation_applies_param_overrides() -> None:
+    spec = build_equation("harmonic", {"omega": 2.0})
+    assert isinstance(spec, HarmonicOscillatorSpec)
+    assert spec.angular_frequency == 2.0
+    assert spec.time.upper == 1.0
+    inline = build_equation(
+        {
+            "equation_id": "harmonic",
+            "omega": 3.0,
+            "time": {"lower": 0.0, "upper": 0.5},
+            "initial_condition": {"components": {"u": 1.0, "du_dt": 0.0}},
+        }
+    )
+    assert isinstance(inline, HarmonicOscillatorSpec)
+    assert inline.angular_frequency == 3.0
+    assert inline.time.upper == 0.5
+    with pytest.raises(ValueError, match="equation_params"):
+        build_equation({"equation_id": "harmonic_oscillator", "omega": 1.0}, {"omega": 2.0})
+    with pytest.raises(ValueError, match="omega"):
+        build_equation("harmonic", {"omega": -1.0})
 
 
 def test_parse_equation_requires_a_string_id() -> None:
