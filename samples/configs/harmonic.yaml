@@ -1,4 +1,5 @@
-# Tiny CPU harmonic run. `pinnforge run --config samples/configs/harmonic.yaml`
+# Tiny CPU harmonic run. `pinnforge demo`
+# and `pinnforge run --config samples/configs/harmonic.yaml`
 equation: harmonic
 equation_params:
   omega: 2.0

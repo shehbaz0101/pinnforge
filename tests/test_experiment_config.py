@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from pinnforge.equations import HarmonicOscillatorSpec, PoissonToySpec
+from pinnforge.equations import Burgers1DSpec, HarmonicOscillatorSpec, PoissonToySpec
 from pinnforge.experiments import (
     ExperimentConfig,
     dump_experiment_config,
@@ -51,6 +51,18 @@ def test_sample_yaml_and_json_load(repo_cwd: None) -> None:
     assert poisson.train.n_bc == 4
     assert poisson.train.epochs == 2
     assert poisson.eval_json == "runs/poisson/eval.json"
+
+    burgers = load_experiment_config("samples/configs/burgers.yaml")
+    assert isinstance(burgers.equation, Burgers1DSpec)
+    assert burgers.equation.nu == 0.01
+    assert burgers.train.equation_id == "burgers_1d"
+    assert burgers.train.epochs == 2
+    assert burgers.train.n_interior == 8
+    assert burgers.train.n_ic == 4
+    assert burgers.train.n_bc == 4
+    assert burgers.train.hidden_widths == (8, 8)
+    assert burgers.train.checkpoint_dir == "runs/burgers/checkpoints"
+    assert burgers.eval_json == "runs/burgers/eval.json"
 
 
 def test_equation_id_alias_and_inline_spec() -> None:

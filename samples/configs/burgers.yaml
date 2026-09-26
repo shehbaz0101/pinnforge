@@ -1,0 +1,21 @@
+# Tiny CPU Burgers run. `pinnforge demo --equation burgers`
+# and `pinnforge run --config samples/configs/burgers.yaml`
+# The built-in problem is periodic on x in [-1, 1]. Eval is residual-only.
+equation: burgers
+equation_params:
+  nu: 0.01
+train:
+  epochs: 2
+  n_interior: 8
+  n_ic: 4
+  n_bc: 4
+  hidden_widths: [8, 8]
+  seed: 0
+  lr: 0.01
+  checkpoint_dir: runs/burgers/checkpoints
+  log_path: runs/burgers/metrics.jsonl
+eval:
+  n_interior: 8
+  seed: 1
+  bins: 4
+eval_json: runs/burgers/eval.json
