@@ -17,6 +17,7 @@ from pinnforge.equations.base import EquationSpec
 from pinnforge.equations.registry import parse_equation
 from pinnforge.sampling.batch import CollocationBatch
 from pinnforge.sampling.config import SampleConfig
+from pinnforge.specs.paths import PathSandboxError, resolve_inside_cwd
 
 SAMPLE_RECORD_FORMAT = "pinnforge.sample.v1"
 
@@ -183,26 +184,22 @@ def load_sample_record(path: Path) -> tuple[EquationSpec, SampleConfig, Collocat
 def resolve_output_path(path: str | Path) -> Path:
     """Resolve a sandbox-friendly relative ``.json`` output path.
 
-    The path must stay inside the working directory after ``..`` and
-    symlinks are resolved. Absolute paths are rejected.
+    The path must stay inside the sandbox root after ``..`` and symlinks
+    are resolved. Absolute paths and ``~`` are rejected. The root is the
+    working directory unless ``PINNFORGE_DATA_ROOT`` is set.
 
     Raises:
         ValueError: the path is absolute, escapes the working directory,
             or does not end in ``.json``.
     """
 
-    raw = Path(path)
-    if raw.is_absolute():
-        raise ValueError("output path must be a relative path")
-    if raw.parts == () or raw == Path("."):
+    raw = Path(path) if isinstance(path, (str, Path)) else None
+    if raw is None or raw.parts == () or raw == Path("."):
         raise ValueError("output path must be a file path")
-    cwd = Path.cwd().resolve()
-    resolved = (cwd / raw).resolve()
-    if resolved == cwd or cwd not in resolved.parents:
-        raise ValueError("output path must stay inside the working directory")
-    if resolved.suffix.lower() != ".json":
-        raise ValueError("output path must end in .json")
-    return resolved
+    try:
+        return resolve_inside_cwd(path, suffix=".json", label="output path")
+    except PathSandboxError as exc:
+        raise ValueError(str(exc)) from exc
 
 
 def _require(data: Mapping[str, object], key: str) -> object:

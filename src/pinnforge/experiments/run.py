@@ -13,6 +13,7 @@ from pathlib import Path
 from pinnforge.evaluation import evaluate_model, write_eval_json
 from pinnforge.evaluation.record import EvalResult
 from pinnforge.experiments.config import ExperimentConfig
+from pinnforge.specs.paths import relative_to_sandbox
 from pinnforge.training import TrainResult, train_loop
 
 
@@ -49,7 +50,7 @@ def run_experiment(config: ExperimentConfig) -> RunResult:
         raise TypeError("config must be an ExperimentConfig")
     trained = train_loop(config.train, spec=config.equation)
     evaluation = evaluate_model(trained.model, config.equation, config.eval)
-    relative = trained.checkpoint_path.resolve().relative_to(Path.cwd().resolve()).as_posix()
+    relative = relative_to_sandbox(trained.checkpoint_path)
     evaluation = replace(evaluation, checkpoint=relative)
     written = None
     if config.eval_json is not None:

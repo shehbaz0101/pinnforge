@@ -1,6 +1,6 @@
 # PINNForge
 
-PINNForge is a sandbox for physics-informed neural networks on a few classic ODE and PDE residuals. Day 1 is the installable package, the equation schemas, and a closed form for the harmonic oscillator. Day 4 trains a small network on the residual with Adam. Day 5 scores a checkpoint against that closed form, or against a manufactured Poisson field, and always reports the interior residual. Day 6 reads one experiment file and runs that train-then-eval path. Day 7 serves the equation catalog and that same path on localhost.
+PINNForge is a sandbox for physics-informed neural networks on a few classic ODE and PDE residuals. Day 1 is the installable package, the equation schemas, and a closed form for the harmonic oscillator. Day 4 trains a small network on the residual with Adam. Day 5 scores a checkpoint against that closed form, or against a manufactured Poisson field, and always reports the interior residual. Day 6 reads one experiment file and runs that train-then-eval path. Day 7 serves the equation catalog and that same path on localhost. Day 8 keeps those file paths inside a sandbox root, rate-limits the train, eval, and run routes, and refuses outbound TCP from that path.
 
 ## Install
 
@@ -83,9 +83,11 @@ pip install -e ".[api,ml]"
 pinnforge serve
 ```
 
-The process binds `127.0.0.1` and port `8000`. `--host` can name another address. `0.0.0.0` and `::` are refused unless `--allow-remote` is also set, so a listen on every interface has to be explicit. If you start uvicorn yourself (`uvicorn pinnforge.api:app`), that check is not applied; pass `--host 127.0.0.1`. There is no authentication and no rate limit.
+The process binds `127.0.0.1` and port `8000`. `--host` can name another address. `0.0.0.0` and `::` are refused unless `--allow-remote` is also set, so a listen on every interface has to be explicit. If you start uvicorn yourself (`uvicorn pinnforge.api:app`), that bind check is not applied; pass `--host 127.0.0.1`. There is no authentication.
 
-Paths in a request are relative to the server's working directory. A config path, checkpoint, metrics file, or eval JSON path that resolves outside that directory is rejected. `..` and symlinks are resolved before the check.
+Paths in a request are relative to the sandbox root. That root is the server's working directory, or `PINNFORGE_DATA_ROOT` / `pinnforge serve --data-root` when one of those is set. A config path, checkpoint, metrics file, or eval JSON path that resolves outside the root is rejected. Absolute paths and `~` are rejected. `..` and symlinks are resolved before the check.
+
+`POST /train`, `POST /eval`, and `POST /run` share one in-process sliding window per client address. The default is 60 requests per 60 seconds. `PINNFORGE_RATE_LIMIT` and `PINNFORGE_RATE_WINDOW_SECONDS` change it, and so do `--rate-limit` and `--rate-window`. Over the limit the response is HTTP 429 with `Retry-After`. `GET /health` and `GET /equations` are not counted. While the app is up, and while `train`, `eval`, and `run` execute, a non-loopback TCP connect is refused. Loopback stays open. See [docs/daily/day08.md](docs/daily/day08.md).
 
 | Method | Path | Body |
 | --- | --- | --- |
@@ -96,11 +98,11 @@ Paths in a request are relative to the server's working directory. A config path
 | POST | `/eval` | `checkpoint`, `equation`, and optional eval settings. `write_json` is an optional relative `.json` path. |
 | POST | `/run` | `{"config": "samples/configs/harmonic.yaml"}` or the experiment document itself, not both. Trains, then evaluates. |
 
-A path or document the schema rejects is HTTP 422. A valid train, eval, or run without torch is HTTP 503. See [docs/daily/day07.md](docs/daily/day07.md).
+A path or document the schema rejects is HTTP 422. A valid train, eval, or run without torch is HTTP 503. A client over the rate limit is HTTP 429. See [docs/daily/day07.md](docs/daily/day07.md).
 
 ## Later
 
-Hardening, a demo, and the v0.1.0 freeze. The localhost API is Day 7. See [docs/architecture.md](docs/architecture.md). Day notes: [docs/daily/day01.md](docs/daily/day01.md), [docs/daily/day02.md](docs/daily/day02.md), [docs/daily/day03.md](docs/daily/day03.md), [docs/daily/day04.md](docs/daily/day04.md), [docs/daily/day05.md](docs/daily/day05.md), [docs/daily/day06.md](docs/daily/day06.md), [docs/daily/day07.md](docs/daily/day07.md).
+A demo command and the v0.1.0 freeze. Path sandbox, rate limits, and the offline guard are Day 8. See [docs/architecture.md](docs/architecture.md). Day notes: [docs/daily/day01.md](docs/daily/day01.md), [docs/daily/day02.md](docs/daily/day02.md), [docs/daily/day03.md](docs/daily/day03.md), [docs/daily/day04.md](docs/daily/day04.md), [docs/daily/day05.md](docs/daily/day05.md), [docs/daily/day06.md](docs/daily/day06.md), [docs/daily/day07.md](docs/daily/day07.md), [docs/daily/day08.md](docs/daily/day08.md).
 
 ## Tests
 

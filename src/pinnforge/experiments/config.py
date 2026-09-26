@@ -163,7 +163,9 @@ def load_experiment_config(path: str | Path) -> ExperimentConfig:
     data = _parse_document(text, resolved.suffix.lower())
     if not isinstance(data, dict):
         raise ValueError("experiment config must be a mapping")
-    return ExperimentConfig.model_validate(data)
+    config = ExperimentConfig.model_validate(data)
+    _sandbox_outputs(config)
+    return config
 
 
 def dump_experiment_config(config: ExperimentConfig, path: str | Path) -> Path:
@@ -190,6 +192,19 @@ def dump_experiment_config(config: ExperimentConfig, path: str | Path) -> Path:
     resolved.parent.mkdir(parents=True, exist_ok=True)
     resolved.write_text(text, encoding="utf-8")
     return resolved
+
+
+def _sandbox_outputs(config: ExperimentConfig) -> None:
+    """Reject checkpoint, metrics, and eval JSON paths that leave the root.
+
+    The schema only checks that those strings look relative. ``..`` and
+    symlinks are resolved here, before torch is imported.
+    """
+
+    resolve_inside_cwd(config.train.checkpoint_dir, label="checkpoint_dir")
+    resolve_inside_cwd(config.train.log_path, suffix=".jsonl", label="log_path")
+    if config.eval_json is not None:
+        resolve_inside_cwd(config.eval_json, suffix=".json", label="eval_json")
 
 
 def _parse_document(text: str, suffix: str) -> object:
