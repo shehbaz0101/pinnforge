@@ -1,0 +1,122 @@
+{
+  "format": "pinnforge.sample.v1",
+  "spec": {
+    "equation_id": "poisson_toy",
+    "dimensions": 1,
+    "source": "sin_pi_x",
+    "x": {
+      "lower": 0.0,
+      "upper": 1.0
+    },
+    "y": null,
+    "boundary_conditions": [
+      {
+        "description": "",
+        "variable": "x",
+        "kind": "dirichlet",
+        "side": "min",
+        "value": 0.0,
+        "component": "u"
+      },
+      {
+        "description": "",
+        "variable": "x",
+        "kind": "dirichlet",
+        "side": "max",
+        "value": 0.0,
+        "component": "u"
+      }
+    ]
+  },
+  "config": {
+    "n_interior": 8,
+    "n_ic": 0,
+    "n_bc": 4,
+    "seed": 0,
+    "method": "uniform"
+  },
+  "batch": {
+    "equation_id": "poisson_toy",
+    "method": "uniform",
+    "seed": 0,
+    "bounds": [
+      {
+        "name": "x",
+        "lower": 0.0,
+        "upper": 1.0
+      }
+    ],
+    "counts": {
+      "interior": 8,
+      "ic": 0,
+      "bc": 4
+    },
+    "interior": [
+      [
+        0.6369616873214543
+      ],
+      [
+        0.2697867137638703
+      ],
+      [
+        0.04097352393619469
+      ],
+      [
+        0.016527635528529094
+      ],
+      [
+        0.8132702392002724
+      ],
+      [
+        0.9127555772777217
+      ],
+      [
+        0.6066357757671799
+      ],
+      [
+        0.7294965609839984
+      ]
+    ],
+    "ic": [],
+    "bc": [
+      [
+        0.0
+      ],
+      [
+        0.0
+      ],
+      [
+        1.0
+      ],
+      [
+        1.0
+      ]
+    ],
+    "bc_variable": [
+      "x",
+      "x",
+      "x",
+      "x"
+    ],
+    "bc_side": [
+      "min",
+      "min",
+      "max",
+      "max"
+    ],
+    "labels": [
+      "interior",
+      "interior",
+      "interior",
+      "interior",
+      "interior",
+      "interior",
+      "interior",
+      "interior",
+      "bc",
+      "bc",
+      "bc",
+      "bc"
+    ]
+  }
+}
