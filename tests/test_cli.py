@@ -46,6 +46,7 @@ def test_help_and_version_flags(capsys: pytest.CaptureFixture[str]) -> None:
     assert "run" in help_text
     assert "demo" in help_text
     assert "serve" in help_text
+    assert "fno" in help_text
     with pytest.raises(SystemExit) as version_exit:
         main(["--version"])
     assert version_exit.value.code == 0

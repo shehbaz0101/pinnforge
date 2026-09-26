@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+Stage 3 data-only Fourier neural operator. The version string stays `0.1.0`. The coordinate-PINN Burgers hook still raises `NotImplementedError`. There is no physics residual and no inverse-viscosity fit.
+
+- 1D FNO on temporal windows of the Stage 2 Burgers pilot, split by problem instance before windowing. `u` uses the training mean and standard deviation in `docs/stage2/pilot_manifest.json`. Viscosity is a constant input channel normalized on the training split only.
+- Supervised mean squared error in normalized space, validation relative L2 for epoch selection, and test relative L2 in [STAGE3_REPORT.md](STAGE3_REPORT.md). Commands: `pinnforge fno` and `python -m pinnforge.operator`.
+
 Stage 2 periodic Burgers reference. The version string stays `0.1.0`. The coordinate-PINN Burgers hook still raises `NotImplementedError`.
 
 - Dealiased Fourier spectral solver with ETDRK4 for `u_t + u u_x = ν u_xx` on `x ∈ [-1, 1]`, `t ∈ [0, 1]`, in `pinnforge.reference.numerical`.

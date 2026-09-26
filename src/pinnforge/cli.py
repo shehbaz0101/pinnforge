@@ -17,7 +17,10 @@ localhost HTTP API and needs the optional ``api`` extra. It binds to
 ``127.0.0.1`` and refuses ``0.0.0.0`` unless ``--allow-remote`` is set.
 ``POST /train``, ``POST /eval``, and ``POST /run`` share a rate limit.
 ``serve``, ``train``, ``eval``, ``run``, and ``demo`` refuse
-non-loopback TCP connects.
+non-loopback TCP connects. ``fno`` trains or scores a data-only 1D
+Fourier neural operator on Burgers windows (``python -m pinnforge.operator``
+is the same command). It does not change ``train`` or the Burgers
+reference hook.
 """
 
 from __future__ import annotations
@@ -332,10 +335,22 @@ def build_parser() -> argparse.ArgumentParser:
             "Rate-limit window in seconds (default: 60, or PINNFORGE_RATE_WINDOW_SECONDS)."
         ),
     )
+    subparsers.add_parser(
+        "fno",
+        help=(
+            "Train or score a data-only 1D FNO on Burgers pilot windows. "
+            "Same commands as python -m pinnforge.operator. Training needs the ml extra."
+        ),
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
+    forwarded = list(sys.argv[1:] if argv is None else argv)
+    if forwarded and forwarded[0] == "fno":
+        from pinnforge.operator.__main__ import main as operator_main
+
+        return operator_main(forwarded[1:])
     parser = build_parser()
     args = parser.parse_args(argv)
     if args.command == "version":

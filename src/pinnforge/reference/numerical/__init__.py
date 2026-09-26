@@ -3,7 +3,8 @@
 This package is not the coordinate-PINN reference hook. ``pinnforge``
 evaluation still calls :func:`pinnforge.reference.burgers.reference_solution`,
 which raises ``NotImplementedError``. Trajectories here are a separate
-Fourier reference for later operator-learning labels.
+Fourier reference. The data-only operator trained on windows of those
+trajectories is :mod:`pinnforge.operator`. This package does not train it.
 
 The problem is
 
