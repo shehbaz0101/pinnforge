@@ -20,15 +20,18 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from pinnforge.equations import EquationSpec
+from pinnforge.equations.burgers import Burgers1DSpec
+from pinnforge.equations.harmonic import HarmonicOscillatorSpec
+from pinnforge.equations.poisson import PoissonToySpec
 from pinnforge.losses import soft_penalty
 from pinnforge.ml_import import require_torch
 from pinnforge.models import mlp_from_spec
 from pinnforge.residuals import mean_squared_residual
 from pinnforge.sampling import CollocationBatch, SampleConfig, default_spec, sample_equation
+from pinnforge.specs.paths import resolve_inside_cwd
+from pinnforge.specs.train import TrainConfig
 from pinnforge.training.checkpoint import save_checkpoint
-from pinnforge.training.config import TrainConfig
 from pinnforge.training.metrics import EpochMetrics, append_metrics
-from pinnforge.training.paths import resolve_inside_cwd
 
 torch = require_torch()
 
@@ -51,7 +54,7 @@ class TrainResult:
     history: tuple[EpochMetrics, ...]
 
 
-def train_loop(config: TrainConfig) -> TrainResult:
+def train_loop(config: TrainConfig, *, spec: EquationSpec | None = None) -> TrainResult:
     """Train on one seeded batch and return the final weights.
 
     The total loss is ``w_pde * MSE(residual) + w_ic * initial + w_bc *
@@ -59,25 +62,32 @@ def train_loop(config: TrainConfig) -> TrainResult:
     metrics file are the unweighted mean squares. ``lr`` is the Adam
     learning rate and does not change.
 
+    ``spec`` overrides the built-in problem for ``config.equation_id``.
+    It is the spec an experiment config resolved, including parameter
+    overrides. When it is omitted, the built-in spec is used. Either
+    way the checkpoint stores the spec that was trained.
+
     Checkpoints hold the weights that produced that epoch's line.
     ``checkpoint.pt`` matches the last epoch. Optimizer state is not
     saved.
 
     Raises:
-        TypeError: ``config`` is not a :class:`TrainConfig`.
-        ValueError: a path escapes the working directory, or the sample
-            counts do not fit the built-in spec.
+        TypeError: ``config`` is not a :class:`TrainConfig`, or ``spec``
+            is not one of the three Day 1 specs.
+        ValueError: a path escapes the working directory, the sample
+            counts do not fit the spec, or ``spec.equation_id`` does not
+            match the config.
         RuntimeError: the loss does not depend on the model parameters.
     """
 
     if not isinstance(config, TrainConfig):
         raise TypeError("config must be a TrainConfig")
+    spec = _resolve_spec(config, spec)
     log_path = resolve_inside_cwd(config.log_path, suffix=".jsonl")
     checkpoint_dir = resolve_inside_cwd(config.checkpoint_dir)
     if checkpoint_dir.exists() and not checkpoint_dir.is_dir():
         raise ValueError("checkpoint dir must be a directory")
     torch.manual_seed(config.seed)
-    spec = default_spec(config.equation_id)
     batch = sample_equation(spec, _sample_config(config))
     model = mlp_from_spec(spec, config.hidden_widths, activation=config.activation)
     model.to(torch.device(config.device))
@@ -100,7 +110,9 @@ def train_loop(config: TrainConfig) -> TrainResult:
             )
             append_metrics(log_path, row)
             history.append(row)
-            checkpoint_path = save_checkpoint(model, config, epoch, config.checkpoint_dir)
+            checkpoint_path = save_checkpoint(
+                model, config, epoch, config.checkpoint_dir, spec=spec
+            )
             if epoch == config.epochs:
                 break
             if not total.requires_grad:
@@ -118,6 +130,19 @@ def train_loop(config: TrainConfig) -> TrainResult:
         checkpoint_path=checkpoint_path,
         history=tuple(history),
     )
+
+
+def _resolve_spec(config: TrainConfig, spec: EquationSpec | None) -> EquationSpec:
+    if spec is None:
+        return default_spec(config.equation_id)
+    if not isinstance(spec, (HarmonicOscillatorSpec, Burgers1DSpec, PoissonToySpec)):
+        raise TypeError("spec must be a HarmonicOscillatorSpec, Burgers1DSpec, or PoissonToySpec")
+    if spec.equation_id != config.equation_id:
+        raise ValueError(
+            f"spec equation_id {spec.equation_id} does not match "
+            f"config equation_id {config.equation_id}"
+        )
+    return spec
 
 
 def _sample_config(config: TrainConfig) -> SampleConfig:

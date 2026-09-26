@@ -2,10 +2,9 @@
 
 :func:`evaluate_model` accepts any callable with the residual signature,
 including an in-memory :class:`~pinnforge.models.MLP`.
-:func:`evaluate_checkpoint` loads a Day 4 CPU checkpoint and scores the
-rebuilt network against the built-in spec for that equation id. Training
-stores the equation id, not a custom spec, so the built-in problem is
-the one that was trained.
+:func:`evaluate_checkpoint` loads a CPU checkpoint and scores the rebuilt
+network against the spec stored in that file. Checkpoints written before
+the spec field existed use the built-in problem for the equation id.
 
 Field error uses the harmonic closed form or a Poisson manufactured
 field. Burgers has no field reference, so only the residual stats are
@@ -23,13 +22,13 @@ from pinnforge.equations.base import EquationSpec
 from pinnforge.equations.burgers import Burgers1DSpec
 from pinnforge.equations.harmonic import HarmonicOscillatorSpec
 from pinnforge.equations.poisson import PoissonToySpec
-from pinnforge.evaluation.config import EvalConfig
 from pinnforge.evaluation.record import EvalResult, ResidualHistogram
 from pinnforge.ml_import import require_torch
 from pinnforge.reference import burgers_reference, displacement, poisson_reference
 from pinnforge.residuals import residual_from_field
 from pinnforge.residuals.field import evaluate_field, prepare_coords
-from pinnforge.sampling import SampleConfig, default_spec, resolve_equation_id, sample_equation
+from pinnforge.sampling import SampleConfig, resolve_equation_id, sample_equation
+from pinnforge.specs.eval import EvalConfig
 from pinnforge.training import load_checkpoint
 
 torch = require_torch()
@@ -109,8 +108,10 @@ def evaluate_checkpoint(
     """Load ``path`` and score the checkpointed network.
 
     ``equation``, when set, is a registry id or a CLI alias. It must
-    match the equation stored in the checkpoint. The returned
-    ``checkpoint`` field is ``path`` in POSIX form, after the file loads.
+    match the equation stored in the checkpoint. The scored spec is the
+    one stored with the checkpoint, or the built-in spec when an older
+    file omitted it. The returned ``checkpoint`` field is ``path`` in
+    POSIX form, after the file loads.
 
     Raises:
         ValueError: the path escapes the working directory, the file is
@@ -127,8 +128,7 @@ def evaluate_checkpoint(
         raise ValueError(
             f"checkpoint equation is {loaded.config.equation_id}, not {expected}"
         )
-    spec = default_spec(loaded.config.equation_id)
-    result = evaluate_model(loaded.model, spec, config)
+    result = evaluate_model(loaded.model, loaded.spec, config)
     return replace(result, checkpoint=Path(path).as_posix())
 
 
