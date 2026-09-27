@@ -298,6 +298,8 @@ def test_fno_help_lists_train_and_eval(capsys: pytest.CaptureFixture[str]) -> No
     train_text = capsys.readouterr().out
     assert "--manifest" in train_text
     assert "--pilot" in train_text
+    assert "--loss" in train_text
+    assert "--residual-weight" in train_text
 
 
 def _add_test_file(pilot: Path) -> None:

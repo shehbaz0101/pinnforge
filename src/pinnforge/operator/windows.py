@@ -104,6 +104,12 @@ class FieldNorm:
         array = np.asarray(values, dtype=np.float64)
         return (array - self.nu_mean) / self.nu_std
 
+    def denormalize_nu(self, values: np.ndarray | float) -> np.ndarray:
+        """Map the normalized viscosity channel back to physical ν."""
+
+        array = np.asarray(values, dtype=np.float64)
+        return array * self.nu_std + self.nu_mean
+
     def to_dict(self) -> dict[str, float]:
         return {
             "u_mean": self.u_mean,

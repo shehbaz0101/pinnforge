@@ -1,9 +1,10 @@
-"""Checkpoint for the data-only Burgers FNO.
+"""Checkpoint for the Burgers FNO.
 
 The file is a ``torch.save`` dict with a format tag that is not the
 coordinate-PINN checkpoint tag. ``load_fno_checkpoint`` reads it with
 ``weights_only=True`` and rebuilds :class:`~pinnforge.operator.fno.FNO1d`
-on CPU.
+on CPU. ``loss_config`` records the training loss. Checkpoints written
+before that block load as normalized data MSE.
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ from pathlib import Path
 
 from pinnforge.ml_import import require_torch
 from pinnforge.operator.fno import FNO1d, fno_from_config
+from pinnforge.operator.residual import LossConfig
 from pinnforge.operator.windows import FieldNorm, WindowSpec
 
 torch = require_torch()
@@ -31,6 +33,7 @@ class LoadedFNO:
     norm: FieldNorm
     seed: int
     val_relative_l2: float
+    loss: LossConfig
 
 
 def save_fno_checkpoint(
@@ -42,6 +45,7 @@ def save_fno_checkpoint(
     norm: FieldNorm,
     seed: int,
     val_relative_l2: float,
+    loss: LossConfig | None = None,
 ) -> Path:
     """Write one checkpoint file. Parent directories are created."""
 
@@ -49,6 +53,9 @@ def save_fno_checkpoint(
         raise TypeError("model must be an FNO1d")
     if isinstance(epoch, bool) or not isinstance(epoch, int) or epoch < 0:
         raise ValueError("epoch must be a non-negative integer")
+    loss_config = loss if loss is not None else LossConfig()
+    if not isinstance(loss_config, LossConfig):
+        raise TypeError("loss must be a LossConfig")
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     payload = {
@@ -63,6 +70,7 @@ def save_fno_checkpoint(
             "stride": spec.stride,
         },
         "normalization": norm.to_dict(),
+        "loss_config": loss_config.to_dict(),
         "state_dict": {key: value.detach().cpu() for key, value in model.state_dict().items()},
     }
     torch.save(payload, destination)
@@ -119,7 +127,17 @@ def load_fno_checkpoint(path: Path) -> LoadedFNO:
         norm=norm,
         seed=seed,
         val_relative_l2=float(score),
+        loss=_loss_from_payload(payload),
     )
+
+
+def _loss_from_payload(payload: dict[str, object]) -> LossConfig:
+    raw = payload.get("loss_config")
+    if raw is None:
+        return LossConfig()
+    if not isinstance(raw, dict):
+        raise ValueError("checkpoint loss_config must be a dict")
+    return LossConfig.from_dict(raw)
 
 
 def _load_payload(path: Path) -> object:

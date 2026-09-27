@@ -2,7 +2,11 @@
 
 ## Unreleased
 
-Stage 3 data-only Fourier neural operator. The version string stays `0.1.0`. The coordinate-PINN Burgers hook still raises `NotImplementedError`. There is no physics residual and no inverse-viscosity fit.
+Stage 4 physics-informed losses on the Stage 3 FNO. The version string stays `0.1.0`. The coordinate-PINN Burgers hook still raises `NotImplementedError`. There is no inverse-viscosity fit.
+
+- `pinnforge fno --loss` selects normalized data MSE, a discrete Burgers residual, or a weighted sum. The residual uses the pilot spectral derivative and a central time difference. The checkpoint is still the best validation relative L2. Measured test numbers are in [STAGE4_REPORT.md](STAGE4_REPORT.md).
+
+Stage 3 data-only Fourier neural operator. The version string stays `0.1.0`. The coordinate-PINN Burgers hook still raises `NotImplementedError`. That baseline does not put a PDE residual in the loss. There is no inverse-viscosity fit.
 
 - 1D FNO on temporal windows of the Stage 2 Burgers pilot, split by problem instance before windowing. `u` uses the training mean and standard deviation in `docs/stage2/pilot_manifest.json`. Viscosity is a constant input channel normalized on the training split only.
 - Supervised mean squared error in normalized space, validation relative L2 for epoch selection, and test relative L2 in [STAGE3_REPORT.md](STAGE3_REPORT.md). Commands: `pinnforge fno` and `python -m pinnforge.operator`.
