@@ -33,24 +33,21 @@ _NORM_ABS = 1e-12
 _NU_ABS = 1e-12
 
 
-def load_split_windows(
+def load_split_trajectories(
     pilot_dir: Path,
     manifest_path: Path,
-    spec: WindowSpec,
     splits: tuple[str, ...] = SPLIT_NAMES,
     *,
     check_field_hash: bool = True,
-) -> dict[str, WindowDataset]:
-    """Cut windows for the requested splits.
+) -> list[Trajectory]:
+    """Load raw trajectories for the requested splits.
 
-    ``splits`` defaults to train, validation, and test. Training should
-    pass ``("train", "val")`` so test files are not read. Every loaded
-    instance must belong to the manifest split, and the windows inherit
-    that split.
+    ``splits`` defaults to train, validation, and test. Pass ``("test",)``
+    to leave the train and validation files unread. Every loaded instance
+    must belong to the manifest split named in the request. The arrays are
+    the stored fields. They are not windowed and not normalized.
     """
 
-    if not isinstance(spec, WindowSpec):
-        raise TypeError("spec must be a WindowSpec")
     requested = _requested_splits(splits)
     manifest = load_pilot_manifest(manifest_path)
     assignment = split_sets(manifest)
@@ -71,6 +68,35 @@ def load_split_windows(
                     check_field_hash=check_field_hash,
                 )
             )
+    return trajectories
+
+
+def load_split_windows(
+    pilot_dir: Path,
+    manifest_path: Path,
+    spec: WindowSpec,
+    splits: tuple[str, ...] = SPLIT_NAMES,
+    *,
+    check_field_hash: bool = True,
+) -> dict[str, WindowDataset]:
+    """Cut windows for the requested splits.
+
+    ``splits`` defaults to train, validation, and test. Training should
+    pass ``("train", "val")`` so test files are not read. Every loaded
+    instance must belong to the manifest split, and the windows inherit
+    that split.
+    """
+
+    if not isinstance(spec, WindowSpec):
+        raise TypeError("spec must be a WindowSpec")
+    requested = _requested_splits(splits)
+    trajectories = load_split_trajectories(
+        pilot_dir,
+        manifest_path,
+        requested,
+        check_field_hash=check_field_hash,
+    )
+    norm = field_norm_from_manifest(load_pilot_manifest(manifest_path))
     datasets = build_window_datasets(trajectories, spec, norm)
     missing = [name for name in requested if name not in datasets]
     if missing:

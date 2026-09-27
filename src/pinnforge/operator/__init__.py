@@ -5,9 +5,10 @@ residual live in numpy. The network and the training loop live in
 :mod:`pinnforge.operator.fno` and :mod:`pinnforge.operator.train`. Those
 modules import torch and need the optional ``ml`` extra. The default loss
 is normalized data MSE. A residual or hybrid loss uses the stencil in
-:mod:`pinnforge.operator.residual`. This package does not replace
-:func:`pinnforge.reference.burgers.reference_solution` and does not infer
-viscosity.
+:mod:`pinnforge.operator.residual`. Sparse recovery of the scalar
+viscosity lives in :mod:`pinnforge.operator.inverse`. It reuses that
+stencil. It does not replace
+:func:`pinnforge.reference.burgers.reference_solution`.
 """
 
 from pinnforge.operator.windows import (
