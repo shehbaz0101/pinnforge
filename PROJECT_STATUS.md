@@ -5,7 +5,7 @@ ODE and PDE residuals. It trains a small network on the residual, scores a
 checkpoint against an analytical or manufactured field, and serves that path
 on localhost. An offline demo trains a checked-in sample on CPU.
 
-**Status:** v0.1.0 remains the tagged freeze. Stage 1 correctness, the Stage 2 Burgers reference, and the Stage 3 data-only FNO baseline are unreleased and keep the `0.1.0` version string. See [STAGE1_REPORT.md](STAGE1_REPORT.md), [STAGE2_REPORT.md](STAGE2_REPORT.md), and [STAGE3_REPORT.md](STAGE3_REPORT.md).
+**Status:** v0.1.0 remains the tagged freeze. Stage 1 correctness, the Stage 2 Burgers reference, the Stage 3 data-only FNO baseline, and the Stage 4 residual ablations are unreleased and keep the `0.1.0` version string. See [STAGE1_REPORT.md](STAGE1_REPORT.md), [STAGE2_REPORT.md](STAGE2_REPORT.md), [STAGE3_REPORT.md](STAGE3_REPORT.md), and [STAGE4_REPORT.md](STAGE4_REPORT.md).
 
 ## Days 1–10
 
@@ -81,7 +81,7 @@ A Fourier reference for periodic viscous Burgers, separate from the coordinate-P
 - On the pilot settings (`N = 256`, `dt = 1e-3`) the convergence initial condition at `ν = 0.05` differs from an `N = 1024`, `dt = 2.5e-4` run by about `1.09e-12` in final-time relative L2. The preregistered label tolerance is `1e-8`.
 - The pilot is 512 train / 128 validation / 128 test trajectories, split by problem instance before any windowing. Normalization statistics are fit on the training fields only and are not applied to the files. The arrays are about 147 MiB and are gitignored; `docs/stage2/pilot_manifest.json` records seeds, hashes, and the split.
 - Viscosity in the pilot is drawn from `[0.02, 0.10]`. A probe at `ν = 0.005` missed the `1e-8` resolution gate and is not in the labels.
-- No physics-informed operator loss and no inverse-viscosity fit. The data-only Fourier neural operator is Stage 3.
+- No inverse-viscosity fit. The data-only Fourier neural operator is Stage 3. Stage 4 adds residual and hybrid losses on that same operator.
 
 ## Stage 3
 
@@ -91,6 +91,14 @@ A data-only 1D Fourier neural operator on windows cut from the Stage 2 pilot. [S
 - The default window is 8 input frames and 8 target frames with stride 8 (`save_dt = 0.01`, so the lead time is 0.08). The loss is mean squared error in normalized `u`. The checkpoint is the epoch with the lowest validation mean relative L2. Test instances are not used for that choice.
 - On the reported CPU run (width 32, 16 modes, 4 layers, seed 0, epoch 24) the test mean relative L2 is about `2.65e-3`. A persistence baseline on the same windows is about `6.64e-2`. That is a measured fit on this pilot, not a physics-informed model and not a match to the `1e-8` label gate.
 - `pinnforge.reference.burgers.reference_solution` still raises `NotImplementedError`. `pinnforge eval` does not load these windows.
+
+## Stage 4
+
+Residual and hybrid losses on the Stage 3 FNO, same windows and the same validation relative L2 checkpoint rule. [STAGE4_REPORT.md](STAGE4_REPORT.md) has the stencil, the commands, and the test table.
+
+- `--loss data` reproduces the Stage 3 metrics on the reported CPU wheel. `--loss residual` optimizes the mean square Burgers residual. `--loss hybrid` adds that term with a weight chosen from `{1e-6, 1e-4, 1e-2}` on validation only. The selected weight in the report is `1e-2`.
+- The residual uses the pilot spectral derivative and a central difference at `Δt = 0.01`. `ν` is the known instance viscosity. Test mean relative L2 for the selected hybrid is about `1.98e-3`, compared with about `2.65e-3` for the data-only control. Both beat persistence (about `6.64e-2`) and both stay far above the `1e-8` label gate.
+- No inverse viscosity, no new architecture, and no claim that the preregistered weight is optimal outside that set.
 
 ## Known limits
 
@@ -107,14 +115,14 @@ A data-only 1D Fourier neural operator on windows cut from the Stage 2 pilot. [S
 - Burgers evaluation still has no reference field. It reports residual
   metrics and boundary penalties, not a field error. Spectral trajectories
   are a separate package and are not loaded by `pinnforge eval`. The Stage 3
-  FNO scores windows from those trajectories; it is not wired into
-  `pinnforge eval`.
+  and Stage 4 FNO scores windows from those trajectories; it is not wired
+  into `pinnforge eval`.
 - `w_bc = 0` does not enforce boundary conditions. An eval config with
   `n_bc = 0` or `n_ic = 0` does not score that condition.
 - Resume requires a checkpoint that stored the optimizer, the torch RNG,
   and the metrics history, and that matches the equation, counts, widths,
   activation, learning rate, and seed. The spectral Burgers solver and the
-  data-only FNO use their own files. They are not part of coordinate-PINN
+  Burgers FNO use their own files. They are not part of coordinate-PINN
   checkpoint resume. The FNO checkpoint does not resume an Adam run.
 
 ## Release tag
