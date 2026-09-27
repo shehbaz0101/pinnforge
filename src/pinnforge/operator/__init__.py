@@ -1,10 +1,13 @@
-"""Data-only Fourier neural operator on Stage 2 Burgers windows.
+"""Fourier neural operator on Stage 2 Burgers windows.
 
-Window cuts, the instance split, and normalization are numpy-only. The
-network and the training loop live in :mod:`pinnforge.operator.fno` and
-:mod:`pinnforge.operator.train`. Those modules import torch and need the
-optional ``ml`` extra. This package does not add a physics residual and
-does not replace :func:`pinnforge.reference.burgers.reference_solution`.
+Window cuts, the instance split, normalization, and the discrete Burgers
+residual live in numpy. The network and the training loop live in
+:mod:`pinnforge.operator.fno` and :mod:`pinnforge.operator.train`. Those
+modules import torch and need the optional ``ml`` extra. The default loss
+is normalized data MSE. A residual or hybrid loss uses the stencil in
+:mod:`pinnforge.operator.residual`. This package does not replace
+:func:`pinnforge.reference.burgers.reference_solution` and does not infer
+viscosity.
 """
 
 from pinnforge.operator.windows import (

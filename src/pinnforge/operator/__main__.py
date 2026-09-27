@@ -1,9 +1,11 @@
-"""Train and evaluate the data-only Burgers FNO.
+"""Train and evaluate the Burgers FNO.
 
 ``train`` reads the train and validation splits only. ``eval`` scores one
 split, defaulting to test. Both commands use the pilot manifest for the
 instance split and for the training-set ``u`` mean and standard deviation.
-Torch is imported only when a command actually trains or scores.
+``--loss data`` is the Stage 3 normalized MSE. ``--loss residual`` and
+``--loss hybrid`` add the discrete Burgers residual. Torch is imported
+only when a command actually trains or scores.
 
 The same commands are available as ``pinnforge fno train`` and
 ``pinnforge fno eval``.
@@ -23,6 +25,13 @@ from pinnforge.operator.defaults import (
     DEFAULT_MODES,
     DEFAULT_SEED,
     DEFAULT_WIDTH,
+)
+from pinnforge.operator.residual import (
+    DEFAULT_FRAME_DT,
+    LOSS_MODES,
+    RESIDUAL_SCOPES,
+    RESIDUAL_SPACES,
+    LossConfig,
 )
 from pinnforge.operator.windows import DEFAULT_INPUT_FRAMES, DEFAULT_OUTPUT_FRAMES, DEFAULT_STRIDE
 
@@ -44,7 +53,11 @@ def main(argv: list[str] | None = None) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="pinnforge fno",
-        description="Data-only 1D Fourier neural operator on Stage 2 Burgers windows.",
+        description=(
+            "1D Fourier neural operator on Stage 2 Burgers windows. "
+            "The default loss is normalized data MSE. "
+            "residual and hybrid add the discrete Burgers residual."
+        ),
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
     train = subparsers.add_parser("train", help="Train on the train split and select with validation relative L2")
@@ -61,6 +74,21 @@ def build_parser() -> argparse.ArgumentParser:
     train.add_argument("--output-frames", type=int, default=DEFAULT_OUTPUT_FRAMES)
     train.add_argument("--stride", type=int, default=DEFAULT_STRIDE)
     train.add_argument("--seed", type=int, default=DEFAULT_SEED)
+    train.add_argument("--loss", choices=LOSS_MODES, default="data")
+    train.add_argument(
+        "--residual-weight",
+        type=float,
+        default=None,
+        help="Positive weight on the residual MSE. Required for hybrid and rejected otherwise.",
+    )
+    train.add_argument("--residual-scope", choices=RESIDUAL_SCOPES, default="with_input")
+    train.add_argument("--residual-space", choices=RESIDUAL_SPACES, default="physical")
+    train.add_argument(
+        "--dt",
+        type=float,
+        default=DEFAULT_FRAME_DT,
+        help="Saved-frame spacing used by the central time difference (pilot save_dt is 0.01).",
+    )
     train.add_argument(
         "--skip-field-hash",
         action="store_true",
@@ -73,11 +101,25 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--split", choices=("train", "val", "test"), default="test")
     evaluate.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
     evaluate.add_argument("--output", type=Path, default=None, help="Eval JSON path. Default: beside the checkpoint.")
+    evaluate.add_argument(
+        "--residual-scope",
+        choices=RESIDUAL_SCOPES,
+        default=None,
+        help="Override the checkpoint residual scope when scoring |R|. Default: the checkpoint value.",
+    )
+    evaluate.add_argument("--residual-space", choices=RESIDUAL_SPACES, default=None)
+    evaluate.add_argument(
+        "--dt",
+        type=float,
+        default=None,
+        help="Override the checkpoint frame spacing when scoring |R|.",
+    )
     evaluate.add_argument("--skip-field-hash", action="store_true")
     return parser
 
 
 def _train(args: argparse.Namespace) -> int:
+    loss = _loss_from_train_args(args)
     train_from_paths = _import_trainer()
     result = train_from_paths(
         pilot_dir=args.pilot,
@@ -93,6 +135,7 @@ def _train(args: argparse.Namespace) -> int:
         output_frames=args.output_frames,
         stride=args.stride,
         seed=args.seed,
+        loss=loss,
         check_field_hash=not args.skip_field_hash,
         log=_print_epoch,
     )
@@ -101,6 +144,8 @@ def _train(args: argparse.Namespace) -> int:
     print(f"manifest: {result.manifest_path.as_posix()}")
     print(f"parameters: {result.parameter_count}")
     print(f"selected_epoch: {result.selected_epoch}")
+    print(f"loss: {loss.describe()}")
+    print(f"wall_clock_seconds: {result.wall_clock_seconds:.4f}")
     print(f"train_mse: {result.train_mse:.8e}")
     print(f"val_mse: {result.val_mse:.8e}")
     print(f"val_relative_l2: {result.val_relative_l2:.8e}")
@@ -110,6 +155,7 @@ def _train(args: argparse.Namespace) -> int:
 def _eval(args: argparse.Namespace) -> int:
     evaluate_checkpoint, load_fno_checkpoint, write_eval_json = _import_evaluator()
     loaded = load_fno_checkpoint(args.checkpoint)
+    residual = _loss_from_eval_args(args, loaded.loss)
     score = evaluate_checkpoint(
         args.checkpoint,
         args.pilot,
@@ -117,6 +163,7 @@ def _eval(args: argparse.Namespace) -> int:
         split=args.split,
         batch_size=args.batch_size,
         check_field_hash=not args.skip_field_hash,
+        residual=residual,
     )
     output = args.output
     if output is None:
@@ -132,6 +179,13 @@ def _eval(args: argparse.Namespace) -> int:
     print(f"median_relative_l2: {score.median_relative_l2:.8e}")
     print(f"pooled_relative_l2: {score.pooled_relative_l2:.8e}")
     print(f"persistence_mean_relative_l2: {score.persistence_mean_relative_l2:.8e}")
+    print(f"mean_abs_residual: {score.mean_abs_residual:.8e}")
+    print(f"residual_mse: {score.residual_mse:.8e}")
+    print(f"target_mean_abs_residual: {score.target_mean_abs_residual:.8e}")
+    print(
+        "residual_definition: "
+        f"scope={residual.residual_scope} space={residual.residual_space} dt={residual.dt:.8e}"
+    )
     print(f"json: {Path(output).as_posix()}")
     return 0
 
@@ -139,8 +193,40 @@ def _eval(args: argparse.Namespace) -> int:
 def _print_epoch(row: object) -> None:
     print(
         f"epoch: {row.epoch} train_mse: {row.train_mse:.8e} "
-        f"val_mse: {row.val_mse:.8e} val_relative_l2: {row.val_relative_l2:.8e}",
+        f"train_objective: {row.train_objective:.8e} "
+        f"val_mse: {row.val_mse:.8e} val_relative_l2: {row.val_relative_l2:.8e} "
+        f"val_mean_abs_residual: {row.val_mean_abs_residual:.8e}",
         flush=True,
+    )
+
+
+def _loss_from_train_args(args: argparse.Namespace) -> LossConfig:
+    weight = args.residual_weight
+    if args.loss == "hybrid":
+        if weight is None:
+            raise ValueError("hybrid loss requires --residual-weight > 0")
+    elif weight is not None:
+        raise ValueError("--residual-weight is only valid with --loss hybrid")
+    else:
+        weight = 0.0
+    return LossConfig(
+        mode=args.loss,
+        residual_weight=0.0 if weight is None else weight,
+        residual_scope=args.residual_scope,
+        residual_space=args.residual_space,
+        dt=args.dt,
+    )
+
+
+def _loss_from_eval_args(args: argparse.Namespace, saved: LossConfig) -> LossConfig:
+    """Residual stencil for scoring. Training mode is not reapplied."""
+
+    return LossConfig(
+        mode="data",
+        residual_weight=0.0,
+        residual_scope=saved.residual_scope if args.residual_scope is None else args.residual_scope,
+        residual_space=saved.residual_space if args.residual_space is None else args.residual_space,
+        dt=saved.dt if args.dt is None else args.dt,
     )
 
 

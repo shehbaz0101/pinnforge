@@ -17,10 +17,11 @@ localhost HTTP API and needs the optional ``api`` extra. It binds to
 ``127.0.0.1`` and refuses ``0.0.0.0`` unless ``--allow-remote`` is set.
 ``POST /train``, ``POST /eval``, and ``POST /run`` share a rate limit.
 ``serve``, ``train``, ``eval``, ``run``, and ``demo`` refuse
-non-loopback TCP connects. ``fno`` trains or scores a data-only 1D
-Fourier neural operator on Burgers windows (``python -m pinnforge.operator``
-is the same command). It does not change ``train`` or the Burgers
-reference hook.
+non-loopback TCP connects. ``fno`` trains or scores a 1D Fourier neural operator on Burgers windows
+(``python -m pinnforge.operator`` is the same command). The default loss
+is normalized data MSE. ``--loss residual`` and ``--loss hybrid`` add the
+discrete Burgers residual. It does not change ``train`` or the Burgers
+reference hook, and it does not infer viscosity.
 """
 
 from __future__ import annotations
@@ -338,8 +339,10 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser(
         "fno",
         help=(
-            "Train or score a data-only 1D FNO on Burgers pilot windows. "
-            "Same commands as python -m pinnforge.operator. Training needs the ml extra."
+            "Train or score a 1D FNO on Burgers pilot windows. "
+            "Same commands as python -m pinnforge.operator. "
+            "Default loss is data MSE; residual and hybrid add the Burgers residual. "
+            "Training needs the ml extra."
         ),
     )
     return parser

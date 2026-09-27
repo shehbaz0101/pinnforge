@@ -1,9 +1,11 @@
-"""Supervised training for the data-only Burgers FNO.
+"""Supervised training for the Burgers FNO.
 
-The loss is mean squared error between the network output and the target
-window in normalized ``u`` space. There is no PDE residual. The checkpoint
-is the epoch with the lowest mean per-window relative L2 on the validation
-instances, after denormalizing. Test instances are not loaded.
+The default loss is mean squared error between the network output and the
+target window in normalized ``u`` space. ``LossConfig`` can replace that
+term with the discrete Burgers residual, or add the residual with a fixed
+weight. The checkpoint is still the epoch with the lowest mean per-window
+relative L2 on the validation instances, after denormalizing. Test
+instances are not loaded, and they are not used to choose the weight.
 
 Epoch 0 is the network before any Adam step. Later epochs are full passes
 over the training windows.
@@ -13,6 +15,7 @@ from __future__ import annotations
 
 import json
 import math
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -31,7 +34,14 @@ from pinnforge.operator.defaults import (
 )
 from pinnforge.operator.evaluate import score_dataset
 from pinnforge.operator.fno import FNO1d, pack_inputs
+from pinnforge.operator.loss import window_operator_loss
 from pinnforge.operator.metrics import normalized_mse
+from pinnforge.operator.residual import (
+    LossConfig,
+    objective_from_parts,
+    prediction_window_residual,
+    residual_stats,
+)
 from pinnforge.operator.windows import (
     DEFAULT_INPUT_FRAMES,
     DEFAULT_OUTPUT_FRAMES,
@@ -56,6 +66,9 @@ class EpochRow:
     val_mse: float
     val_relative_l2: float
     lr: float
+    train_objective: float
+    train_residual_mse: float
+    val_mean_abs_residual: float
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -65,6 +78,9 @@ class EpochRow:
             "val_mse": self.val_mse,
             "val_relative_l2": self.val_relative_l2,
             "lr": self.lr,
+            "train_objective": self.train_objective,
+            "train_residual_mse": self.train_residual_mse,
+            "val_mean_abs_residual": self.val_mean_abs_residual,
         }
 
 
@@ -80,6 +96,7 @@ class TrainResult:
     val_mse: float
     train_mse: float
     parameter_count: int
+    wall_clock_seconds: float
 
 
 def fit_fno(
@@ -93,6 +110,7 @@ def fit_fno(
     batch_size: int = DEFAULT_BATCH_SIZE,
     lr: float = DEFAULT_LR,
     seed: int = DEFAULT_SEED,
+    loss: LossConfig | None = None,
     log: Callable[[EpochRow], None] | None = None,
 ) -> tuple[FNO1d, list[EpochRow]]:
     """Train on ``train`` and record validation relative L2 each epoch.
@@ -100,9 +118,13 @@ def fit_fno(
     ``train`` and ``val`` must use the same window spec, normalization, and
     spatial size, and their instance ids must be disjoint. The returned
     network is the epoch with the lowest validation relative L2, loaded in
-    ``eval`` mode. History includes epoch 0.
+    ``eval`` mode. History includes epoch 0. ``loss`` defaults to normalized
+    data MSE. A physics loss does not change that selection rule.
     """
 
+    loss_config = loss if loss is not None else LossConfig()
+    if not isinstance(loss_config, LossConfig):
+        raise TypeError("loss must be a LossConfig")
     _require_pair(train, val)
     _require_positive_int(epochs, "epochs")
     _require_positive_int(batch_size, "batch_size")
@@ -125,8 +147,23 @@ def fit_fno(
     best_state: dict[str, torch.Tensor] | None = None
     for epoch in range(epochs + 1):
         if epoch > 0:
-            _adam_epoch(model, optimizer, train, batch_size=batch_size, generator=generator)
-        row = _measure(model, train, val, epoch=epoch, lr=float(lr), batch_size=batch_size)
+            _adam_epoch(
+                model,
+                optimizer,
+                train,
+                batch_size=batch_size,
+                generator=generator,
+                loss_config=loss_config,
+            )
+        row = _measure(
+            model,
+            train,
+            val,
+            epoch=epoch,
+            lr=float(lr),
+            batch_size=batch_size,
+            loss_config=loss_config,
+        )
         history.append(row)
         if log is not None:
             log(row)
@@ -155,6 +192,7 @@ def train_from_paths(
     output_frames: int = DEFAULT_OUTPUT_FRAMES,
     stride: int = DEFAULT_STRIDE,
     seed: int = DEFAULT_SEED,
+    loss: LossConfig | None = None,
     check_field_hash: bool = True,
     log: Callable[[EpochRow], None] | None = None,
 ) -> TrainResult:
@@ -164,6 +202,9 @@ def train_from_paths(
     """
 
     spec = WindowSpec(input_frames=input_frames, output_frames=output_frames, stride=stride)
+    loss_config = loss if loss is not None else LossConfig()
+    if not isinstance(loss_config, LossConfig):
+        raise TypeError("loss must be a LossConfig")
     datasets = load_split_windows(
         pilot_dir,
         manifest_path,
@@ -171,6 +212,7 @@ def train_from_paths(
         ("train", "val"),
         check_field_hash=check_field_hash,
     )
+    started = time.perf_counter()
     model, history = fit_fno(
         datasets["train"],
         datasets["val"],
@@ -181,8 +223,10 @@ def train_from_paths(
         batch_size=batch_size,
         lr=lr,
         seed=seed,
+        loss=loss_config,
         log=log,
     )
+    elapsed = time.perf_counter() - started
     selected = min(history, key=lambda row: (row.val_relative_l2, row.epoch))
     destination = Path(output_dir)
     destination.mkdir(parents=True, exist_ok=True)
@@ -196,6 +240,7 @@ def train_from_paths(
         norm=datasets["train"].norm,
         seed=seed,
         val_relative_l2=selected.val_relative_l2,
+        loss=loss_config,
     )
     manifest_file = destination / "manifest.json"
     _write_run_manifest(
@@ -210,6 +255,8 @@ def train_from_paths(
         epochs=epochs,
         batch_size=batch_size,
         lr=float(lr),
+        loss=loss_config,
+        wall_clock_seconds=elapsed,
     )
     return TrainResult(
         checkpoint=checkpoint,
@@ -220,6 +267,7 @@ def train_from_paths(
         val_mse=selected.val_mse,
         train_mse=selected.train_mse,
         parameter_count=model.parameter_count(),
+        wall_clock_seconds=elapsed,
     )
 
 
@@ -230,6 +278,7 @@ def _adam_epoch(
     *,
     batch_size: int,
     generator: torch.Generator,
+    loss_config: LossConfig,
 ) -> None:
     model.train()
     inputs = torch.as_tensor(dataset.inputs, dtype=torch.float32)
@@ -240,7 +289,19 @@ def _adam_epoch(
         index = order[start : start + batch_size]
         optimizer.zero_grad(set_to_none=True)
         prediction = model(pack_inputs(inputs[index], nu[index]))
-        loss = torch.mean((prediction - targets[index]) ** 2)
+        if loss_config.mode == "data":
+            loss = torch.mean((prediction - targets[index]) ** 2)
+        else:
+            loss = window_operator_loss(
+                prediction,
+                targets[index],
+                inputs[index],
+                nu[index],
+                dataset.norm,
+                loss_config,
+            )
+        if not torch.isfinite(loss):
+            raise RuntimeError("training loss is not finite")
         loss.backward()
         optimizer.step()
 
@@ -253,17 +314,30 @@ def _measure(
     epoch: int,
     lr: float,
     batch_size: int,
+    loss_config: LossConfig,
 ) -> EpochRow:
     model.eval()
     train_prediction = _predict(model, train, batch_size)
     train_mse = normalized_mse(train_prediction, train.targets)
-    val_score = score_dataset(model, val, batch_size=batch_size)
+    train_residual = residual_stats(
+        prediction_window_residual(
+            train.inputs,
+            train_prediction,
+            train.nu,
+            train.norm,
+            loss_config,
+        )
+    )
+    val_score = score_dataset(model, val, batch_size=batch_size, residual=loss_config)
     return EpochRow(
         epoch=epoch,
         train_mse=train_mse,
         val_mse=val_score.normalized_mse,
         val_relative_l2=val_score.mean_relative_l2,
         lr=lr,
+        train_objective=objective_from_parts(train_mse, train_residual.mean_square, loss_config),
+        train_residual_mse=train_residual.mean_square,
+        val_mean_abs_residual=val_score.mean_abs_residual,
     )
 
 
@@ -305,17 +379,22 @@ def _write_run_manifest(
     epochs: int,
     batch_size: int,
     lr: float,
+    loss: LossConfig,
+    wall_clock_seconds: float,
 ) -> None:
     train = datasets["train"]
     val = datasets["val"]
     payload = {
         "format": MANIFEST_FORMAT,
-        "task": "data-only 1D FNO on Burgers windows",
-        "loss": "mean squared error in normalized u space",
+        "task": "1D FNO on Burgers windows",
+        "loss": loss.describe(),
+        "loss_config": loss.to_dict(),
         "selection": "minimum validation mean relative L2, ties take the earliest epoch",
         "test_used_for_training": False,
         "test_used_for_selection": False,
-        "physics_residual": False,
+        "physics_residual": loss.uses_physics(),
+        "wall_clock_seconds": wall_clock_seconds,
+        "selected_val_mean_abs_residual": selected.val_mean_abs_residual,
         "device": "cpu",
         "seed": seed,
         "epochs_requested": epochs,
