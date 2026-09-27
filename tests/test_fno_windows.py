@@ -292,6 +292,7 @@ def test_fno_help_lists_train_and_eval(capsys: pytest.CaptureFixture[str]) -> No
     text = capsys.readouterr().out
     assert "train" in text
     assert "eval" in text
+    assert "inverse" in text
     with pytest.raises(SystemExit) as train_help:
         main(["fno", "train", "--help"])
     assert train_help.value.code == 0

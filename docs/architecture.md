@@ -18,7 +18,7 @@ Importing `pinnforge` loads pydantic specs and the numpy samplers. It does not i
 | Penalties | Soft mean-squared initial, Dirichlet, outward-Neumann, and periodic terms. Periodic matches the field and its derivative along that axis at both endpoints, at each boundary row's other coordinates. An unsupported condition raises. `w_bc = 0` drops the boundary terms on purpose. |
 | Trainer | Adam on one batch from the train RNG stream. The validation stream is hashed into `manifest.json` and is not in the loss. Loss is `w_pde *` residual MSE plus weighted initial and boundary penalties. Checkpoints store weights, the spec, Adam state, the torch RNG, and history, and load with `weights_only=True`. |
 | Eval | Test-stream collocation, including held-out initial and boundary rows when the equation has them. Residual mean and max, L2, relative L2, max absolute field error when a reference exists, and held-out IC and BC errors. |
-| CLI | `pinnforge version`, `pinnforge equations`, `pinnforge sample`, `pinnforge residual`, `pinnforge train`, `pinnforge eval`, `pinnforge run --config`, `pinnforge demo`, `pinnforge serve`, and `pinnforge fno`. Residual, train, eval, run, demo, and `fno train`/`fno eval` need torch. Serve needs the `api` extra and binds to `127.0.0.1`. `fno` is the Burgers window operator, with a data, residual, or hybrid loss. It is not the coordinate-PINN trainer. |
+| CLI | `pinnforge version`, `pinnforge equations`, `pinnforge sample`, `pinnforge residual`, `pinnforge train`, `pinnforge eval`, `pinnforge run --config`, `pinnforge demo`, `pinnforge serve`, and `pinnforge fno`. Residual, train, eval, run, demo, and `fno train`/`fno eval` need torch. `fno inverse` recovers scalar viscosity from preregistered sparse sensors and does not need torch. Serve needs the `api` extra and binds to `127.0.0.1`. `fno` is the Burgers window operator, with a data, residual, or hybrid loss, plus that inverse. It is not the coordinate-PINN trainer. |
 | Config | `ExperimentConfig` loads a relative YAML or JSON file: equation id or inline spec, optional parameter overrides, nested train and eval settings, MLP widths, and relative output paths. |
 | API | `GET /health`, `GET /equations`, `GET /equations/{id_or_alias}`, `POST /train`, `POST /eval`, and `POST /run`. Paths stay inside the sandbox root. Those three POSTs share a per-client rate limit (HTTP 429). The process refuses non-loopback TCP connects. `0.0.0.0` is refused unless `pinnforge serve --allow-remote` is set. |
 
@@ -69,6 +69,10 @@ The tagged v0.1.0 tree skipped Neumann and periodic penalties, returned `u = -x�
 ## Stage 4 residual losses
 
 The same operator accepts `--loss residual` and `--loss hybrid`. The residual is the pilot spectral derivative in space and a central difference in time, with the instance viscosity known. Checkpoint selection stays on validation mean relative L2. The stencil, the preregistered weights, and the test table are in [STAGE4_REPORT.md](../STAGE4_REPORT.md).
+
+## Stage 5 sparse viscosity
+
+`pinnforge fno inverse` recovers one scalar `ν` per pilot instance from a preregistered sensor mask. The objective is the Stage 4 central residual, which is linear in `ν`, so the minimizer is a normal equation. It does not train a new network. The mask, the test errors, and the limits are in [STAGE5_REPORT.md](../STAGE5_REPORT.md).
 
 ## Later days
 

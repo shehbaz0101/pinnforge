@@ -5,7 +5,7 @@ ODE and PDE residuals. It trains a small network on the residual, scores a
 checkpoint against an analytical or manufactured field, and serves that path
 on localhost. An offline demo trains a checked-in sample on CPU.
 
-**Status:** v0.1.0 remains the tagged freeze. Stage 1 correctness, the Stage 2 Burgers reference, the Stage 3 data-only FNO baseline, and the Stage 4 residual ablations are unreleased and keep the `0.1.0` version string. See [STAGE1_REPORT.md](STAGE1_REPORT.md), [STAGE2_REPORT.md](STAGE2_REPORT.md), [STAGE3_REPORT.md](STAGE3_REPORT.md), and [STAGE4_REPORT.md](STAGE4_REPORT.md).
+**Status:** v0.1.0 remains the tagged freeze. Stage 1 correctness, the Stage 2 Burgers reference, the Stage 3 data-only FNO baseline, the Stage 4 residual ablations, and the Stage 5 sparse viscosity recovery are unreleased and keep the `0.1.0` version string. See [STAGE1_REPORT.md](STAGE1_REPORT.md), [STAGE2_REPORT.md](STAGE2_REPORT.md), [STAGE3_REPORT.md](STAGE3_REPORT.md), [STAGE4_REPORT.md](STAGE4_REPORT.md), and [STAGE5_REPORT.md](STAGE5_REPORT.md).
 
 ## Days 1–10
 
@@ -81,7 +81,7 @@ A Fourier reference for periodic viscous Burgers, separate from the coordinate-P
 - On the pilot settings (`N = 256`, `dt = 1e-3`) the convergence initial condition at `ν = 0.05` differs from an `N = 1024`, `dt = 2.5e-4` run by about `1.09e-12` in final-time relative L2. The preregistered label tolerance is `1e-8`.
 - The pilot is 512 train / 128 validation / 128 test trajectories, split by problem instance before any windowing. Normalization statistics are fit on the training fields only and are not applied to the files. The arrays are about 147 MiB and are gitignored; `docs/stage2/pilot_manifest.json` records seeds, hashes, and the split.
 - Viscosity in the pilot is drawn from `[0.02, 0.10]`. A probe at `ν = 0.005` missed the `1e-8` resolution gate and is not in the labels.
-- No inverse-viscosity fit. The data-only Fourier neural operator is Stage 3. Stage 4 adds residual and hybrid losses on that same operator.
+- No inverse-viscosity fit in this stage. The data-only Fourier neural operator is Stage 3. Stage 4 adds residual and hybrid losses on that same operator. Stage 5 recovers `ν` from sparse sensors.
 
 ## Stage 3
 
@@ -98,7 +98,15 @@ Residual and hybrid losses on the Stage 3 FNO, same windows and the same validat
 
 - `--loss data` reproduces the Stage 3 metrics on the reported CPU wheel. `--loss residual` optimizes the mean square Burgers residual. `--loss hybrid` adds that term with a weight chosen from `{1e-6, 1e-4, 1e-2}` on validation only. The selected weight in the report is `1e-2`.
 - The residual uses the pilot spectral derivative and a central difference at `Δt = 0.01`. `ν` is the known instance viscosity. Test mean relative L2 for the selected hybrid is about `1.98e-3`, compared with about `2.65e-3` for the data-only control. Both beat persistence (about `6.64e-2`) and both stay far above the `1e-8` label gate.
-- No inverse viscosity, no new architecture, and no claim that the preregistered weight is optimal outside that set.
+- No inverse viscosity, no new architecture, and no claim that the preregistered weight is optimal outside that set. Sparse recovery of `ν` is Stage 5.
+
+## Stage 5
+
+Scalar viscosity from sparse sensors on the Stage 2 pilot, using the Stage 4 Burgers residual. [STAGE5_REPORT.md](STAGE5_REPORT.md) has the mask, the command, and the test table.
+
+- The observation pattern is fixed in code before the test score: 32 equispaced sensors and four bursts of five consecutive frames. That is 640 samples out of each `101 × 256` trajectory. The estimator is the normal equation for the Stage 4 central residual. It does not fit a new network and it does not read test viscosities.
+- On the 128 held-out instances the mean absolute error in `ν` is about `6.09e-5`, against about `1.81e-2` for the training-split mean. Mean relative error is about `1.33e-3`. Correlation is about `0.999994`. No test instance is worse in absolute error than that constant baseline. The same command's stride-8 clock is coarser and is not the reported pattern.
+- The version string stays `0.1.0`. This is not the `1e-8` solver gate, and it does not claim that `ν` is unique from every other sensor mask.
 
 ## Known limits
 
@@ -116,7 +124,8 @@ Residual and hybrid losses on the Stage 3 FNO, same windows and the same validat
   metrics and boundary penalties, not a field error. Spectral trajectories
   are a separate package and are not loaded by `pinnforge eval`. The Stage 3
   and Stage 4 FNO scores windows from those trajectories; it is not wired
-  into `pinnforge eval`.
+  into `pinnforge eval`. Stage 5 reads the same trajectories only to
+  recover `ν` from a sensor mask. It is also not wired into `pinnforge eval`.
 - `w_bc = 0` does not enforce boundary conditions. An eval config with
   `n_bc = 0` or `n_ic = 0` does not score that condition.
 - Resume requires a checkpoint that stored the optimizer, the torch RNG,

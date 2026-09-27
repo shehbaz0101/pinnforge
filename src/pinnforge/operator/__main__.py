@@ -4,11 +4,13 @@
 split, defaulting to test. Both commands use the pilot manifest for the
 instance split and for the training-set ``u`` mean and standard deviation.
 ``--loss data`` is the Stage 3 normalized MSE. ``--loss residual`` and
-``--loss hybrid`` add the discrete Burgers residual. Torch is imported
-only when a command actually trains or scores.
+``--loss hybrid`` add the discrete Burgers residual. ``inverse`` recovers
+each instance viscosity from the preregistered sparse sensors by
+minimizing that residual. Torch is imported only when a command actually
+trains, scores, or runs the Adam viscosity check.
 
-The same commands are available as ``pinnforge fno train`` and
-``pinnforge fno eval``.
+The same commands are available as ``pinnforge fno train``,
+``pinnforge fno eval``, and ``pinnforge fno inverse``.
 """
 
 from __future__ import annotations
@@ -44,6 +46,8 @@ def main(argv: list[str] | None = None) -> int:
             return _train(args)
         if args.command == "eval":
             return _eval(args)
+        if args.command == "inverse":
+            return _inverse(args)
     except ValueError as exc:
         parser.error(str(exc))
     parser.error(f"unknown command {args.command}")
@@ -56,7 +60,8 @@ def build_parser() -> argparse.ArgumentParser:
         description=(
             "1D Fourier neural operator on Stage 2 Burgers windows. "
             "The default loss is normalized data MSE. "
-            "residual and hybrid add the discrete Burgers residual."
+            "residual and hybrid add the discrete Burgers residual. "
+            "inverse recovers scalar viscosity from preregistered sparse sensors."
         ),
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -115,6 +120,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="Override the checkpoint frame spacing when scoring |R|.",
     )
     evaluate.add_argument("--skip-field-hash", action="store_true")
+    inverse = subparsers.add_parser(
+        "inverse",
+        help="Recover instance viscosity from the preregistered sparse sensors",
+    )
+    inverse.add_argument("--pilot", type=Path, default=Path("artifacts/burgers_pilot"))
+    inverse.add_argument("--manifest", type=Path, default=Path("docs/stage2/pilot_manifest.json"))
+    inverse.add_argument("--split", choices=("train", "val", "test"), default="test")
+    inverse.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+        help="JSON record. Default: runs/stage5_inverse/eval_<split>.json",
+    )
+    inverse.add_argument("--skip-field-hash", action="store_true")
     return parser
 
 
@@ -188,6 +207,80 @@ def _eval(args: argparse.Namespace) -> int:
     )
     print(f"json: {Path(output).as_posix()}")
     return 0
+
+
+def _inverse(args: argparse.Namespace) -> int:
+    from pinnforge.operator.inverse import (
+        ABLATION_OBSERVATION,
+        PREREGISTERED_OBSERVATION,
+        dense_reference_observation,
+        load_recovery_split,
+        score_trajectories,
+        write_inverse_json,
+    )
+
+    trajectories, baseline = load_recovery_split(
+        args.pilot,
+        args.manifest,
+        split=args.split,
+        check_field_hash=not args.skip_field_hash,
+    )
+    primary = score_trajectories(trajectories, PREREGISTERED_OBSERVATION, baseline)
+    ablation = score_trajectories(trajectories, ABLATION_OBSERVATION, baseline)
+    dense_spec = dense_reference_observation(int(trajectories[0].u.shape[0]))
+    dense = score_trajectories(trajectories, dense_spec, baseline)
+    output = args.output
+    if output is None:
+        output = Path("runs/stage5_inverse") / f"eval_{args.split}.json"
+    payload = {
+        "format": "pinnforge.burgers_inverse.v1",
+        "split": args.split,
+        "n_instances": primary.n_instances,
+        "baseline_nu": baseline,
+        "baseline_source": "training-split mean viscosity in the pilot manifest",
+        "objective": "least squares of the Stage 4 central Burgers residual in scalar nu",
+        "primary_pattern": PREREGISTERED_OBSERVATION.to_dict(),
+        "primary": primary.to_dict(include_instances=True),
+        "ablation_pattern": ABLATION_OBSERVATION.to_dict(),
+        "ablation": ablation.to_dict(include_instances=False),
+        "dense_pattern": dense_spec.to_dict(),
+        "dense_reference": dense.to_dict(include_instances=False),
+    }
+    write_inverse_json(payload, output)
+    observed = PREREGISTERED_OBSERVATION.n_observed_frames() * PREREGISTERED_OBSERVATION.n_sensors
+    print(f"split: {args.split}")
+    print(f"pattern: {primary.pattern}")
+    print(f"n_instances: {primary.n_instances}")
+    print(f"n_observations_per_instance: {observed}")
+    print(f"baseline_nu: {baseline:.16e}")
+    _print_recovery("primary", primary)
+    _print_recovery("ablation", ablation)
+    _print_recovery("dense_reference", dense)
+    print(f"json: {Path(output).as_posix()}")
+    return 0
+
+
+def _print_recovery(label: str, score: object) -> None:
+    print(f"{label}_mean_abs_error: {score.mean_abs_error:.16e}")
+    print(f"{label}_median_abs_error: {score.median_abs_error:.16e}")
+    print(f"{label}_max_abs_error: {score.max_abs_error:.16e}")
+    print(f"{label}_mean_rel_error: {score.mean_rel_error:.16e}")
+    print(f"{label}_median_rel_error: {score.median_rel_error:.16e}")
+    print(f"{label}_max_rel_error: {score.max_rel_error:.16e}")
+    correlation = score.correlation
+    if correlation is None:
+        print(f"{label}_correlation: null")
+    else:
+        print(f"{label}_correlation: {correlation:.16e}")
+    print(f"{label}_n_failures: {score.n_failures}")
+    print(f"{label}_n_nonpositive: {score.n_nonpositive}")
+    print(f"{label}_n_worse_than_baseline: {score.n_worse_than_baseline}")
+    print(f"{label}_baseline_mean_abs_error: {score.baseline_mean_abs_error:.16e}")
+    print(f"{label}_baseline_mean_rel_error: {score.baseline_mean_rel_error:.16e}")
+    print(f"{label}_mean_abs_residual: {score.mean_abs_residual:.16e}")
+    print(f"{label}_mean_abs_residual_at_truth: {score.mean_abs_residual_at_truth:.16e}")
+    print(f"{label}_mean_square_residual: {score.mean_square_residual:.16e}")
+    print(f"{label}_mean_square_residual_at_truth: {score.mean_square_residual_at_truth:.16e}")
 
 
 def _print_epoch(row: object) -> None:

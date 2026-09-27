@@ -20,8 +20,9 @@ localhost HTTP API and needs the optional ``api`` extra. It binds to
 non-loopback TCP connects. ``fno`` trains or scores a 1D Fourier neural operator on Burgers windows
 (``python -m pinnforge.operator`` is the same command). The default loss
 is normalized data MSE. ``--loss residual`` and ``--loss hybrid`` add the
-discrete Burgers residual. It does not change ``train`` or the Burgers
-reference hook, and it does not infer viscosity.
+discrete Burgers residual. ``fno inverse`` recovers scalar viscosity from
+preregistered sparse sensors of those trajectories. It does not change
+``train`` or the Burgers reference hook.
 """
 
 from __future__ import annotations
@@ -339,10 +340,11 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser(
         "fno",
         help=(
-            "Train or score a 1D FNO on Burgers pilot windows. "
+            "Train or score a 1D FNO on Burgers pilot windows, or recover viscosity. "
             "Same commands as python -m pinnforge.operator. "
             "Default loss is data MSE; residual and hybrid add the Burgers residual. "
-            "Training needs the ml extra."
+            "inverse recovers scalar viscosity from preregistered sparse sensors. "
+            "Training needs the ml extra. inverse does not."
         ),
     )
     return parser

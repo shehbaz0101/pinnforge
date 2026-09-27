@@ -2,7 +2,11 @@
 
 ## Unreleased
 
-Stage 4 physics-informed losses on the Stage 3 FNO. The version string stays `0.1.0`. The coordinate-PINN Burgers hook still raises `NotImplementedError`. There is no inverse-viscosity fit.
+Stage 5 recovers each pilot instance's viscosity from a preregistered sparse sensor mask. The version string stays `0.1.0`. The coordinate-PINN Burgers hook still raises `NotImplementedError`.
+
+- `pinnforge fno inverse` minimizes the Stage 4 central Burgers residual in the scalar `ν`. The minimizer is the normal equation on 32 equispaced sensors and four short frame bursts. Test absolute and relative errors are in [STAGE5_REPORT.md](STAGE5_REPORT.md). No new Fourier layer is trained.
+
+Stage 4 physics-informed losses on the Stage 3 FNO. The version string stays `0.1.0`. The coordinate-PINN Burgers hook still raises `NotImplementedError`. There is no inverse-viscosity fit in that stage.
 
 - `pinnforge fno --loss` selects normalized data MSE, a discrete Burgers residual, or a weighted sum. The residual uses the pilot spectral derivative and a central time difference. The checkpoint is still the best validation relative L2. Measured test numbers are in [STAGE4_REPORT.md](STAGE4_REPORT.md).
 
