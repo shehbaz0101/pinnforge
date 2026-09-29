@@ -81,6 +81,30 @@ def test_committed_objective_selection_is_validation_only() -> None:
         assert selection["arms"][arm]["selected_mean_hard_ood_mean_rel_error"] > 0.0
 
 
+def test_committed_stage_d_scores_keep_the_stage_a_baselines() -> None:
+    scores = json.loads((ROOT / "docs" / "v02" / "stage_d_scores.json").read_text(encoding="utf-8"))
+    stress = json.loads((ROOT / "docs" / "v02" / "inverse_stress.json").read_text(encoding="utf-8"))
+    assert scores["format"] == "pinnforge.stage_d_scores.v1"
+    assert scores["protocol_sha256"] == protocol_sha256(PROTOCOL)
+    assert scores["selection_path"] == "docs/v02/stage_d_objective_selection.json"
+    assert scores["oracle_used_for_selection"] is False
+    assert scores["threshold_nu"] == pytest.approx(0.027028120493367818)
+    published = scores["baselines"]["sensors32_bursts"]["hard_ood"]
+    reference = stress["hard_ood_sensors32_bursts"]
+    assert published["n_instances"] == 30
+    assert published["n_failures"] == 9
+    assert published["mean_rel_error"] == pytest.approx(reference["mean_rel_error"])
+    assert published["mean_abs_error"] == pytest.approx(reference["mean_abs_error"])
+    for arm in ("data_only", "hybrid_1e-2"):
+        block = scores["arms"][arm]
+        assert block["selected_lambda"] == pytest.approx(0.0)
+        assert set(block["objectives"]) == {"0.0"}
+        hard = block["objectives"]["0.0"]["slices"]["hard_ood"]
+        assert hard["n_instances"] == 30
+        assert hard["n_failures"]["per_seed"] == [0, 0, 0, 0, 0]
+        assert hard["mean_rel_error"]["mean"] < reference["mean_rel_error"]
+
+
 def test_stage_d_protocol_rejects_a_file_that_already_holds_scores(tmp_path: Path) -> None:
     payload = json.loads(PROTOCOL.read_text(encoding="utf-8"))
     payload["results"] = {"hard_ood": 0.0}

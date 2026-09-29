@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+Stage D fits viscosity from the unchanged `sensors32_bursts` mask with the Stage B data-only FNO and the Stage C hybrid `1e-2` FNO. The version string stays `0.1.0`. The Stage A–C tables are not edited.
+
+- [docs/v02/stage_d_inverse_protocol.json](docs/v02/stage_d_inverse_protocol.json) freezes the mask, the 191-point grid on `[0.005, 0.1]`, seeds 0 through 4, the `0.5` relative-error rule, and the Stage A `hard_ood` cut before the test scores. The residual weight is chosen on validation `hard_ood` only. Both arms select `λ = 0`.
+- On test `hard_ood`, data-only mean relative error is `0.049487208469027544 ± 0.0144232271670265` and hybrid `1e-2` is `0.03368266375533967 ± 0.0034734247381767768`, against `0.3494591802034973` and 9 failures for the closed-form residual least squares. Both operator arms have 0 failures on that slice. Tables are in [STAGE_D_REPORT.md](STAGE_D_REPORT.md) and [docs/v02/stage_d_scores.json](docs/v02/stage_d_scores.json).
+
 Stage C trains residual and hybrid losses on the Stage A harder Burgers pilot. The version string stays `0.1.0`. The data-only arm is the Stage B table and is not retrained. There is no learned inverse.
 
 - [docs/v02/stage_c_train_protocol.json](docs/v02/stage_c_train_protocol.json) freezes seeds 0 through 4, the Stage B architecture, the Stage 4 hybrid weights `{1e-6, 1e-4, 1e-2}`, and the Stage A `hard_ood` cut before the Stage C test scores. The weight is chosen on validation only. The selected weight is `1e-2`.
