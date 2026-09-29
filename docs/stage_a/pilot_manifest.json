@@ -2,7 +2,7 @@
   "code_sha256": {
     "checks.py": "0f124f1eacd1f558e606d29ea44ae7cdec2e7497bd36e33d5828bd121f5a5361",
     "dataset.py": "a2661ff8599ffc8f86d71daa4d58ebca84deb0e5741c4c166a194e2aa7db1cea",
-    "harder.py": "41682d0d000421ac1cf1fef5c787d4cc85fe8d2db31e2002005a27e2fdb32474",
+    "harder.py": "798764d3e18ec2899df6453b65b69385fdfcc6fb53fb2239d83eeb7efcf97b19",
     "initial.py": "0a8b2f910bcb71d1be3993eb810cd805e9bca97d23f63404749695ef983b9ba0",
     "solver.py": "aa3acbe14a4474bd3069ff1a4a0e99b3ee38dc5fa66cc596210ca0a051d5095b"
   },
@@ -10083,6 +10083,93 @@
     "windowing": "none"
   },
   "pilot_config_sha256": "c0b97e2be1373233be4286f99e280011efb8ca8e905dffa5abe1bbd3b35753a0",
+  "protocol": {
+    "format": "pinnforge.burgers_hard_pilot_protocol.v1",
+    "frozen_before_operator_training": true,
+    "hard_ood": {
+      "comparison": "nu <= threshold_nu",
+      "fit_on": "train",
+      "method": "linear",
+      "n_train_at_or_below": 128,
+      "name": "hard_ood",
+      "quantile": 0.25,
+      "rule": "An instance is hard_ood iff nu <= threshold_nu. threshold_nu is the training-split quantile. Fit on train only. Later stages must score this slice separately and must not use hard_ood, validation, or the test split to choose a model or to refit the quantile.",
+      "threshold_nu": 0.027028120493367818
+    },
+    "ic_family": "tanh_bandlimited",
+    "inverse_reference": {
+      "estimator": "sensors32_bursts",
+      "role": "Closed-form residual least squares from Stage 5, scored as a ceiling/floor reference. The observation pattern is not retuned.",
+      "symbol": "pinnforge.operator.inverse.PREREGISTERED_OBSERVATION"
+    },
+    "label_gate": {
+      "max_abs_mean_drift_max": 1e-12,
+      "max_energy_increase_max": 1e-10,
+      "nu_max": 0.1,
+      "nu_min": 0.005,
+      "pilot_dt": 0.00025,
+      "pilot_n": 1024,
+      "reference_dt": 0.000125,
+      "reference_n": 2048,
+      "relative_l2_final_max": 1e-09,
+      "relative_l2_spacetime_max": 1e-09,
+      "study": "docs/stage_a/convergence.json"
+    },
+    "nu_range": {
+      "distribution": "uniform",
+      "drawn_after": "successful initial field",
+      "max": 0.1,
+      "min": 0.005
+    },
+    "pilot": {
+      "amplitude_decay": 0.5,
+      "batch_size": 8,
+      "beta": 3.0,
+      "bit_generator": "PCG64",
+      "canonical_n": 8192,
+      "coefficient_law": "a_m, b_m = Uniform(-1, 1) / m^decay; s = tanh(beta * p_hat) on the canonical grid; keep modes |m| <= m_keep, drop the mean, scale by 1/max|S|",
+      "dt": 0.00025,
+      "ic_family": "tanh_bandlimited",
+      "ic_salt": 1212240452,
+      "m_keep": 48,
+      "master_seed": 20260929,
+      "n": 1024,
+      "n_modes": 8,
+      "n_test": 128,
+      "n_train": 512,
+      "n_val": 128,
+      "nu_max": 0.1,
+      "nu_min": 0.005,
+      "profile": "harder_burgers_v1",
+      "save_dt": 0.01,
+      "split_salt": 1397771348,
+      "split_seed": 20260929,
+      "split_unit": "problem_instance",
+      "t_final": 1.0,
+      "windowing": "none"
+    },
+    "pilot_config_sha256": "c0b97e2be1373233be4286f99e280011efb8ca8e905dffa5abe1bbd3b35753a0",
+    "retuned_after_inverse_measurement": false,
+    "seeds": {
+      "bit_generator": "PCG64",
+      "ic_salt": 1212240452,
+      "master_seed": 20260929,
+      "split_salt": 1397771348,
+      "split_seed": 20260929
+    },
+    "solver_config_sha256": "955dc2f9687ae7131737e37c0b6dc2f790c70ebfcc2b8e67ffca30f29de28bd6",
+    "split_sizes": {
+      "test": 128,
+      "train": 512,
+      "unit": "problem_instance",
+      "val": 128
+    },
+    "stage2_nu_min": 0.02,
+    "time_horizon": {
+      "domain": "x in [-1, 1], periodic",
+      "t_final": 1.0
+    }
+  },
   "solver": {
     "dealiasing": "three_halves",
     "domain": [

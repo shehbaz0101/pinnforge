@@ -24,14 +24,18 @@ from pinnforge.reference.numerical.harder import (
     HARD_DT,
     HARD_MASTER_SEED,
     HARD_N,
+    HARD_OOD_QUANTILE,
     LABEL_REL_L2_MAX,
     M_KEEP,
     NU_MAX,
     NU_MIN,
+    PROTOCOL_FORMAT,
     HardPilotConfig,
+    build_protocol,
     draw_hard_initial_condition,
     estimate_hard_storage,
     generate_hard_pilot,
+    hard_ood_threshold,
     high_mode_energy_fraction,
     source_hashes,
     spectral_slope_max,
@@ -39,10 +43,13 @@ from pinnforge.reference.numerical.harder import (
 from pinnforge.reference.numerical.initial import NU_MIN as STAGE2_NU_MIN
 from pinnforge.reference.numerical.initial import draw_initial_condition
 from pinnforge.reference.numerical.solver import SolverConfig, recommended_dt
+from pinnforge.reference.numerical.stress import STRESS_FORMAT
 
 ROOT = Path(__file__).resolve().parents[1]
 STAGE2_PILOT_HASH = "1926d9a625136afca2af0d4dbc318cd77616ee0268ef80341e55c45daf156088"
 STAGE2_SOLVER_HASH = "2a0c1c3f078ca81f15bf5c33874bc1403fa6a1a30bda1f484bbc6df5d0d48928"
+STAGE5_SENSORS32_MEAN_ABS = 6.091698430189056e-05
+STAGE5_SENSORS32_MEAN_REL = 1.3303134076090104e-03
 MANIFEST_KEYS = {
     "format",
     "ic_family",
@@ -57,6 +64,7 @@ MANIFEST_KEYS = {
     "nu_stats",
     "invariants",
     "label_gate",
+    "protocol",
     "instances",
 }
 INSTANCE_KEYS = {
@@ -199,6 +207,24 @@ def test_tiny_hard_pilot_is_deterministic_and_matches_the_manifest_schema(tmp_pa
     assert first["nu_stats"]["train"]["count"] == 2
     assert first["invariants"]["max_abs_mean_drift"] <= 1e-12
     assert first["invariants"]["max_energy_increase"] <= 1e-10
+    train_nu = [record["nu"] for record in first["instances"] if record["split"] == "train"]
+    protocol = first["protocol"]
+    assert protocol["format"] == PROTOCOL_FORMAT
+    assert protocol["frozen_before_operator_training"] is True
+    assert protocol["retuned_after_inverse_measurement"] is False
+    assert protocol["hard_ood"]["name"] == "hard_ood"
+    assert protocol["hard_ood"]["quantile"] == HARD_OOD_QUANTILE == 0.25
+    assert protocol["hard_ood"]["method"] == "linear"
+    assert protocol["hard_ood"]["fit_on"] == "train"
+    assert protocol["hard_ood"]["threshold_nu"] == pytest.approx(hard_ood_threshold(train_nu))
+    assert protocol["hard_ood"]["threshold_nu"] == pytest.approx(
+        float(np.quantile(np.asarray(train_nu, dtype=np.float64), 0.25, method="linear"))
+    )
+    assert protocol["label_gate"]["pilot_n"] == HARD_N
+    assert protocol["label_gate"]["relative_l2_final_max"] == LABEL_REL_L2_MAX
+    assert protocol["pilot_config_sha256"] == first["pilot_config_sha256"]
+    assert protocol == build_protocol(config, train_nu, first["solver_config_sha256"])
+    assert protocol == second["protocol"]
     storage = estimate_hard_storage(config)
     assert storage["n_times"] == 3
     assert storage["field_bytes"] == 4 * 3 * 128 * 8
@@ -256,7 +282,15 @@ def test_numerical_cli_keeps_stage2_defaults_and_adds_the_hard_pilot() -> None:
         capture_output=True,
         text=True,
     ).stdout
-    for name in ("estimate", "convergence", "pilot", "hard-estimate", "hard-convergence", "hard-pilot"):
+    for name in (
+        "estimate",
+        "convergence",
+        "pilot",
+        "hard-estimate",
+        "hard-convergence",
+        "hard-pilot",
+        "hard-stress",
+    ):
         assert name in help_text
 
 
@@ -284,7 +318,9 @@ def test_saved_hard_study_and_manifest_meet_the_label_gate() -> None:
     assert invariants["max_abs_mean_drift"] <= 1e-12
     assert invariants["max_energy_increase"] <= 1e-10
 
-    manifest = json.loads((ROOT / "docs" / "stage_a" / "pilot_manifest.json").read_text(encoding="utf-8"))
+    manifest = json.loads(
+        (ROOT / "docs" / "stage_a" / "pilot_manifest.json").read_text(encoding="utf-8")
+    )
     assert manifest["format"] == FORMAT
     assert manifest["ic_family"] == "tanh_bandlimited"
     assert [len(manifest["splits"][name]) for name in ("train", "val", "test")] == [512, 128, 128]
@@ -310,3 +346,67 @@ def test_saved_hard_study_and_manifest_meet_the_label_gate() -> None:
         assert len(record["field_sha256"]) == 64
         assert len(record["sha256"]) == 64
         assert 0.005 <= record["nu"] <= 0.10
+    train_nu = [record["nu"] for record in manifest["instances"] if record["split"] == "train"]
+    protocol = manifest["protocol"]
+    assert protocol["format"] == PROTOCOL_FORMAT
+    assert protocol["frozen_before_operator_training"] is True
+    assert protocol["retuned_after_inverse_measurement"] is False
+    assert protocol["ic_family"] == "tanh_bandlimited"
+    assert protocol["split_sizes"] == {
+        "train": 512,
+        "val": 128,
+        "test": 128,
+        "unit": "problem_instance",
+    }
+    assert protocol["nu_range"]["min"] == 0.005
+    assert protocol["nu_range"]["max"] == 0.10
+    assert protocol["seeds"]["master_seed"] == HARD_MASTER_SEED
+    assert protocol["seeds"]["split_seed"] == HARD_MASTER_SEED
+    assert protocol["hard_ood"]["name"] == "hard_ood"
+    assert protocol["hard_ood"]["quantile"] == 0.25
+    assert protocol["hard_ood"]["method"] == "linear"
+    assert protocol["hard_ood"]["fit_on"] == "train"
+    threshold = hard_ood_threshold(train_nu)
+    assert protocol["hard_ood"]["threshold_nu"] == pytest.approx(threshold)
+    assert protocol["hard_ood"]["n_train_at_or_below"] == sum(nu <= threshold for nu in train_nu)
+    assert protocol["label_gate"]["relative_l2_final_max"] == LABEL_REL_L2_MAX
+    assert protocol == build_protocol(
+        HardPilotConfig(),
+        train_nu,
+        manifest["solver_config_sha256"],
+    )
+    committed = json.loads(
+        (ROOT / "docs" / "v02" / "pilot_protocol.json").read_text(encoding="utf-8")
+    )
+    assert committed == protocol
+
+    stress = json.loads((ROOT / "docs" / "v02" / "inverse_stress.json").read_text(encoding="utf-8"))
+    assert stress["format"] == STRESS_FORMAT
+    assert stress["estimator"] == "sensors32_bursts"
+    assert stress["operator_trained"] is False
+    assert stress["observation_retuned"] is False
+    assert stress["hard_ood"]["threshold_nu"] == protocol["hard_ood"]["threshold_nu"]
+    primary = stress["sensors32_bursts"]
+    assert primary["pattern"] == "sensors32_bursts"
+    assert primary["n_instances"] == 128
+    assert primary["mean_abs_error"] > 10.0 * STAGE5_SENSORS32_MEAN_ABS
+    assert primary["mean_rel_error"] > 10.0 * STAGE5_SENSORS32_MEAN_REL
+    assert primary["n_failures"] >= 1
+    ood = stress["hard_ood_sensors32_bursts"]
+    assert ood["n_failures"] >= 1
+    assert stress["hard_ood"]["n_test"] == ood["n_instances"]
+    assert stress["complement_sensors32_bursts"]["n_failures"] == 0
+    assert stress["dense_reference"]["n_failures"] == 0
+    assert stress["hard_ood_dense_reference"]["n_failures"] == 0
+    assert len(stress["failures"]) == primary["n_failures"]
+    assert all(row["nu"] <= protocol["hard_ood"]["threshold_nu"] for row in stress["failures"])
+    assert all(row["rel_error"] > 0.5 and row["nu_hat_above_nu"] for row in stress["failures"])
+    assert stress["uxx_alias"]["test_median"] > 0.2
+    assert stress["uxx_alias"]["failure_median"] > stress["uxx_alias"]["test_median"]
+    stage2 = json.loads(
+        (ROOT / "docs" / "stage2" / "pilot_manifest.json").read_text(encoding="utf-8")
+    )
+    assert stage2["format"] == "pinnforge.burgers_pilot.v1"
+    assert stage2["solver_config_sha256"] == STAGE2_SOLVER_HASH
+    assert "protocol" not in stage2
+    assert "ic_family" not in stage2

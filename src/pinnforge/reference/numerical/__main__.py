@@ -1,10 +1,11 @@
 """Commands for the periodic Burgers reference.
 
 ``estimate``, ``convergence``, and ``pilot`` are the Stage 2 Burgers
-pilot. ``hard-estimate``, ``hard-convergence``, and ``hard-pilot`` are
-the separate harder pilot. Defaults of the Stage 2 commands are
-unchanged. None of these commands train a network or call the
-coordinate-PINN path.
+pilot. ``hard-estimate``, ``hard-convergence``, ``hard-pilot``, and
+``hard-stress`` are the separate harder pilot. Defaults of the Stage 2
+commands are unchanged. None of these commands train a network or call
+the coordinate-PINN path. ``hard-stress`` scores the Stage 5 residual
+least squares on an existing harder pilot. It does not generate labels.
 """
 
 from __future__ import annotations
@@ -29,6 +30,7 @@ from pinnforge.reference.numerical.harder import (
 from pinnforge.reference.numerical.harder_study import run_hard_convergence
 from pinnforge.reference.numerical.initial import draw_initial_condition
 from pinnforge.reference.numerical.solver import solve
+from pinnforge.reference.numerical.stress import run_inverse_stress, write_inverse_stress
 from pinnforge.reference.numerical.study import run_convergence
 
 
@@ -68,6 +70,18 @@ def main(argv: list[str] | None = None) -> None:
     )
     _add_hard_pilot_args(hard_pilot)
     hard_pilot.add_argument("--output", type=Path, required=True)
+    hard_stress = subparsers.add_parser(
+        "hard-stress",
+        help="Score the Stage 5 residual estimator on an existing harder pilot",
+    )
+    hard_stress.add_argument("--pilot", type=Path, required=True)
+    hard_stress.add_argument(
+        "--manifest",
+        type=Path,
+        default=None,
+        help="Harder-pilot manifest. Defaults to <pilot>/manifest.json",
+    )
+    hard_stress.add_argument("--output", type=Path, default=Path("docs/v02/inverse_stress.json"))
     args = parser.parse_args(argv)
     if args.command == "estimate":
         _estimate(args)
@@ -88,6 +102,19 @@ def main(argv: list[str] | None = None) -> None:
         print(
             f"wrote {args.output} ({len(manifest['instances'])} instances, "
             f"solver_config_sha256={manifest['solver_config_sha256']})"
+        )
+    elif args.command == "hard-stress":
+        manifest_path = args.manifest if args.manifest is not None else args.pilot / "manifest.json"
+        payload = run_inverse_stress(args.pilot, manifest_path)
+        write_inverse_stress(payload, args.output)
+        primary = payload["sensors32_bursts"]
+        ood = payload["hard_ood_sensors32_bursts"]
+        print(
+            f"wrote {args.output} estimator={payload['estimator']} "
+            f"mean_abs_error={primary['mean_abs_error']} "
+            f"mean_rel_error={primary['mean_rel_error']} "
+            f"n_failures={primary['n_failures']} "
+            f"hard_ood_n={ood['n_instances']} hard_ood_failures={ood['n_failures']}"
         )
     else:
         raise AssertionError(args.command)
@@ -165,8 +192,7 @@ def _estimate(args: argparse.Namespace) -> None:
     solve(initial.u0, initial.nu, dt=config.dt, t_final=config.t_final, save_dt=config.save_dt)
     elapsed = time.perf_counter() - started
     print(
-        f"one_trajectory_seconds={elapsed:.3f} "
-        f"extrapolated_seconds={elapsed * config.total():.1f}"
+        f"one_trajectory_seconds={elapsed:.3f} extrapolated_seconds={elapsed * config.total():.1f}"
     )
 
 
@@ -191,8 +217,7 @@ def _hard_estimate(args: argparse.Namespace) -> None:
     solve(initial.u0, initial.nu, dt=config.dt, t_final=config.t_final, save_dt=config.save_dt)
     elapsed = time.perf_counter() - started
     print(
-        f"one_trajectory_seconds={elapsed:.3f} "
-        f"extrapolated_seconds={elapsed * config.total():.1f}"
+        f"one_trajectory_seconds={elapsed:.3f} extrapolated_seconds={elapsed * config.total():.1f}"
     )
 
 

@@ -54,6 +54,7 @@ from pinnforge.reference.numerical.dataset import (
     assign_splits,
     sha256_json,
 )
+from pinnforge.reference.numerical.initial import NU_MIN as STAGE2_NU_MIN
 from pinnforge.reference.numerical.initial import trigonometric_field
 from pinnforge.reference.numerical.solver import SolverConfig, solve_batch, spectral_derivative
 
@@ -86,6 +87,10 @@ REFERENCE_DT = 1.25e-4
 LABEL_REL_L2_MAX = 1e-9
 LABEL_MEAN_DRIFT_MAX = 1e-12
 LABEL_ENERGY_INCREASE_MAX = 1e-10
+PROTOCOL_FORMAT = "pinnforge.burgers_hard_pilot_protocol.v1"
+HARD_OOD_NAME = "hard_ood"
+HARD_OOD_QUANTILE = 0.25
+HARD_OOD_QUANTILE_METHOD = "linear"
 _PEAK_FLOOR = 1e-8
 _MAX_ATTEMPTS = 8
 _CODE_SOURCES = ("solver.py", "initial.py", "dataset.py", "checks.py", "harder.py")
@@ -453,6 +458,11 @@ def generate_hard_pilot(output: Path, config: HardPilotConfig) -> dict[str, Any]
             "energy_increase_gate": LABEL_ENERGY_INCREASE_MAX,
         },
         "label_gate": label_gate_document(),
+        "protocol": build_protocol(
+            config,
+            viscosities_by_split["train"],
+            sha256_json(solver_config.to_dict()),
+        ),
         "instances": records,
     }
     manifest_path = destination / "manifest.json"
@@ -461,6 +471,104 @@ def generate_hard_pilot(output: Path, config: HardPilotConfig) -> dict[str, Any]
         encoding="utf-8",
     )
     return manifest
+
+
+def hard_ood_threshold(train_viscosities: np.ndarray | list[float]) -> float:
+    """Training-split quantile that defines the ``hard_ood`` slice.
+
+    The quantile and the method are fixed. The returned number is that
+    quantile of ``train_viscosities`` only. Validation and test viscosities
+    do not enter.
+    """
+
+    values = np.asarray(train_viscosities, dtype=np.float64)
+    if values.ndim != 1 or values.size < 1 or not np.isfinite(values).all():
+        raise ValueError("hard_ood threshold needs a non-empty finite training sample")
+    if np.any(values <= 0.0):
+        raise ValueError("training viscosities must be > 0")
+    return float(np.quantile(values, HARD_OOD_QUANTILE, method=HARD_OOD_QUANTILE_METHOD))
+
+
+def build_protocol(
+    config: HardPilotConfig,
+    train_viscosities: np.ndarray | list[float],
+    solver_config_sha256: str,
+) -> dict[str, Any]:
+    """Preregistered harder-pilot protocol.
+
+    ``label_gate`` is the Stage A gate at ``N = 1024`` and ``dt = 2.5e-4``,
+    including when ``config`` is a smaller diagnostic run. ``hard_ood`` is
+    the lowest training-split quartile of viscosity. Later stages score that
+    slice on its own. They do not use it, or the test split, to choose a model.
+    """
+
+    _validate_config(config)
+    if not isinstance(solver_config_sha256, str) or len(solver_config_sha256) != 64:
+        raise ValueError("solver_config_sha256 must be a 64-character hex digest")
+    try:
+        int(solver_config_sha256, 16)
+    except ValueError as exc:
+        raise ValueError("solver_config_sha256 must be hexadecimal") from exc
+    threshold = hard_ood_threshold(train_viscosities)
+    train = np.asarray(train_viscosities, dtype=np.float64)
+    return {
+        "format": PROTOCOL_FORMAT,
+        "frozen_before_operator_training": True,
+        "retuned_after_inverse_measurement": False,
+        "ic_family": IC_FAMILY,
+        "pilot": config.to_dict(),
+        "pilot_config_sha256": sha256_json(config.to_dict()),
+        "solver_config_sha256": solver_config_sha256,
+        "seeds": {
+            "master_seed": config.master_seed,
+            "split_seed": config.split_seed,
+            "ic_salt": HARD_IC_SALT,
+            "split_salt": SPLIT_SALT,
+            "bit_generator": "PCG64",
+        },
+        "split_sizes": {
+            "train": config.n_train,
+            "val": config.n_val,
+            "test": config.n_test,
+            "unit": "problem_instance",
+        },
+        "nu_range": {
+            "distribution": "uniform",
+            "min": config.nu_min,
+            "max": config.nu_max,
+            "drawn_after": "successful initial field",
+        },
+        "time_horizon": {
+            "t_final": config.t_final,
+            "domain": "x in [-1, 1], periodic",
+        },
+        "label_gate": label_gate_document(),
+        "hard_ood": {
+            "name": HARD_OOD_NAME,
+            "rule": (
+                "An instance is hard_ood iff nu <= threshold_nu. "
+                "threshold_nu is the training-split quantile. Fit on train only. "
+                "Later stages must score this slice separately and must not use "
+                "hard_ood, validation, or the test split to choose a model or "
+                "to refit the quantile."
+            ),
+            "quantile": HARD_OOD_QUANTILE,
+            "method": HARD_OOD_QUANTILE_METHOD,
+            "fit_on": "train",
+            "comparison": "nu <= threshold_nu",
+            "threshold_nu": threshold,
+            "n_train_at_or_below": int(np.count_nonzero(train <= threshold)),
+        },
+        "stage2_nu_min": STAGE2_NU_MIN,
+        "inverse_reference": {
+            "estimator": "sensors32_bursts",
+            "symbol": "pinnforge.operator.inverse.PREREGISTERED_OBSERVATION",
+            "role": (
+                "Closed-form residual least squares from Stage 5, scored as a "
+                "ceiling/floor reference. The observation pattern is not retuned."
+            ),
+        },
+    }
 
 
 def label_gate_document() -> dict[str, Any]:
@@ -564,7 +672,11 @@ def _validate_config(config: HardPilotConfig) -> None:
         ("nu_min", config.nu_min),
         ("nu_max", config.nu_max),
     ):
-        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(value)
+        ):
             raise ValueError(f"{label} must be finite")
     if config.dt <= 0 or config.t_final <= 0 or config.save_dt <= 0:
         raise ValueError("dt, t_final, and save_dt must be > 0")

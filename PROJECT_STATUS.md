@@ -114,8 +114,8 @@ A harder Burgers pilot in parallel with Stage 2. [STAGE_A_REPORT.md](STAGE_A_REP
 
 - Initial data is `tanh_bandlimited`: an 8-mode polynomial with amplitudes `Uniform(-1, 1) / sqrt(m)`, shaped by `tanh(3 p_hat)`, then projected onto modes `|m| <= 48`, mean removed, and max-abs normalized on 8192 nodes. Viscosity is `Uniform(0.005, 0.10)`. The Stage 2 family and the Stage 2 manifest are unchanged.
 - Labels are `N = 1024`, `dt = 2.5e-4`, `save_dt = 0.01`, `t ∈ [0, 1]`, the same dealiased ETDRK4 solver. On the steepest draws at `ν = 0.005`, space-time relative L2 against `N = 2048`, `dt = 1.25e-4` is about `4e-11`. The preregistered gate is `1e-9`. The Stage 2 grid (`N = 256`, `dt = 1e-3`) misses that gate on this family.
-- The split is 512 / 128 / 128 by problem instance. Arrays under `artifacts/burgers_hard_pilot/` are gitignored. `docs/stage_a/pilot_manifest.json` records seeds, field SHA-256s, viscosity statistics, and the solver-config hash.
-- No Fourier neural operator and no inverse-viscosity fit are trained here.
+- The split is 512 / 128 / 128 by problem instance. Arrays under `artifacts/burgers_hard_pilot/` are gitignored. `docs/stage_a/pilot_manifest.json` records seeds, field SHA-256s, viscosity statistics, and the solver-config hash. `docs/v02/pilot_protocol.json` is the same protocol block. `hard_ood` is `ν` at or below the training quartile `0.027028120493367818`.
+- The Stage 5 `sensors32_bursts` estimator is not retuned. On the harder test split its mean absolute error is `0.0030159391726451274` (about 50 times the Stage 5 table) and 9 of 128 instances exceed relative error `0.5`, all inside `hard_ood`. Dense least squares on the same files does not. The record is `docs/v02/inverse_stress.json`. No Fourier neural operator is trained on this pilot.
 
 ## Known limits
 
