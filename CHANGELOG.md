@@ -2,7 +2,13 @@
 
 ## Unreleased
 
-Stage A adds a harder periodic Burgers pilot beside the Stage 2 dataset. The version string stays `0.1.0`. No operator is trained on it. The coordinate-PINN Burgers hook still raises `NotImplementedError`.
+Stage B trains the Stage 3 data-only 1D FNO on the Stage A harder Burgers pilot. The version string stays `0.1.0`. The coordinate-PINN Burgers hook still raises `NotImplementedError`. There is no hybrid loss and no learned inverse in this stage.
+
+- [docs/v02/stage_b_train_protocol.json](docs/v02/stage_b_train_protocol.json) freezes five seeds, the Stage 3 window and architecture, normalized data MSE, and the Stage A `hard_ood` cut before the test scores. The cut is not refit.
+- `pinnforge fno` accepts `docs/stage_a/pilot_manifest.json` as well as the Stage 2 manifest. `fno slices` scores the full test split, `hard_ood`, and the complement. `fno aggregate` reports the mean and the sample standard deviation across the frozen seeds. The numbers are in [STAGE_B_REPORT.md](STAGE_B_REPORT.md) and [docs/v02/stage_b_scores.json](docs/v02/stage_b_scores.json).
+- On these five seeds the `hard_ood` mean relative L2 is about twice the complement, and both slices beat the one-step persistence baseline. The Stage A `sensors32_bursts` inverse failures are unchanged.
+
+Stage A adds a harder periodic Burgers pilot beside the Stage 2 dataset. The version string stays `0.1.0`. That stage does not itself train an operator. The coordinate-PINN Burgers hook still raises `NotImplementedError`.
 
 - `tanh_bandlimited` initial data (modes through 48, `tanh(3 p_hat)` projected and max-normalized) and viscosities in `[0.005, 0.10]`. Labels use `N = 1024`, `dt = 2.5e-4`. The preregistered relative-L2 gate is `1e-9`. Counts, hashes, and the convergence tables are in [STAGE_A_REPORT.md](STAGE_A_REPORT.md) and [docs/stage_a/](docs/stage_a/).
 - [docs/v02/pilot_protocol.json](docs/v02/pilot_protocol.json) freezes that family before any operator training. `hard_ood` is the training-split quartile of `ν` (`0.027028120493367818` on this draw). Later stages score that slice on its own.
