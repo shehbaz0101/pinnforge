@@ -32,6 +32,7 @@ from pinnforge.operator.metrics import (
     physical_targets,
     pooled_relative_l2,
 )
+from pinnforge.operator.residual import per_window_residual_means
 from pinnforge.operator.windows import WindowDataset
 
 DATA_PROTOCOL_FORMAT = "pinnforge.burgers_hard_pilot_protocol.v1"
@@ -283,13 +284,17 @@ def score_prediction_slices(
     threshold: float,
     *,
     worst_count: int = _WORST_COUNT,
+    prediction_residual: np.ndarray | None = None,
+    target_residual: np.ndarray | None = None,
 ) -> dict[str, dict[str, object]]:
     """Score full test, ``hard_ood``, and the complement from one prediction tensor.
 
     ``prediction_normalized`` matches ``dataset.targets``. The viscosity
     used for the cut is the physical value in ``nu_by_id``, not the
     normalized channel stored on the dataset. ``threshold`` is the frozen
-    protocol number.
+    protocol number. Optional residual tensors add the mean of ``|R|`` and
+    the mean of ``R²`` on the same windows. They are metrics. They do not
+    choose the slice.
     """
 
     if dataset.split not in {"train", "val", "test"}:
@@ -320,6 +325,11 @@ def score_prediction_slices(
         raise ValueError("hard_ood and complement overlap")
     if not np.array_equal(masks["hard_ood"] | masks["complement"], masks["full_test"]):
         raise ValueError("hard_ood and complement do not partition the split")
+    residual_means = _residual_window_means(
+        prediction_residual,
+        target_residual,
+        dataset.n_windows(),
+    )
     scores: dict[str, dict[str, object]] = {}
     for name in SLICE_NAMES:
         mask = masks[name]
@@ -347,6 +357,11 @@ def score_prediction_slices(
                 worst_count,
             ),
         }
+        if residual_means is not None:
+            pred_abs, pred_sq, target_abs = residual_means
+            scores[name]["mean_abs_residual"] = float(np.mean(pred_abs[mask]))
+            scores[name]["residual_mse"] = float(np.mean(pred_sq[mask]))
+            scores[name]["target_mean_abs_residual"] = float(np.mean(target_abs[mask]))
     return scores
 
 
@@ -547,6 +562,22 @@ def _worst_windows(
         )
     rows.sort(key=lambda row: (-float(row["mean_relative_l2"]), int(row["instance_id"])))
     return rows[:worst_count]
+
+
+def _residual_window_means(
+    prediction_residual: np.ndarray | None,
+    target_residual: np.ndarray | None,
+    n_windows: int,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
+    if prediction_residual is None and target_residual is None:
+        return None
+    if prediction_residual is None or target_residual is None:
+        raise ValueError("prediction and target residuals must be provided together")
+    pred_abs, pred_sq = per_window_residual_means(prediction_residual)
+    target_abs, _target_sq = per_window_residual_means(target_residual)
+    if pred_abs.shape != (n_windows,) or target_abs.shape != (n_windows,):
+        raise ValueError("residual batch does not match the number of windows")
+    return pred_abs, pred_sq, target_abs
 
 
 def _lookup_nu(nu_by_id: Mapping[int, float], instance_id: int) -> float:

@@ -345,8 +345,10 @@ def build_parser() -> argparse.ArgumentParser:
             "Default loss is data MSE; residual and hybrid add the Burgers residual. "
             "--pilot and --manifest accept the Stage 2 pilot or the Stage A harder pilot. "
             "slices scores that harder test split on full, hard_ood, and complement. "
-            "inverse recovers scalar viscosity from preregistered sparse sensors. "
-            "Training and slices need the ml extra. inverse and aggregate do not."
+            "A Stage C protocol adds residual and hybrid losses and selects the hybrid "
+            "weight on validation. inverse recovers scalar viscosity from preregistered "
+            "sparse sensors. Training and slices need the ml extra. inverse, aggregate, "
+            "select-hybrid, and stage-c-scores do not."
         ),
     )
     return parser

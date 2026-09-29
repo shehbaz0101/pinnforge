@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Stage C trains residual and hybrid losses on the Stage A harder Burgers pilot. The version string stays `0.1.0`. The data-only arm is the Stage B table and is not retrained. There is no learned inverse.
+
+- [docs/v02/stage_c_train_protocol.json](docs/v02/stage_c_train_protocol.json) freezes seeds 0 through 4, the Stage B architecture, the Stage 4 hybrid weights `{1e-6, 1e-4, 1e-2}`, and the Stage A `hard_ood` cut before the Stage C test scores. The weight is chosen on validation only.
+
 Stage B trains the Stage 3 data-only 1D FNO on the Stage A harder Burgers pilot. The version string stays `0.1.0`. The coordinate-PINN Burgers hook still raises `NotImplementedError`. There is no hybrid loss and no learned inverse in this stage.
 
 - [docs/v02/stage_b_train_protocol.json](docs/v02/stage_b_train_protocol.json) freezes five seeds, the Stage 3 window and architecture, normalized data MSE, and the Stage A `hard_ood` cut before the test scores. The cut is not refit.

@@ -1,7 +1,8 @@
 """CPU training defaults for the Burgers FNO.
 
 The architecture, optimizer, and window settings are the Stage 3 run.
-``PREREGISTERED_HYBRID_WEIGHTS`` is the Stage 4 validation sweep. The
+``PREREGISTERED_HYBRID_WEIGHTS`` is the Stage 4 validation sweep. Stage C
+reuses that grid on the harder pilot and does not add candidates. The
 reported hybrid run is the member with the lowest validation mean relative
 L2. Test scores do not choose the weight. This module does not import torch.
 """

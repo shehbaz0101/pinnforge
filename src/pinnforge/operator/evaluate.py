@@ -207,17 +207,17 @@ def evaluate_slices(
     batch_size: int = 32,
     check_field_hash: bool = True,
 ) -> dict[str, object]:
-    """Score one data-only checkpoint on full test, ``hard_ood``, and the complement.
+    """Score one checkpoint on full test, ``hard_ood``, and the complement.
 
     The threshold comes from ``protocol``. The training quartile is not
-    refit. Rollout error is recorded and is not a selection metric.
+    refit. Rollout error is recorded and is not a selection metric. The
+    Burgers residual is recorded on the same windows. A Stage B training
+    protocol still rejects a physics checkpoint before this function runs.
     """
 
     if split != "test":
         raise ValueError("slice scoring is defined on the test split")
     loaded = load_fno_checkpoint(checkpoint)
-    if loaded.loss.uses_physics():
-        raise ValueError("slice scoring requires a data-only checkpoint")
     manifest = load_pilot_manifest(manifest_path)
     if manifest.get("format") != HARD_PILOT_FORMAT:
         raise ValueError("slice scoring requires the harder pilot manifest")
@@ -233,7 +233,35 @@ def evaluate_slices(
     _require_same_norm(loaded, dataset)
     prediction = predict_normalized(loaded.model, dataset, batch_size=batch_size).numpy()
     nu_by_id = physical_nu_by_instance(manifest)
-    slices = score_prediction_slices(dataset, prediction, nu_by_id, threshold)
+    metric_loss = LossConfig(
+        mode="data",
+        residual_weight=0.0,
+        residual_scope=loaded.loss.residual_scope,
+        residual_space=loaded.loss.residual_space,
+        dt=loaded.loss.dt,
+    )
+    prediction_residual = prediction_window_residual(
+        dataset.inputs,
+        prediction,
+        dataset.nu,
+        dataset.norm,
+        metric_loss,
+    )
+    target_residual = prediction_window_residual(
+        dataset.inputs,
+        dataset.targets,
+        dataset.nu,
+        dataset.norm,
+        metric_loss,
+    )
+    slices = score_prediction_slices(
+        dataset,
+        prediction,
+        nu_by_id,
+        threshold,
+        prediction_residual=prediction_residual,
+        target_residual=target_residual,
+    )
     trajectories = load_split_trajectories(
         pilot_dir,
         manifest_path,
@@ -262,6 +290,10 @@ def evaluate_slices(
         "val_relative_l2": loaded.val_relative_l2,
         "checkpoint": str(checkpoint),
         "loss_mode": loaded.loss.mode,
+        "residual_weight": loaded.loss.residual_weight,
+        "residual_scope": loaded.loss.residual_scope,
+        "residual_space": loaded.loss.residual_space,
+        "residual_dt": loaded.loss.dt,
         "threshold_nu": threshold,
         "comparison": "nu <= threshold_nu",
         "threshold_refit": False,
