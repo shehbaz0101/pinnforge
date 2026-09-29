@@ -5,7 +5,7 @@ ODE and PDE residuals. It trains a small network on the residual, scores a
 checkpoint against an analytical or manufactured field, and serves that path
 on localhost. An offline demo trains a checked-in sample on CPU.
 
-**Status:** v0.1.0 remains the tagged freeze. Stage 1 correctness, the Stage 2 Burgers reference, the Stage 3 data-only FNO baseline, the Stage 4 residual ablations, the Stage 5 sparse viscosity recovery, and the Stage A harder Burgers pilot are unreleased and keep the `0.1.0` version string. See [STAGE1_REPORT.md](STAGE1_REPORT.md), [STAGE2_REPORT.md](STAGE2_REPORT.md), [STAGE3_REPORT.md](STAGE3_REPORT.md), [STAGE4_REPORT.md](STAGE4_REPORT.md), [STAGE5_REPORT.md](STAGE5_REPORT.md), and [STAGE_A_REPORT.md](STAGE_A_REPORT.md).
+**Status:** v0.1.0 remains the tagged freeze. Stage 1 correctness, the Stage 2 Burgers reference, the Stage 3 data-only FNO baseline, the Stage 4 residual ablations, the Stage 5 sparse viscosity recovery, the Stage A harder Burgers pilot, and the Stage B multi-seed data-only FNO on that pilot are unreleased and keep the `0.1.0` version string. See [STAGE1_REPORT.md](STAGE1_REPORT.md), [STAGE2_REPORT.md](STAGE2_REPORT.md), [STAGE3_REPORT.md](STAGE3_REPORT.md), [STAGE4_REPORT.md](STAGE4_REPORT.md), [STAGE5_REPORT.md](STAGE5_REPORT.md), [STAGE_A_REPORT.md](STAGE_A_REPORT.md), and [STAGE_B_REPORT.md](STAGE_B_REPORT.md).
 
 ## Days 1–10
 
@@ -110,12 +110,21 @@ Scalar viscosity from sparse sensors on the Stage 2 pilot, using the Stage 4 Bur
 
 ## Stage A
 
-A harder Burgers pilot in parallel with Stage 2. [STAGE_A_REPORT.md](STAGE_A_REPORT.md) has the family, the convergence tables, and the manifest. `pinnforge fno` is not pointed at this dataset.
+A harder Burgers pilot in parallel with Stage 2. [STAGE_A_REPORT.md](STAGE_A_REPORT.md) has the family, the convergence tables, and the manifest. Stage B is the first operator trained on it.
 
 - Initial data is `tanh_bandlimited`: an 8-mode polynomial with amplitudes `Uniform(-1, 1) / sqrt(m)`, shaped by `tanh(3 p_hat)`, then projected onto modes `|m| <= 48`, mean removed, and max-abs normalized on 8192 nodes. Viscosity is `Uniform(0.005, 0.10)`. The Stage 2 family and the Stage 2 manifest are unchanged.
 - Labels are `N = 1024`, `dt = 2.5e-4`, `save_dt = 0.01`, `t ∈ [0, 1]`, the same dealiased ETDRK4 solver. On the steepest draws at `ν = 0.005`, space-time relative L2 against `N = 2048`, `dt = 1.25e-4` is about `4e-11`. The preregistered gate is `1e-9`. The Stage 2 grid (`N = 256`, `dt = 1e-3`) misses that gate on this family.
 - The split is 512 / 128 / 128 by problem instance. Arrays under `artifacts/burgers_hard_pilot/` are gitignored. `docs/stage_a/pilot_manifest.json` records seeds, field SHA-256s, viscosity statistics, and the solver-config hash. `docs/v02/pilot_protocol.json` is the same protocol block. `hard_ood` is `ν` at or below the training quartile `0.027028120493367818`.
-- The Stage 5 `sensors32_bursts` estimator is not retuned. On the harder test split its mean absolute error is `0.0030159391726451274` (about 50 times the Stage 5 table) and 9 of 128 instances exceed relative error `0.5`, all inside `hard_ood`. Dense least squares on the same files does not. The record is `docs/v02/inverse_stress.json`. No Fourier neural operator is trained on this pilot.
+- The Stage 5 `sensors32_bursts` estimator is not retuned. On the harder test split its mean absolute error is `0.0030159391726451274` (about 50 times the Stage 5 table) and 9 of 128 instances exceed relative error `0.5`, all inside `hard_ood`. Dense least squares on the same files does not. The record is `docs/v02/inverse_stress.json`. Stage A does not train the operator. Stage B does, with data loss only.
+
+## Stage B
+
+Five-seed data-only 1D FNO on the Stage A pilot. [STAGE_B_REPORT.md](STAGE_B_REPORT.md) has the protocol, the commands, and the tables. The version string stays `0.1.0`.
+
+- The contract in `docs/v02/stage_b_train_protocol.json` was frozen before the test scores: seeds 0 through 4, the Stage 3 window and architecture, 30 epochs, normalized data MSE, no early stopping, and the Stage A `hard_ood` cut. `--protocol` rejects a run that leaves that contract. The Stage 2 pilot path still works without it.
+- `fno slices` scores the full test split, `hard_ood` (`ν <= 0.027028120493367818`, 30 instances), and the complement (98). `fno aggregate` reduces one scalar per seed with the sample standard deviation (`ddof = 1`). The committed summary is `docs/v02/stage_b_scores.json`.
+- Full-test mean relative L2 is `4.298970125314308e-03 ± 3.608651258270467e-04`. `hard_ood` is `7.049252763443842e-03 ± 3.032654479273341e-04`. The complement is `3.457046868744042e-03 ± 3.865637014640921e-04`. One-step persistence is about `8.46e-2`, `9.78e-2`, and `8.05e-2` on those three slices. The `hard_ood` mean is about twice the complement on every seed. Both beat persistence. Neither meets the `1e-9` label gate.
+- The Stage A sensor inverse is not retrained. Its nine `0.5`-rule failures remain inside `hard_ood`. Forecasting `u` with `ν` given does not remove that stress.
 
 ## Known limits
 

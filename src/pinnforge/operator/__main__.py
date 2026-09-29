@@ -6,8 +6,11 @@ instance split and for the training-set ``u`` mean and standard deviation.
 ``--loss data`` is the Stage 3 normalized MSE. ``--loss residual`` and
 ``--loss hybrid`` add the discrete Burgers residual. ``inverse`` recovers
 each instance viscosity from the preregistered sparse sensors by
-minimizing that residual. Torch is imported only when a command actually
-trains, scores, or runs the Adam viscosity check.
+minimizing that residual. ``slices`` scores a data-only checkpoint on the
+harder pilot's full test split, the frozen ``hard_ood`` cut, and the
+complement. ``aggregate`` reduces those per-seed records. Torch is
+imported only when a command actually trains, scores, or runs the Adam
+viscosity check. ``aggregate`` does not import torch.
 
 The same commands are available as ``pinnforge fno train``,
 ``pinnforge fno eval``, and ``pinnforge fno inverse``.
@@ -48,6 +51,10 @@ def main(argv: list[str] | None = None) -> int:
             return _eval(args)
         if args.command == "inverse":
             return _inverse(args)
+        if args.command == "slices":
+            return _slices(args)
+        if args.command == "aggregate":
+            return _aggregate(args)
     except ValueError as exc:
         parser.error(str(exc))
     parser.error(f"unknown command {args.command}")
@@ -58,10 +65,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="pinnforge fno",
         description=(
-            "1D Fourier neural operator on Stage 2 Burgers windows. "
+            "1D Fourier neural operator on Burgers windows. "
+            "The default pilot is the Stage 2 dataset. "
+            "--pilot and --manifest also accept the Stage A harder pilot. "
             "The default loss is normalized data MSE. "
             "residual and hybrid add the discrete Burgers residual. "
-            "inverse recovers scalar viscosity from preregistered sparse sensors."
+            "inverse recovers scalar viscosity from preregistered sparse sensors. "
+            "slices scores hard_ood on a data-only checkpoint."
         ),
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -79,6 +89,15 @@ def build_parser() -> argparse.ArgumentParser:
     train.add_argument("--output-frames", type=int, default=DEFAULT_OUTPUT_FRAMES)
     train.add_argument("--stride", type=int, default=DEFAULT_STRIDE)
     train.add_argument("--seed", type=int, default=DEFAULT_SEED)
+    train.add_argument(
+        "--protocol",
+        type=Path,
+        default=None,
+        help=(
+            "Frozen training-protocol JSON. When set, the pilot, manifest, "
+            "seed, window, architecture, epochs, and data-only loss must match it."
+        ),
+    )
     train.add_argument("--loss", choices=LOSS_MODES, default="data")
     train.add_argument(
         "--residual-weight",
@@ -134,11 +153,60 @@ def build_parser() -> argparse.ArgumentParser:
         help="JSON record. Default: runs/stage5_inverse/eval_<split>.json",
     )
     inverse.add_argument("--skip-field-hash", action="store_true")
+    slices = subparsers.add_parser(
+        "slices",
+        help="Score full test, hard_ood, and the complement on a data-only checkpoint",
+    )
+    slices.add_argument("--pilot", type=Path, default=Path("artifacts/burgers_hard_pilot"))
+    slices.add_argument("--manifest", type=Path, default=Path("docs/stage_a/pilot_manifest.json"))
+    slices.add_argument("--protocol", type=Path, default=Path("docs/v02/pilot_protocol.json"))
+    slices.add_argument(
+        "--train-protocol",
+        type=Path,
+        default=None,
+        help="When set, the checkpoint and the slice counts must match this frozen training protocol.",
+    )
+    slices.add_argument("--checkpoint", type=Path, required=True)
+    slices.add_argument("--split", choices=("train", "val", "test"), default="test")
+    slices.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
+    slices.add_argument("--output", type=Path, required=True)
+    slices.add_argument("--skip-field-hash", action="store_true")
+    aggregate = subparsers.add_parser(
+        "aggregate",
+        help="Mean and sample std of slice scores across the frozen seeds",
+    )
+    aggregate.add_argument("--protocol", type=Path, default=Path("docs/v02/stage_b_train_protocol.json"))
+    aggregate.add_argument("--inputs", type=Path, nargs="+", required=True)
+    aggregate.add_argument("--output", type=Path, required=True)
     return parser
 
 
 def _train(args: argparse.Namespace) -> int:
     loss = _loss_from_train_args(args)
+    if args.protocol is not None:
+        from pinnforge.operator.slices import (
+            assert_train_call_matches_protocol,
+            load_train_protocol,
+        )
+
+        protocol = load_train_protocol(args.protocol)
+        assert_train_call_matches_protocol(
+            protocol,
+            pilot=args.pilot,
+            manifest=args.manifest,
+            epochs=args.epochs,
+            batch_size=args.batch_size,
+            lr=args.lr,
+            width=args.width,
+            modes=args.modes,
+            layers=args.layers,
+            input_frames=args.input_frames,
+            output_frames=args.output_frames,
+            stride=args.stride,
+            seed=args.seed,
+            loss=args.loss,
+            residual_weight=args.residual_weight,
+        )
     train_from_paths = _import_trainer()
     result = train_from_paths(
         pilot_dir=args.pilot,
@@ -156,6 +224,7 @@ def _train(args: argparse.Namespace) -> int:
         seed=args.seed,
         loss=loss,
         check_field_hash=not args.skip_field_hash,
+        protocol_path=args.protocol,
         log=_print_epoch,
     )
     print(f"checkpoint: {result.checkpoint.as_posix()}")
@@ -260,6 +329,100 @@ def _inverse(args: argparse.Namespace) -> int:
     return 0
 
 
+def _slices(args: argparse.Namespace) -> int:
+    from pinnforge.operator.slices import (
+        assert_checkpoint_matches_train_protocol,
+        assert_manifest_slice_counts,
+        load_data_protocol,
+        load_train_protocol,
+        write_json,
+    )
+
+    data_protocol = load_data_protocol(args.protocol)
+    train_protocol = None
+    if args.train_protocol is not None:
+        train_protocol = load_train_protocol(args.train_protocol)
+        if float(train_protocol["hard_ood"]["threshold_nu"]) != float(data_protocol["hard_ood"]["threshold_nu"]):
+            raise ValueError("train protocol and data protocol thresholds differ")
+    evaluate_slices, load_fno_checkpoint = _import_slice_evaluator()
+    if train_protocol is not None:
+        loaded = load_fno_checkpoint(args.checkpoint)
+        assert_checkpoint_matches_train_protocol(
+            {
+                "loss_mode": loaded.loss.mode,
+                "seed": loaded.seed,
+                "width": loaded.model.width,
+                "modes": loaded.model.modes,
+                "layers": loaded.model.n_layers,
+                "input_frames": loaded.spec.input_frames,
+                "output_frames": loaded.spec.output_frames,
+                "stride": loaded.spec.stride,
+            },
+            train_protocol,
+        )
+    payload = evaluate_slices(
+        args.checkpoint,
+        args.pilot,
+        args.manifest,
+        data_protocol,
+        split=args.split,
+        batch_size=args.batch_size,
+        check_field_hash=not args.skip_field_hash,
+    )
+    if train_protocol is not None:
+        assert_manifest_slice_counts(payload["slices"], train_protocol, args.split)
+        payload["training_protocol"] = str(args.train_protocol)
+    write_json(payload, args.output)
+    print(f"split: {payload['split']}")
+    print(f"seed: {payload['seed']}")
+    print(f"selected_epoch: {payload['selected_epoch']}")
+    print(f"threshold_nu: {payload['threshold_nu']:.16e}")
+    print(f"loss_mode: {payload['loss_mode']}")
+    for name in ("full_test", "hard_ood", "complement"):
+        section = payload["slices"][name]
+        rollout = payload["rollout"][name]
+        print(
+            f"{name}: n_instances={section['n_instances']} n_windows={section['n_windows']} "
+            f"mean_relative_l2={section['mean_relative_l2']:.8e} "
+            f"persistence_mean_relative_l2={section['persistence_mean_relative_l2']:.8e} "
+            f"rollout_mean_instance_relative_l2={rollout['mean_instance_relative_l2']:.8e} "
+            f"rollout_persistence_mean_instance_relative_l2="
+            f"{rollout['persistence_mean_instance_relative_l2']:.8e}"
+        )
+    print(f"json: {Path(args.output).as_posix()}")
+    return 0
+
+
+def _aggregate(args: argparse.Namespace) -> int:
+    import json
+
+    from pinnforge.operator.slices import aggregate_slice_records, load_train_protocol, write_json
+
+    protocol = load_train_protocol(args.protocol)
+    records = []
+    for path in args.inputs:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError(f"{path} must contain a JSON object")
+        records.append(payload)
+    summary = aggregate_slice_records(records, protocol)
+    summary["training_protocol"] = str(args.protocol)
+    write_json(summary, args.output)
+    print(f"seeds: {summary['seeds']}")
+    print(f"ddof: {summary['ddof']}")
+    for name in ("full_test", "hard_ood", "complement"):
+        metric = summary["slices"][name]["mean_relative_l2"]
+        baseline = summary["slices"][name]["persistence_mean_relative_l2"]
+        rollout = summary["rollout"][name]["mean_instance_relative_l2"]
+        print(
+            f"{name}_mean_relative_l2: {metric['mean']:.8e} ± {metric['std']:.8e} "
+            f"persistence: {baseline['mean']:.8e} ± {baseline['std']:.8e} "
+            f"rollout: {rollout['mean']:.8e} ± {rollout['std']:.8e}"
+        )
+    print(f"json: {Path(args.output).as_posix()}")
+    return 0
+
+
 def _print_recovery(label: str, score: object) -> None:
     print(f"{label}_mean_abs_error: {score.mean_abs_error:.16e}")
     print(f"{label}_median_abs_error: {score.median_abs_error:.16e}")
@@ -354,6 +517,23 @@ def _import_evaluator():
         print(str(InstallHint()), file=sys.stderr)
         raise SystemExit(1) from exc
     return evaluate_checkpoint, load_fno_checkpoint, write_eval_json
+
+
+def _import_slice_evaluator():
+    from pinnforge.ml_import import InstallHint
+
+    try:
+        from pinnforge.operator.checkpoint import load_fno_checkpoint
+        from pinnforge.operator.evaluate import evaluate_slices
+    except InstallHint as exc:
+        print(str(exc), file=sys.stderr)
+        raise SystemExit(1) from exc
+    except ModuleNotFoundError as exc:
+        if exc.name != "torch":
+            raise
+        print(str(InstallHint()), file=sys.stderr)
+        raise SystemExit(1) from exc
+    return evaluate_slices, load_fno_checkpoint
 
 
 if __name__ == "__main__":

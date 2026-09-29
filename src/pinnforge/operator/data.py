@@ -1,11 +1,11 @@
 """Load a Stage 2 pilot directory into normalized windows.
 
 The split and the ``u`` mean and standard deviation come from the manifest
-passed in, which for the reported run is
-``docs/stage2/pilot_manifest.json``. A ``manifest.json`` sitting in the
-pilot directory is checked against that file when it exists. Field bytes
-are checked with the manifest's ``field_sha256``, which does not depend on
-zip timestamps.
+passed in. The Stage 3 run uses ``docs/stage2/pilot_manifest.json``. The
+Stage B run uses ``docs/stage_a/pilot_manifest.json`` and the harder pilot
+directory. A ``manifest.json`` sitting in the pilot directory is checked
+against that file when it exists. Field bytes are checked with the
+manifest's ``field_sha256``, which does not depend on zip timestamps.
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ from pathlib import Path
 import numpy as np
 
 from pinnforge.operator.windows import (
+    HARD_PILOT_FORMAT,
     SPLIT_NAMES,
     FieldNorm,
     Trajectory,
@@ -57,6 +58,7 @@ def load_split_trajectories(
         raise ValueError(f"pilot directory does not exist: {root}")
     _check_local_manifest(root, assignment, norm)
     records = _records_by_id(manifest)
+    pilot_format = str(manifest.get("format"))
     trajectories: list[Trajectory] = []
     for name in requested:
         for instance_id in sorted(assignment[name]):
@@ -66,6 +68,7 @@ def load_split_trajectories(
                     records[instance_id],
                     expected_split=name,
                     check_field_hash=check_field_hash,
+                    pilot_format=pilot_format,
                 )
             )
     return trajectories
@@ -138,6 +141,7 @@ def _load_trajectory(
     *,
     expected_split: str,
     check_field_hash: bool,
+    pilot_format: str,
 ) -> Trajectory:
     instance_id = int(record["instance_id"])  # type: ignore[arg-type]
     split = record.get("split")
@@ -150,10 +154,7 @@ def _load_trajectory(
     if path.parent.name != expected_split:
         raise ValueError(f"instance {instance_id} file is not under {expected_split}/")
     if not path.is_file():
-        raise ValueError(
-            f"missing {path}. Regenerate the pilot with "
-            "`python -m pinnforge.reference.numerical pilot --output artifacts/burgers_pilot`."
-        )
+        raise ValueError(f"missing {path}. {_regenerate_hint(pilot_format)}")
     with np.load(path) as archive:
         field = np.array(archive["u"], dtype=np.float64, copy=True)
         nu = float(archive["nu"])
@@ -194,3 +195,15 @@ def _check_local_manifest(root: Path, assignment: Mapping[str, set[int]], norm: 
             raise ValueError(
                 f"pilot directory {label} ({got}) does not match the committed manifest ({expected})"
             )
+
+
+def _regenerate_hint(pilot_format: str) -> str:
+    if pilot_format == HARD_PILOT_FORMAT:
+        return (
+            "Regenerate the harder pilot with "
+            "`python -m pinnforge.reference.numerical hard-pilot --output artifacts/burgers_hard_pilot`."
+        )
+    return (
+        "Regenerate the pilot with "
+        "`python -m pinnforge.reference.numerical pilot --output artifacts/burgers_pilot`."
+    )

@@ -13,6 +13,7 @@ over the training windows.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import time
@@ -194,6 +195,7 @@ def train_from_paths(
     seed: int = DEFAULT_SEED,
     loss: LossConfig | None = None,
     check_field_hash: bool = True,
+    protocol_path: Path | None = None,
     log: Callable[[EpochRow], None] | None = None,
 ) -> TrainResult:
     """Train on pilot windows and write checkpoint, metrics, and a manifest.
@@ -257,6 +259,7 @@ def train_from_paths(
         lr=float(lr),
         loss=loss_config,
         wall_clock_seconds=elapsed,
+        protocol_path=None if protocol_path is None else Path(protocol_path),
     )
     return TrainResult(
         checkpoint=checkpoint,
@@ -381,6 +384,7 @@ def _write_run_manifest(
     lr: float,
     loss: LossConfig,
     wall_clock_seconds: float,
+    protocol_path: Path | None,
 ) -> None:
     train = datasets["train"]
     val = datasets["val"]
@@ -425,6 +429,14 @@ def _write_run_manifest(
         "environment": environment(),
         "history": [row.as_dict() for row in history],
     }
+    if protocol_path is not None:
+        raw = protocol_path.read_bytes()
+        payload["training_protocol"] = {
+            "path": protocol_path.as_posix(),
+            "sha256": hashlib.sha256(raw).hexdigest(),
+            "hyperparameters_checked": True,
+            "test_metrics_not_read": True,
+        }
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 

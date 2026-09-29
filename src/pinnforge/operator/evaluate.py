@@ -14,7 +14,7 @@ from pathlib import Path
 
 from pinnforge.ml_import import require_torch
 from pinnforge.operator.checkpoint import LoadedFNO, load_fno_checkpoint
-from pinnforge.operator.data import load_split_windows
+from pinnforge.operator.data import load_split_trajectories, load_split_windows
 from pinnforge.operator.fno import FNO1d, pack_inputs
 from pinnforge.operator.metrics import (
     mean_relative_l2,
@@ -25,7 +25,14 @@ from pinnforge.operator.metrics import (
     pooled_relative_l2,
 )
 from pinnforge.operator.residual import LossConfig, prediction_window_residual, residual_stats
-from pinnforge.operator.windows import WindowDataset
+from pinnforge.operator.rollout import rollout_trajectories, summarize_rollout
+from pinnforge.operator.slices import (
+    SLICE_EVAL_FORMAT,
+    hard_ood_threshold,
+    physical_nu_by_instance,
+    score_prediction_slices,
+)
+from pinnforge.operator.windows import HARD_PILOT_FORMAT, WindowDataset, load_pilot_manifest
 
 torch = require_torch()
 
@@ -188,6 +195,141 @@ def _residual_definition(config: LossConfig) -> dict[str, object]:
         "field": config.residual_space,
         "dt": config.dt,
     }
+
+
+def evaluate_slices(
+    checkpoint: Path,
+    pilot_dir: Path,
+    manifest_path: Path,
+    protocol: dict[str, object],
+    *,
+    split: str = "test",
+    batch_size: int = 32,
+    check_field_hash: bool = True,
+) -> dict[str, object]:
+    """Score one data-only checkpoint on full test, ``hard_ood``, and the complement.
+
+    The threshold comes from ``protocol``. The training quartile is not
+    refit. Rollout error is recorded and is not a selection metric.
+    """
+
+    if split != "test":
+        raise ValueError("slice scoring is defined on the test split")
+    loaded = load_fno_checkpoint(checkpoint)
+    if loaded.loss.uses_physics():
+        raise ValueError("slice scoring requires a data-only checkpoint")
+    manifest = load_pilot_manifest(manifest_path)
+    if manifest.get("format") != HARD_PILOT_FORMAT:
+        raise ValueError("slice scoring requires the harder pilot manifest")
+    threshold = hard_ood_threshold(protocol)
+    datasets = load_split_windows(
+        pilot_dir,
+        manifest_path,
+        loaded.spec,
+        (split,),
+        check_field_hash=check_field_hash,
+    )
+    dataset = datasets[split]
+    _require_same_norm(loaded, dataset)
+    prediction = predict_normalized(loaded.model, dataset, batch_size=batch_size).numpy()
+    nu_by_id = physical_nu_by_instance(manifest)
+    slices = score_prediction_slices(dataset, prediction, nu_by_id, threshold)
+    trajectories = load_split_trajectories(
+        pilot_dir,
+        manifest_path,
+        (split,),
+        check_field_hash=check_field_hash,
+    )
+    fields = [item.u for item in trajectories]
+    ids = [item.instance_id for item in trajectories]
+    viscosities = [item.nu for item in trajectories]
+    rollout = rollout_trajectories(
+        fields,
+        ids,
+        viscosities,
+        loaded.spec,
+        _physical_predictor(loaded.model, dataset.norm),
+        batch_size=batch_size,
+    )
+    _require_rollout_matches_first_window(dataset, prediction, rollout, dataset.norm)
+    from pinnforge.training.manifest import environment
+
+    return {
+        "format": SLICE_EVAL_FORMAT,
+        "split": split,
+        "seed": loaded.seed,
+        "selected_epoch": loaded.epoch,
+        "val_relative_l2": loaded.val_relative_l2,
+        "checkpoint": str(checkpoint),
+        "loss_mode": loaded.loss.mode,
+        "threshold_nu": threshold,
+        "comparison": "nu <= threshold_nu",
+        "threshold_refit": False,
+        "rollout_used_for_selection": False,
+        "model": loaded.model.config_dict(),
+        "window": {
+            "input_frames": loaded.spec.input_frames,
+            "output_frames": loaded.spec.output_frames,
+            "stride": loaded.spec.stride,
+        },
+        "slices": slices,
+        "rollout": summarize_rollout(rollout, threshold),
+        "rollout_definition": (
+            "autoregressive from the true initial window; stride equals output_frames; "
+            "open-loop persistence holds the last frame of that initial window"
+        ),
+        "environment": environment(),
+    }
+
+
+def _physical_predictor(model: FNO1d, norm: object):
+    def predict(windows: object, nu: object) -> object:
+        import numpy as np
+
+        physical = np.asarray(windows, dtype=np.float64)
+        viscosity = np.asarray(nu, dtype=np.float64)
+        normalized = norm.normalize_u(physical)  # type: ignore[attr-defined]
+        nu_hat = norm.normalize_nu(viscosity)  # type: ignore[attr-defined]
+        inputs = torch.as_tensor(normalized, dtype=torch.float32)
+        channel = torch.as_tensor(nu_hat, dtype=torch.float32)
+        with torch.no_grad():
+            output = model(pack_inputs(inputs, channel)).detach().cpu().numpy()
+        return norm.denormalize_u(output)  # type: ignore[attr-defined]
+
+    return predict
+
+
+def _require_rollout_matches_first_window(
+    dataset: WindowDataset,
+    prediction_normalized: object,
+    rollout: dict[str, object],
+    norm: object,
+) -> None:
+    """The first rollout step is the supervised window that starts at frame 0.
+
+    Later rollout steps see predictions. This check only covers the
+    initial window, where both paths see the true field. The network has
+    no batch normalization, so a different batch grouping must not change
+    that first field.
+    """
+
+    import numpy as np
+
+    prediction = norm.denormalize_u(np.asarray(prediction_normalized, dtype=np.float64))  # type: ignore[attr-defined]
+    first = np.asarray(rollout["first_prediction"], dtype=np.float64)
+    rolled_ids = np.asarray(rollout["instance_ids"], dtype=np.int64)
+    for index, instance_id in enumerate(rolled_ids):
+        mask = (dataset.instance_ids == int(instance_id)) & (dataset.starts == 0)
+        window_prediction = prediction[mask]
+        if window_prediction.shape[0] != 1:
+            raise ValueError(f"instance {int(instance_id)} does not have exactly one start-0 window")
+        if window_prediction[0].shape != first[index].shape or not np.allclose(
+            window_prediction[0],
+            first[index],
+            rtol=0.0,
+            atol=1e-5,
+        ):
+            raise ValueError(f"rollout step 0 does not match the start-0 window for instance {int(instance_id)}")
 
 
 def _require_same_norm(loaded: LoadedFNO, dataset: WindowDataset) -> None:

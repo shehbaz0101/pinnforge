@@ -32,6 +32,8 @@ DEFAULT_OUTPUT_FRAMES = 8
 DEFAULT_STRIDE = 8
 
 PILOT_FORMAT = "pinnforge.burgers_pilot.v1"
+HARD_PILOT_FORMAT = "pinnforge.burgers_hard_pilot.v1"
+PILOT_FORMATS = (PILOT_FORMAT, HARD_PILOT_FORMAT)
 SPLIT_NAMES = ("train", "val", "test")
 
 
@@ -338,18 +340,22 @@ def assert_split_integrity(
 
 
 def load_pilot_manifest(path: Path) -> dict[str, object]:
-    """Read a Stage 2 pilot manifest.
+    """Read a Burgers pilot manifest.
 
-    The file is the committed ``docs/stage2/pilot_manifest.json`` or the
-    copy written next to a regenerated pilot. The format tag must be
-    ``pinnforge.burgers_pilot.v1``.
+    The file is the committed Stage 2 manifest
+    (``docs/stage2/pilot_manifest.json``, format
+    ``pinnforge.burgers_pilot.v1``) or the Stage A harder manifest
+    (``docs/stage_a/pilot_manifest.json``, format
+    ``pinnforge.burgers_hard_pilot.v1``), or the copy written next to a
+    regenerated pilot of either kind. Both formats store the same split
+    lists, instance records, and training-split ``u`` normalization.
     """
 
     source = Path(path)
     payload = json.loads(source.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise ValueError("pilot manifest must be a JSON object")
-    if payload.get("format") != PILOT_FORMAT:
+    if payload.get("format") not in PILOT_FORMATS:
         raise ValueError(f"unsupported pilot manifest format {payload.get('format')!r}")
     return payload
 
