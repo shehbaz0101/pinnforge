@@ -12,7 +12,10 @@ The problem is
 
 with periodic boundary conditions in ``x``. The solver is a dealiased
 Fourier spectral method with ETDRK4 time stepping. See
-:mod:`pinnforge.reference.numerical.solver`.
+:mod:`pinnforge.reference.numerical.solver`. The Stage 2 pilot is
+:mod:`pinnforge.reference.numerical.dataset`. The harder pilot, with a
+wider initial band and viscosities down to ``0.005``, is
+:mod:`pinnforge.reference.numerical.harder`.
 """
 
 from pinnforge.reference.numerical.checks import (

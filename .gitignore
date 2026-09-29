@@ -32,3 +32,6 @@ runs/
 # Regenerated Burgers pilot arrays (about 150 MiB at the full split).
 # The manifest and the generation command are in STAGE2_REPORT.md.
 artifacts/burgers_pilot/
+
+# Harder v0.2 Burgers pilot arrays. The manifest is docs/stage_a/pilot_manifest.json.
+artifacts/burgers_hard_pilot/
