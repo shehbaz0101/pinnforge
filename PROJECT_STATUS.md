@@ -126,6 +126,14 @@ Five-seed data-only 1D FNO on the Stage A pilot. [STAGE_B_REPORT.md](STAGE_B_REP
 - Full-test mean relative L2 is `4.298970125314308e-03 ± 3.608651258270467e-04`. `hard_ood` is `7.049252763443842e-03 ± 3.032654479273341e-04`. The complement is `3.457046868744042e-03 ± 3.865637014640921e-04`. One-step persistence is about `8.46e-2`, `9.78e-2`, and `8.05e-2` on those three slices. The `hard_ood` mean is about twice the complement on every seed. Both beat persistence. Neither meets the `1e-9` label gate.
 - The Stage A sensor inverse is not retrained. Its nine `0.5`-rule failures remain inside `hard_ood`. Forecasting `u` with `ν` given does not remove that stress.
 
+## Stage C
+
+Residual and hybrid losses on the same harder pilot, five seeds. [STAGE_C_REPORT.md](STAGE_C_REPORT.md) has the protocol, the validation weight choice, and the test tables. The version string stays `0.1.0`.
+
+- [docs/v02/stage_c_train_protocol.json](docs/v02/stage_c_train_protocol.json) was frozen before the test scores. Seeds, width, modes, depth, window, epochs, and learning rate match Stage B. The hybrid grid is `{1e-6, 1e-4, 1e-2}`. `hard_ood` is still `ν <= 0.027028120493367818`. The data-only arm is the Stage B aggregate and was not retrained.
+- The selected weight is `1e-2`, the lowest mean validation relative L2 across the five seeds. The other two weights were not scored on test.
+- On `hard_ood`, hybrid mean relative L2 is `5.215427637735405e-03 ± 6.736875927560861e-04`, against the Stage B data-only `7.049252763443842e-03 ± 3.032654479273341e-04`. The hybrid number is lower on every seed. Residual-only is `5.704581248709277e-03 ± 7.767311465741109e-04`, also lower on every `hard_ood` seed, and higher than data-only on seed 1 for the full test and the complement. The `hard_ood` mean stays about twice the complement. Neither arm meets the `1e-9` label gate. No inverse model was trained.
+
 ## Known limits
 
 - CPU-first. `TrainConfig.device` is `cpu` only. `pinnforge demo` allows at
