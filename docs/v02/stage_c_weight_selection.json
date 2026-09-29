@@ -1,0 +1,93 @@
+{
+  "format": "pinnforge.stage_c_weight_selection.v1",
+  "frozen_before_test_evaluation": true,
+  "test_used_for_selection": false,
+  "test_splits_read": false,
+  "protocol_path": "docs/v02/stage_c_train_protocol.json",
+  "protocol_sha256": "1631d7d60e83ea1bdecf1d63de550f952f54f835385cf66786e563a643cd9708",
+  "metric": "selected_epoch validation mean relative L2",
+  "aggregation": "arithmetic mean across the frozen seeds",
+  "tie_break": "smallest residual_weight",
+  "candidates": [
+    {
+      "residual_weight": 1e-06,
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "selected_epoch": [
+        28,
+        28,
+        29,
+        24,
+        29
+      ],
+      "val_relative_l2": [
+        0.003974276469638224,
+        0.003702785065598535,
+        0.0044624773959964885,
+        0.0038998964510555106,
+        0.0032977045832071265
+      ],
+      "mean_val_relative_l2": 0.0038674279930991768,
+      "std_val_relative_l2": 0.00042374716723071775
+    },
+    {
+      "residual_weight": 0.0001,
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "selected_epoch": [
+        25,
+        19,
+        29,
+        30,
+        25
+      ],
+      "val_relative_l2": [
+        0.004786312926414036,
+        0.005063644281684993,
+        0.003662515980467676,
+        0.0033742809609108764,
+        0.004236234592598437
+      ],
+      "mean_val_relative_l2": 0.004224597748415203,
+      "std_val_relative_l2": 0.0007173968558788702
+    },
+    {
+      "residual_weight": 0.01,
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "selected_epoch": [
+        29,
+        30,
+        28,
+        22,
+        30
+      ],
+      "val_relative_l2": [
+        0.003126559837192686,
+        0.00277956952462546,
+        0.003625878423223408,
+        0.003551079761562272,
+        0.0030552787063192867
+      ],
+      "mean_val_relative_l2": 0.003227673250584623,
+      "std_val_relative_l2": 0.00035492952868764225
+    }
+  ],
+  "selected_residual_weight": 0.01,
+  "selected_mean_val_relative_l2": 0.003227673250584623
+}

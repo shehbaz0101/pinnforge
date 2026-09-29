@@ -265,6 +265,25 @@ def residual_stats(residual: np.ndarray) -> ResidualStats:
     )
 
 
+def per_window_residual_means(residual: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Per-window mean of ``|R|`` and mean of ``R²``.
+
+    ``residual`` has shape ``(n_windows, n_nodes, n_space)``. Every window
+    in this pilot has the same node count, so the mean of these per-window
+    means matches :func:`residual_stats` on the same array.
+    """
+
+    values = np.asarray(residual, dtype=np.float64)
+    if values.ndim != 3 or values.shape[0] < 1 or values.shape[1] < 1 or values.shape[2] < 1:
+        raise ValueError("residual must have shape (n_windows, n_nodes, n_space)")
+    if not np.isfinite(values).all():
+        raise ValueError("residual must be finite")
+    flat = values.reshape(values.shape[0], -1)
+    mean_abs = np.mean(np.abs(flat), axis=1)
+    mean_square = np.mean(flat * flat, axis=1)
+    return mean_abs, mean_square
+
+
 def objective_from_parts(data_mse: float, residual_mse: float, config: LossConfig) -> float:
     """Scalar the optimizer minimizes, from full-set means.
 

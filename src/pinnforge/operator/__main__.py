@@ -6,11 +6,15 @@ instance split and for the training-set ``u`` mean and standard deviation.
 ``--loss data`` is the Stage 3 normalized MSE. ``--loss residual`` and
 ``--loss hybrid`` add the discrete Burgers residual. ``inverse`` recovers
 each instance viscosity from the preregistered sparse sensors by
-minimizing that residual. ``slices`` scores a data-only checkpoint on the
-harder pilot's full test split, the frozen ``hard_ood`` cut, and the
-complement. ``aggregate`` reduces those per-seed records. Torch is
-imported only when a command actually trains, scores, or runs the Adam
-viscosity check. ``aggregate`` does not import torch.
+minimizing that residual. ``slices`` scores a checkpoint on the harder
+pilot's full test split, the frozen ``hard_ood`` cut, and the complement.
+A Stage B training protocol still requires the data-only loss. A Stage C
+training protocol scores residual and the validation-selected hybrid
+weight, and it does not retrain the data-only arm. ``aggregate`` reduces
+per-seed records. ``select-hybrid`` reads validation manifests only.
+Torch is imported only when a command actually trains, scores, or runs
+the Adam viscosity check. ``aggregate``, ``select-hybrid``, and
+``stage-c-scores`` do not import torch.
 
 The same commands are available as ``pinnforge fno train``,
 ``pinnforge fno eval``, and ``pinnforge fno inverse``.
@@ -55,6 +59,10 @@ def main(argv: list[str] | None = None) -> int:
             return _slices(args)
         if args.command == "aggregate":
             return _aggregate(args)
+        if args.command == "select-hybrid":
+            return _select_hybrid(args)
+        if args.command == "stage-c-scores":
+            return _stage_c_scores(args)
     except ValueError as exc:
         parser.error(str(exc))
     parser.error(f"unknown command {args.command}")
@@ -71,7 +79,8 @@ def build_parser() -> argparse.ArgumentParser:
             "The default loss is normalized data MSE. "
             "residual and hybrid add the discrete Burgers residual. "
             "inverse recovers scalar viscosity from preregistered sparse sensors. "
-            "slices scores hard_ood on a data-only checkpoint."
+            "slices scores hard_ood on the harder pilot. "
+            "A Stage C protocol selects the hybrid weight on validation only."
         ),
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -94,8 +103,9 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=None,
         help=(
-            "Frozen training-protocol JSON. When set, the pilot, manifest, "
-            "seed, window, architecture, epochs, and data-only loss must match it."
+            "Frozen training-protocol JSON. A Stage B file requires the data-only loss. "
+            "A Stage C file allows residual and a preregistered hybrid weight, and "
+            "rejects a new data-only run."
         ),
     )
     train.add_argument("--loss", choices=LOSS_MODES, default="data")
@@ -155,7 +165,7 @@ def build_parser() -> argparse.ArgumentParser:
     inverse.add_argument("--skip-field-hash", action="store_true")
     slices = subparsers.add_parser(
         "slices",
-        help="Score full test, hard_ood, and the complement on a data-only checkpoint",
+        help="Score full test, hard_ood, and the complement",
     )
     slices.add_argument("--pilot", type=Path, default=Path("artifacts/burgers_hard_pilot"))
     slices.add_argument("--manifest", type=Path, default=Path("docs/stage_a/pilot_manifest.json"))
@@ -175,38 +185,44 @@ def build_parser() -> argparse.ArgumentParser:
         "aggregate",
         help="Mean and sample std of slice scores across the frozen seeds",
     )
+    slices.add_argument(
+        "--weight-selection",
+        type=Path,
+        default=None,
+        help="Stage C validation selection. Required when --train-protocol is the Stage C contract.",
+    )
     aggregate.add_argument("--protocol", type=Path, default=Path("docs/v02/stage_b_train_protocol.json"))
     aggregate.add_argument("--inputs", type=Path, nargs="+", required=True)
     aggregate.add_argument("--output", type=Path, required=True)
+    aggregate.add_argument(
+        "--weight-selection",
+        type=Path,
+        default=None,
+        help="Stage C validation selection. Required when --protocol is the Stage C contract.",
+    )
+    select = subparsers.add_parser(
+        "select-hybrid",
+        help="Choose the hybrid weight from validation manifests. Does not read test scores.",
+    )
+    select.add_argument("--protocol", type=Path, default=Path("docs/v02/stage_c_train_protocol.json"))
+    select.add_argument("--inputs", type=Path, nargs="+", required=True)
+    select.add_argument("--output", type=Path, required=True)
+    scores = subparsers.add_parser(
+        "stage-c-scores",
+        help="Assemble residual and selected-hybrid scores against the Stage B data-only reference",
+    )
+    scores.add_argument("--protocol", type=Path, default=Path("docs/v02/stage_c_train_protocol.json"))
+    scores.add_argument("--selection", type=Path, required=True)
+    scores.add_argument("--residual", type=Path, required=True)
+    scores.add_argument("--hybrid", type=Path, required=True)
+    scores.add_argument("--output", type=Path, required=True)
     return parser
 
 
 def _train(args: argparse.Namespace) -> int:
     loss = _loss_from_train_args(args)
     if args.protocol is not None:
-        from pinnforge.operator.slices import (
-            assert_train_call_matches_protocol,
-            load_train_protocol,
-        )
-
-        protocol = load_train_protocol(args.protocol)
-        assert_train_call_matches_protocol(
-            protocol,
-            pilot=args.pilot,
-            manifest=args.manifest,
-            epochs=args.epochs,
-            batch_size=args.batch_size,
-            lr=args.lr,
-            width=args.width,
-            modes=args.modes,
-            layers=args.layers,
-            input_frames=args.input_frames,
-            output_frames=args.output_frames,
-            stride=args.stride,
-            seed=args.seed,
-            loss=args.loss,
-            residual_weight=args.residual_weight,
-        )
+        _enforce_train_protocol(args)
     train_from_paths = _import_trainer()
     result = train_from_paths(
         pilot_dir=args.pilot,
@@ -337,29 +353,59 @@ def _slices(args: argparse.Namespace) -> int:
         load_train_protocol,
         write_json,
     )
+    from pinnforge.operator.stage_c import (
+        STAGE_C_PROTOCOL_FORMAT,
+        assert_checkpoint_matches_stage_c,
+        load_stage_c_protocol,
+        load_weight_selection,
+        protocol_format,
+    )
 
     data_protocol = load_data_protocol(args.protocol)
     train_protocol = None
+    stage_c_selection = None
     if args.train_protocol is not None:
-        train_protocol = load_train_protocol(args.train_protocol)
+        if protocol_format(args.train_protocol) == STAGE_C_PROTOCOL_FORMAT:
+            train_protocol = load_stage_c_protocol(args.train_protocol)
+            if args.weight_selection is None:
+                raise ValueError("--weight-selection is required for the Stage C protocol")
+            import hashlib
+
+            digest = hashlib.sha256(Path(args.train_protocol).read_bytes()).hexdigest()
+            stage_c_selection = load_weight_selection(args.weight_selection, train_protocol, digest)
+        else:
+            if args.weight_selection is not None:
+                raise ValueError("--weight-selection is only valid with the Stage C training protocol")
+            train_protocol = load_train_protocol(args.train_protocol)
         if float(train_protocol["hard_ood"]["threshold_nu"]) != float(data_protocol["hard_ood"]["threshold_nu"]):
             raise ValueError("train protocol and data protocol thresholds differ")
+    elif args.weight_selection is not None:
+        raise ValueError("--weight-selection requires --train-protocol")
     evaluate_slices, load_fno_checkpoint = _import_slice_evaluator()
     if train_protocol is not None:
         loaded = load_fno_checkpoint(args.checkpoint)
-        assert_checkpoint_matches_train_protocol(
-            {
-                "loss_mode": loaded.loss.mode,
-                "seed": loaded.seed,
-                "width": loaded.model.width,
-                "modes": loaded.model.modes,
-                "layers": loaded.model.n_layers,
-                "input_frames": loaded.spec.input_frames,
-                "output_frames": loaded.spec.output_frames,
-                "stride": loaded.spec.stride,
-            },
-            train_protocol,
-        )
+        summary = {
+            "loss_mode": loaded.loss.mode,
+            "seed": loaded.seed,
+            "width": loaded.model.width,
+            "modes": loaded.model.modes,
+            "layers": loaded.model.n_layers,
+            "input_frames": loaded.spec.input_frames,
+            "output_frames": loaded.spec.output_frames,
+            "stride": loaded.spec.stride,
+        }
+        if stage_c_selection is not None:
+            summary.update(
+                {
+                    "residual_weight": loaded.loss.residual_weight,
+                    "residual_scope": loaded.loss.residual_scope,
+                    "residual_space": loaded.loss.residual_space,
+                    "residual_dt": loaded.loss.dt,
+                }
+            )
+            assert_checkpoint_matches_stage_c(summary, train_protocol, stage_c_selection)
+        else:
+            assert_checkpoint_matches_train_protocol(summary, train_protocol)
     payload = evaluate_slices(
         args.checkpoint,
         args.pilot,
@@ -372,6 +418,9 @@ def _slices(args: argparse.Namespace) -> int:
     if train_protocol is not None:
         assert_manifest_slice_counts(payload["slices"], train_protocol, args.split)
         payload["training_protocol"] = str(args.train_protocol)
+        if stage_c_selection is not None:
+            payload["weight_selection"] = str(args.weight_selection)
+            payload["test_used_for_weight_selection"] = False
     write_json(payload, args.output)
     print(f"split: {payload['split']}")
     print(f"seed: {payload['seed']}")
@@ -394,19 +443,34 @@ def _slices(args: argparse.Namespace) -> int:
 
 
 def _aggregate(args: argparse.Namespace) -> int:
-    import json
+    import hashlib
 
     from pinnforge.operator.slices import aggregate_slice_records, load_train_protocol, write_json
+    from pinnforge.operator.stage_c import (
+        STAGE_C_PROTOCOL_FORMAT,
+        aggregate_stage_c_records,
+        load_stage_c_protocol,
+        load_weight_selection,
+        protocol_format,
+    )
 
-    protocol = load_train_protocol(args.protocol)
-    records = []
-    for path in args.inputs:
-        payload = json.loads(Path(path).read_text(encoding="utf-8"))
-        if not isinstance(payload, dict):
-            raise ValueError(f"{path} must contain a JSON object")
-        records.append(payload)
-    summary = aggregate_slice_records(records, protocol)
-    summary["training_protocol"] = str(args.protocol)
+    if protocol_format(args.protocol) == STAGE_C_PROTOCOL_FORMAT:
+        if args.weight_selection is None:
+            raise ValueError("--weight-selection is required for the Stage C protocol")
+        protocol = load_stage_c_protocol(args.protocol)
+        digest = hashlib.sha256(Path(args.protocol).read_bytes()).hexdigest()
+        selection = load_weight_selection(args.weight_selection, protocol, digest)
+        records = _read_records(args.inputs)
+        summary = aggregate_stage_c_records(records, protocol, selection)
+        summary["training_protocol"] = str(args.protocol)
+        summary["weight_selection"] = str(args.weight_selection)
+    else:
+        if args.weight_selection is not None:
+            raise ValueError("--weight-selection is only valid with the Stage C training protocol")
+        protocol = load_train_protocol(args.protocol)
+        records = _read_records(args.inputs)
+        summary = aggregate_slice_records(records, protocol)
+        summary["training_protocol"] = str(args.protocol)
     write_json(summary, args.output)
     print(f"seeds: {summary['seeds']}")
     print(f"ddof: {summary['ddof']}")
@@ -421,6 +485,115 @@ def _aggregate(args: argparse.Namespace) -> int:
         )
     print(f"json: {Path(args.output).as_posix()}")
     return 0
+
+
+def _select_hybrid(args: argparse.Namespace) -> int:
+    from pinnforge.operator.stage_c import select_hybrid_weight, write_selection
+
+    if Path(args.output).resolve() == Path(args.protocol).resolve():
+        raise ValueError("refusing to overwrite the training protocol")
+    payload = select_hybrid_weight(args.inputs, args.protocol)
+    write_selection(payload, args.output)
+    print(f"selected_residual_weight: {payload['selected_residual_weight']}")
+    print(f"selected_mean_val_relative_l2: {payload['selected_mean_val_relative_l2']:.8e}")
+    print("test_splits_read: false")
+    print(f"json: {Path(args.output).as_posix()}")
+    return 0
+
+
+def _stage_c_scores(args: argparse.Namespace) -> int:
+    import json
+
+    from pinnforge.operator.slices import write_json
+    from pinnforge.operator.stage_c import assemble_stage_c_scores
+
+    if Path(args.output).resolve() == Path(args.protocol).resolve():
+        raise ValueError("refusing to overwrite the training protocol")
+    residual = json.loads(Path(args.residual).read_text(encoding="utf-8"))
+    hybrid = json.loads(Path(args.hybrid).read_text(encoding="utf-8"))
+    if not isinstance(residual, dict) or not isinstance(hybrid, dict):
+        raise ValueError("aggregate inputs must be JSON objects")
+    payload = assemble_stage_c_scores(args.protocol, args.selection, residual, hybrid)
+    write_json(payload, args.output)
+    comparison = payload["versus_stage_b_data_only"]["hard_ood"]
+    for arm in ("residual", "hybrid"):
+        block = comparison[arm]
+        lower = "lower" if block["arm_mean_is_lower"] else "not lower"
+        print(
+            f"hard_ood {arm}: {block['arm_mean']:.8e} ± {block['arm_std']:.8e} "
+            f"minus data-only {block['arm_minus_data_only']:.8e} ({lower})"
+        )
+    print(f"selected_residual_weight: {payload['selected_residual_weight']}")
+    print(f"json: {Path(args.output).as_posix()}")
+    return 0
+
+
+def _enforce_train_protocol(args: argparse.Namespace) -> None:
+    from pinnforge.operator.slices import assert_train_call_matches_protocol, load_train_protocol
+    from pinnforge.operator.stage_c import (
+        STAGE_B_PROTOCOL_FORMAT,
+        STAGE_C_PROTOCOL_FORMAT,
+        assert_stage_c_train_call,
+        load_stage_c_protocol,
+        protocol_format,
+    )
+
+    fmt = protocol_format(args.protocol)
+    if fmt == STAGE_C_PROTOCOL_FORMAT:
+        protocol = load_stage_c_protocol(args.protocol)
+        assert_stage_c_train_call(
+            protocol,
+            pilot=args.pilot,
+            manifest=args.manifest,
+            epochs=args.epochs,
+            batch_size=args.batch_size,
+            lr=args.lr,
+            width=args.width,
+            modes=args.modes,
+            layers=args.layers,
+            input_frames=args.input_frames,
+            output_frames=args.output_frames,
+            stride=args.stride,
+            seed=args.seed,
+            loss=args.loss,
+            residual_weight=args.residual_weight,
+            residual_scope=args.residual_scope,
+            residual_space=args.residual_space,
+            dt=args.dt,
+        )
+        return
+    if fmt != STAGE_B_PROTOCOL_FORMAT:
+        raise ValueError(f"unsupported training protocol format {fmt!r}")
+    protocol = load_train_protocol(args.protocol)
+    assert_train_call_matches_protocol(
+        protocol,
+        pilot=args.pilot,
+        manifest=args.manifest,
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        lr=args.lr,
+        width=args.width,
+        modes=args.modes,
+        layers=args.layers,
+        input_frames=args.input_frames,
+        output_frames=args.output_frames,
+        stride=args.stride,
+        seed=args.seed,
+        loss=args.loss,
+        residual_weight=args.residual_weight,
+    )
+
+
+def _read_records(paths: list[Path]) -> list[dict[str, object]]:
+    import json
+
+    records = []
+    for path in paths:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError(f"{path} must contain a JSON object")
+        records.append(payload)
+    return records
 
 
 def _print_recovery(label: str, score: object) -> None:

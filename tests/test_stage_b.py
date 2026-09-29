@@ -418,6 +418,8 @@ def test_slices_cli_on_a_tiny_hard_pilot(tmp_path: Path) -> None:
     assert record["slices"]["hard_ood"]["worst"][0]["instance_id"] == 3
     assert record["rollout"]["hard_ood"]["n_steps"] == record["slices"]["hard_ood"]["n_windows"]
     assert math.isfinite(record["rollout"]["complement"]["mean_instance_relative_l2"])
+    assert math.isfinite(record["slices"]["full_test"]["mean_abs_residual"])
+    assert math.isfinite(record["slices"]["hard_ood"]["target_mean_abs_residual"])
 
 
 def _field(instance_id: int, n_times: int = 24, n_space: int = 8) -> np.ndarray:
