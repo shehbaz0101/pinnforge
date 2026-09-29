@@ -19,6 +19,7 @@ from pinnforge.operator.stage_d import (
     extrapolate_initial_window,
     initial_window_from_mask,
     lift_sensors,
+    load_objective_selection,
     load_stage_d_protocol,
     mean_std,
     nu_from_objective,
@@ -62,6 +63,22 @@ def test_committed_stage_d_protocol_locks_the_mask_and_the_search() -> None:
     assert grid[-1] == pytest.approx(0.1)
     assert "results" not in protocol
     assert "scores" not in protocol
+
+
+def test_committed_objective_selection_is_validation_only() -> None:
+    protocol = load_stage_d_protocol(PROTOCOL)
+    selection = load_objective_selection(
+        ROOT / "docs" / "v02" / "stage_d_objective_selection.json",
+        protocol,
+        protocol_sha256(PROTOCOL),
+    )
+    assert selection["test_used_for_selection"] is False
+    assert selection["test_splits_read"] is False
+    assert selection["selection_split"] == "val"
+    assert selection["selection_slice"] == "hard_ood"
+    for arm in ("data_only", "hybrid_1e-2"):
+        assert selection["arms"][arm]["selected_lambda"] == pytest.approx(0.0)
+        assert selection["arms"][arm]["selected_mean_hard_ood_mean_rel_error"] > 0.0
 
 
 def test_stage_d_protocol_rejects_a_file_that_already_holds_scores(tmp_path: Path) -> None:

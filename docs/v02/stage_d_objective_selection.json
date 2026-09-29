@@ -1,0 +1,140 @@
+{
+  "format": "pinnforge.stage_d_objective_selection.v1",
+  "frozen_before_test_evaluation": true,
+  "test_used_for_selection": false,
+  "test_splits_read": false,
+  "protocol_path": "docs/v02/stage_d_inverse_protocol.json",
+  "protocol_sha256": "24450a3d7dec8a1c0347b099c82f27f1941f6e869f4041b320cff302adad8a0a",
+  "selection_split": "val",
+  "selection_slice": "hard_ood",
+  "metric": "arithmetic mean across seeds of mean relative viscosity error",
+  "tie_break": "smallest lambda",
+  "arms": {
+    "data_only": {
+      "candidates": [
+        {
+          "lambda": 0.0,
+          "seeds": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "hard_ood_mean_rel_error": [
+            0.050523745659305855,
+            0.03811041970523169,
+            0.07906901279562802,
+            0.03156748241639875,
+            0.027208714390097928
+          ],
+          "mean_hard_ood_mean_rel_error": 0.045295874993332444,
+          "std_hard_ood_mean_rel_error": 0.020827868216910086
+        },
+        {
+          "lambda": 1.0,
+          "seeds": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "hard_ood_mean_rel_error": [
+            0.13321601354643492,
+            0.12047600602281193,
+            0.13537970352649428,
+            0.10512023865759591,
+            0.09686847148669811
+          ],
+          "mean_hard_ood_mean_rel_error": 0.11821208664800702,
+          "std_hard_ood_mean_rel_error": 0.016969948545543626
+        },
+        {
+          "lambda": 10.0,
+          "seeds": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "hard_ood_mean_rel_error": [
+            0.2742520630681204,
+            0.2651990899282135,
+            0.27275153078540276,
+            0.2632432499562435,
+            0.2635719056798275
+          ],
+          "mean_hard_ood_mean_rel_error": 0.2678035678835615,
+          "std_hard_ood_mean_rel_error": 0.005280913676815287
+        }
+      ],
+      "selected_lambda": 0.0,
+      "selected_mean_hard_ood_mean_rel_error": 0.045295874993332444
+    },
+    "hybrid_1e-2": {
+      "candidates": [
+        {
+          "lambda": 0.0,
+          "seeds": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "hard_ood_mean_rel_error": [
+            0.035914827435485144,
+            0.03507858015467258,
+            0.04218503114250346,
+            0.029525554927736026,
+            0.026375559497232227
+          ],
+          "mean_hard_ood_mean_rel_error": 0.033815910631525885,
+          "std_hard_ood_mean_rel_error": 0.006119802718807989
+        },
+        {
+          "lambda": 1.0,
+          "seeds": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "hard_ood_mean_rel_error": [
+            0.10800076252306597,
+            0.08565473756106688,
+            0.09806749530130032,
+            0.1016985638616522,
+            0.09243368846841821
+          ],
+          "mean_hard_ood_mean_rel_error": 0.09717104954310071,
+          "std_hard_ood_mean_rel_error": 0.008568149096362113
+        },
+        {
+          "lambda": 10.0,
+          "seeds": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "hard_ood_mean_rel_error": [
+            0.26867780274268477,
+            0.2632432499562435,
+            0.2640833210083406,
+            0.26161606570785745,
+            0.26161606570785745
+          ],
+          "mean_hard_ood_mean_rel_error": 0.26384730102459675,
+          "std_hard_ood_mean_rel_error": 0.0029030652787909337
+        }
+      ],
+      "selected_lambda": 0.0,
+      "selected_mean_hard_ood_mean_rel_error": 0.033815910631525885
+    }
+  }
+}
