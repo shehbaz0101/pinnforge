@@ -1,0 +1,84 @@
+{
+  "format": "pinnforge.stage_b_train_protocol.v1",
+  "frozen_before_test_evaluation": true,
+  "role": "Stage B data-only multi-seed 1D FNO on the Stage A harder Burgers pilot. This file is the training and scoring contract. It is not a test table.",
+  "loss": "data",
+  "early_stopping": false,
+  "selection": "minimum validation mean relative L2, ties take the earliest epoch",
+  "test_used_for_training": false,
+  "test_used_for_selection": false,
+  "hard_ood_refit": false,
+  "optimizer": "Adam",
+  "schedule": "constant",
+  "device": "cpu",
+  "seeds": [0, 1, 2, 3, 4],
+  "epochs": 30,
+  "batch_size": 32,
+  "lr": 0.001,
+  "width": 32,
+  "modes": 16,
+  "layers": 4,
+  "input_frames": 8,
+  "output_frames": 8,
+  "stride": 8,
+  "residual_weight": null,
+  "pilot": "artifacts/burgers_hard_pilot",
+  "manifest": "docs/stage_a/pilot_manifest.json",
+  "data_protocol": "docs/v02/pilot_protocol.json",
+  "data_protocol_sha256": "bc640feab6220d8871cfcdc72997bdb7cd717c1ead67d70bd347eed19ddf8c6c",
+  "hard_ood": {
+    "name": "hard_ood",
+    "comparison": "nu <= threshold_nu",
+    "threshold_nu": 0.027028120493367818,
+    "source": "docs/v02/pilot_protocol.json",
+    "refit": false,
+    "complement": "instances in the scored split with nu > threshold_nu"
+  },
+  "primary_metric": "mean_relative_l2",
+  "primary_metric_definition": "Stage 3 mean of per-window relative L2 on denormalized u. Each window is one supervised pair. On this grid every instance has the same window count, so the window mean equals the mean of per-instance window means.",
+  "slices": ["full_test", "hard_ood", "complement"],
+  "instance_counts_from_manifest": {
+    "computed_before_operator_evaluation": true,
+    "rule": "nu <= threshold_nu on docs/stage_a/pilot_manifest.json, threshold not refit",
+    "train": {"hard_ood": 128, "complement": 384},
+    "val": {"hard_ood": 27, "complement": 101},
+    "test": {"full_test": 128, "hard_ood": 30, "complement": 98}
+  },
+  "aggregation": {
+    "unit": "one scalar per seed per slice",
+    "center": "arithmetic mean",
+    "spread": "sample standard deviation",
+    "ddof": 1,
+    "minimum_seeds": 5,
+    "pool_windows_across_seeds": false,
+    "drop_seeds": false
+  },
+  "baseline": {
+    "name": "persistence",
+    "window": "Repeat the last input frame across the eight target frames. Not trained. Same windows as the network.",
+    "rollout": "Hold the last frame of the true initial window for every predicted frame in the open-loop horizon."
+  },
+  "rollout": {
+    "enabled": true,
+    "used_for_selection": false,
+    "requires_stride_equals_output_frames": true,
+    "method": "autoregressive from the true initial input window; each predicted block is the next input",
+    "metric": "per-instance relative L2 of the concatenated predicted frames versus the saved truth, then the mean over instances in the slice"
+  },
+  "inverse": {
+    "retrain": false,
+    "learned_inverse": false,
+    "reference": "docs/v02/inverse_stress.json",
+    "question": "Does the Stage A sensors32_bursts residual least-squares stress remain, with the 0.5-rule failures inside hard_ood and none in the complement?"
+  },
+  "architecture_note": "Stage 3 FNO1d, not retuned. The spectral layers keep 16 Fourier modes. The harder initial condition is band-limited at mode 48. Modes, width, depth, window, epoch budget, and learning rate are not changed after test scores.",
+  "not_claimed": [
+    "a hybrid or residual training loss",
+    "a learned inverse",
+    "a retuned hard_ood threshold or a refit of the Stage A protocol",
+    "an architecture, window, or learning-rate search",
+    "that 16 Fourier modes resolve the 48-mode initial band",
+    "that one seed is the result",
+    "that rollout error was used to pick the checkpoint"
+  ]
+}

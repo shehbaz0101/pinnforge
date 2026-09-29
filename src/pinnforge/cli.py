@@ -343,8 +343,10 @@ def build_parser() -> argparse.ArgumentParser:
             "Train or score a 1D FNO on Burgers pilot windows, or recover viscosity. "
             "Same commands as python -m pinnforge.operator. "
             "Default loss is data MSE; residual and hybrid add the Burgers residual. "
+            "--pilot and --manifest accept the Stage 2 pilot or the Stage A harder pilot. "
+            "slices scores that harder test split on full, hard_ood, and complement. "
             "inverse recovers scalar viscosity from preregistered sparse sensors. "
-            "Training needs the ml extra. inverse does not."
+            "Training and slices need the ml extra. inverse and aggregate do not."
         ),
     )
     return parser

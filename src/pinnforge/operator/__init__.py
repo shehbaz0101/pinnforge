@@ -1,4 +1,7 @@
-"""Fourier neural operator on Stage 2 Burgers windows.
+"""Fourier neural operator on Burgers windows.
+
+The Stage 2 pilot and the Stage A harder pilot share this loader. The
+Stage A manifest format is ``pinnforge.burgers_hard_pilot.v1``.
 
 Window cuts, the instance split, normalization, and the discrete Burgers
 residual live in numpy. The network and the training loop live in
