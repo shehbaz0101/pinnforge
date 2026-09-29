@@ -5,7 +5,7 @@ ODE and PDE residuals. It trains a small network on the residual, scores a
 checkpoint against an analytical or manufactured field, and serves that path
 on localhost. An offline demo trains a checked-in sample on CPU.
 
-**Status:** v0.1.0 remains the tagged freeze. Stage 1 correctness, the Stage 2 Burgers reference, the Stage 3 data-only FNO baseline, the Stage 4 residual ablations, and the Stage 5 sparse viscosity recovery are unreleased and keep the `0.1.0` version string. See [STAGE1_REPORT.md](STAGE1_REPORT.md), [STAGE2_REPORT.md](STAGE2_REPORT.md), [STAGE3_REPORT.md](STAGE3_REPORT.md), [STAGE4_REPORT.md](STAGE4_REPORT.md), and [STAGE5_REPORT.md](STAGE5_REPORT.md).
+**Status:** v0.1.0 remains the tagged freeze. Stage 1 correctness, the Stage 2 Burgers reference, the Stage 3 data-only FNO baseline, the Stage 4 residual ablations, the Stage 5 sparse viscosity recovery, and the Stage A harder Burgers pilot are unreleased and keep the `0.1.0` version string. See [STAGE1_REPORT.md](STAGE1_REPORT.md), [STAGE2_REPORT.md](STAGE2_REPORT.md), [STAGE3_REPORT.md](STAGE3_REPORT.md), [STAGE4_REPORT.md](STAGE4_REPORT.md), [STAGE5_REPORT.md](STAGE5_REPORT.md), and [STAGE_A_REPORT.md](STAGE_A_REPORT.md).
 
 ## Days 1–10
 
@@ -107,6 +107,15 @@ Scalar viscosity from sparse sensors on the Stage 2 pilot, using the Stage 4 Bur
 - The observation pattern is fixed in code before the test score: 32 equispaced sensors and four bursts of five consecutive frames. That is 640 samples out of each `101 × 256` trajectory. The estimator is the normal equation for the Stage 4 central residual. It does not fit a new network and it does not read test viscosities.
 - On the 128 held-out instances the mean absolute error in `ν` is about `6.09e-5`, against about `1.81e-2` for the training-split mean. Mean relative error is about `1.33e-3`. Correlation is about `0.999994`. No test instance is worse in absolute error than that constant baseline. The same command's stride-8 clock is coarser and is not the reported pattern.
 - The version string stays `0.1.0`. This is not the `1e-8` solver gate, and it does not claim that `ν` is unique from every other sensor mask.
+
+## Stage A
+
+A harder Burgers pilot in parallel with Stage 2. [STAGE_A_REPORT.md](STAGE_A_REPORT.md) has the family, the convergence tables, and the manifest. `pinnforge fno` is not pointed at this dataset.
+
+- Initial data is `tanh_bandlimited`: an 8-mode polynomial with amplitudes `Uniform(-1, 1) / sqrt(m)`, shaped by `tanh(3 p_hat)`, then projected onto modes `|m| <= 48`, mean removed, and max-abs normalized on 8192 nodes. Viscosity is `Uniform(0.005, 0.10)`. The Stage 2 family and the Stage 2 manifest are unchanged.
+- Labels are `N = 1024`, `dt = 2.5e-4`, `save_dt = 0.01`, `t ∈ [0, 1]`, the same dealiased ETDRK4 solver. On the steepest draws at `ν = 0.005`, space-time relative L2 against `N = 2048`, `dt = 1.25e-4` is about `4e-11`. The preregistered gate is `1e-9`. The Stage 2 grid (`N = 256`, `dt = 1e-3`) misses that gate on this family.
+- The split is 512 / 128 / 128 by problem instance. Arrays under `artifacts/burgers_hard_pilot/` are gitignored. `docs/stage_a/pilot_manifest.json` records seeds, field SHA-256s, viscosity statistics, and the solver-config hash.
+- No Fourier neural operator and no inverse-viscosity fit are trained here.
 
 ## Known limits
 

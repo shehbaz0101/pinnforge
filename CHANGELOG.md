@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+Stage A adds a harder periodic Burgers pilot beside the Stage 2 dataset. The version string stays `0.1.0`. No operator is trained on it. The coordinate-PINN Burgers hook still raises `NotImplementedError`.
+
+- `tanh_bandlimited` initial data (modes through 48, `tanh(3 p_hat)` projected and max-normalized) and viscosities in `[0.005, 0.10]`. Labels use `N = 1024`, `dt = 2.5e-4`. The preregistered relative-L2 gate is `1e-9`. Counts, hashes, and the convergence tables are in [STAGE_A_REPORT.md](STAGE_A_REPORT.md) and [docs/stage_a/](docs/stage_a/).
+- Stage 2 commands keep their defaults: `python -m pinnforge.reference.numerical pilot`. The harder set is `hard-pilot`.
+
 Stage 5 recovers each pilot instance's viscosity from a preregistered sparse sensor mask. The version string stays `0.1.0`. The coordinate-PINN Burgers hook still raises `NotImplementedError`.
 
 - `pinnforge fno inverse` minimizes the Stage 4 central Burgers residual in the scalar `ν`. The minimizer is the normal equation on 32 equispaced sensors and four short frame bursts. Test absolute and relative errors are in [STAGE5_REPORT.md](STAGE5_REPORT.md). No new Fourier layer is trained.
