@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -67,6 +68,56 @@ def test_committed_protocol_is_frozen_and_does_not_reselect() -> None:
     assert "scores" not in protocol
     weight = json.loads((ROOT / "docs" / "v02" / "stage_c_weight_selection.json").read_text(encoding="utf-8"))
     assert weight["selected_residual_weight"] == HYBRID_WEIGHT
+
+
+def test_committed_stage_f_scores_keep_the_published_tables() -> None:
+    scores = json.loads((ROOT / "docs" / "v02" / "stage_f_scores.json").read_text(encoding="utf-8"))
+    stage_b = json.loads(STAGE_B_SCORES.read_text(encoding="utf-8"))
+    stage_c = json.loads((ROOT / "docs" / "v02" / "stage_c_scores.json").read_text(encoding="utf-8"))
+    stage_d = json.loads(STAGE_D_SCORES.read_text(encoding="utf-8"))
+    stress = json.loads((ROOT / "docs" / "v02" / "inverse_stress.json").read_text(encoding="utf-8"))
+    digest = hashlib.sha256(PROTOCOL_PATH.read_bytes()).hexdigest()
+    assert scores["format"] == "pinnforge.stage_f_scores.v1"
+    assert scores["protocol_sha256"] == digest
+    assert scores["threshold_nu"] == pytest.approx(THRESHOLD)
+    assert scores["threshold_refit"] is False
+    assert scores["hybrid_weight"] == pytest.approx(HYBRID_WEIGHT)
+    assert scores["hybrid_weight_reselected"] is False
+    assert scores["lambda"] == pytest.approx(0.0)
+    assert scores["lambda_reselected"] is False
+    assert scores["ood_used_for_selection"] is False
+    assert scores["test_used_for_selection"] is False
+    assert scores["nu_search"]["clipped_to_training_support"] is False
+    assert scores["nu_search"]["can_return_values_outside_training_range"] is True
+    assert scores["nu_search"]["n_grid_below_train_min"] == 45
+    published_data = scores["forward"]["full_range"]["data_only"]["slices"]["ood"]
+    assert published_data["one_step_mean_relative_l2"]["mean"] == pytest.approx(
+        stage_b["slices"]["hard_ood"]["mean_relative_l2"]["mean"]
+    )
+    published_hybrid = scores["forward"]["full_range"]["hybrid_1e-2"]["slices"]["ood"]
+    assert published_hybrid["one_step_mean_relative_l2"]["mean"] == pytest.approx(
+        stage_c["hybrid"]["slices"]["hard_ood"]["mean_relative_l2"]["mean"]
+    )
+    closed = scores["inverse"]["closed_form_sensors32"]["slices"]["ood"]
+    assert closed["n_failures"] == 9
+    assert closed["mean_rel_error"] == pytest.approx(stress["hard_ood_sensors32_bursts"]["mean_rel_error"])
+    full_range_inverse = scores["inverse"]["full_range_operators"]["arms"]["data_only"]["ood"]
+    stage_d_hard = stage_d["arms"]["data_only"]["objectives"]["0.0"]["slices"]["hard_ood"]
+    assert full_range_inverse["mean_rel_error"]["mean"] == pytest.approx(stage_d_hard["mean_rel_error"]["mean"])
+    assert full_range_inverse["n_failures"]["mean"] == pytest.approx(0.0)
+    for arm in ("data_only", "hybrid_1e-2"):
+        forward = scores["forward"][arm]
+        inverse = scores["inverse"]["arms"][arm]["slices"]
+        assert forward["slices"]["ood"]["n_instances"] == 30
+        assert forward["slices"]["ood"]["mean_relative_l2"]["mean"] > forward["slices"]["in_range"]["mean_relative_l2"]["mean"]
+        assert forward["slices"]["ood"]["mean_relative_l2"]["mean"] > published_data["one_step_mean_relative_l2"]["mean"]
+        assert inverse["ood"]["n_outside_training_range"]["mean"] == pytest.approx(30.0)
+        assert inverse["in_range"]["n_failures"]["mean"] == pytest.approx(0.0)
+        assert inverse["ood"]["mean_rel_error"]["mean"] > full_range_inverse["mean_rel_error"]["mean"]
+        assert inverse["ood"]["mean_rel_error"]["mean"] < closed["mean_rel_error"]
+    paired = scores["forward"]["hybrid_minus_data_only"]["ood"]["one_step_hybrid_minus_data"]["values"]
+    assert any(value > 0.0 for value in paired)
+    assert any(value < 0.0 for value in paired)
 
 
 def test_protocol_rejects_a_file_that_already_holds_scores(tmp_path: Path) -> None:
