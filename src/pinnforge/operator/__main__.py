@@ -14,7 +14,10 @@ weight, and it does not retrain the data-only arm. ``aggregate`` reduces
 per-seed records. ``select-hybrid`` reads validation manifests only.
 ``operator-inverse`` fits viscosity on the Stage D grid.
 ``select-objective`` reads validation curves only. ``stage-d-scores``
-reduces the test curves after that selection.
+reduces the test curves after that selection. A Stage F protocol trains
+only on viscosities above the frozen ``hard_ood`` cut. ``ood-slices``,
+``ood-aggregate``, ``ood-inverse``, and ``stage-f-scores`` score that
+restricted operator. The hybrid weight stays ``1e-2``.
 Torch is imported only when a command actually trains, scores, or runs
 the Adam viscosity check. ``aggregate``, ``select-hybrid``, and
 ``stage-c-scores`` do not import torch.
@@ -72,6 +75,14 @@ def main(argv: list[str] | None = None) -> int:
             return _select_objective(args)
         if args.command == "stage-d-scores":
             return _stage_d_scores(args)
+        if args.command == "ood-slices":
+            return _ood_slices(args)
+        if args.command == "ood-aggregate":
+            return _ood_aggregate(args)
+        if args.command == "ood-inverse":
+            return _ood_inverse(args)
+        if args.command == "stage-f-scores":
+            return _stage_f_scores(args)
     except ValueError as exc:
         parser.error(str(exc))
     parser.error(f"unknown command {args.command}")
@@ -90,7 +101,9 @@ def build_parser() -> argparse.ArgumentParser:
             "inverse recovers scalar viscosity from preregistered sparse sensors. "
             "slices scores hard_ood on the harder pilot. "
             "A Stage C protocol selects the hybrid weight on validation only. "
-            "operator-inverse fits viscosity with a trained FNO on the Stage D grid."
+            "operator-inverse fits viscosity with a trained FNO on the Stage D grid. "
+            "A Stage F protocol trains above the frozen hard_ood cut and scores "
+            "the low-viscosity test slice separately."
         ),
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -254,12 +267,53 @@ def build_parser() -> argparse.ArgumentParser:
     stage_d.add_argument("--pilot", type=Path, default=Path("artifacts/burgers_hard_pilot"))
     stage_d.add_argument("--manifest", type=Path, default=Path("docs/stage_a/pilot_manifest.json"))
     stage_d.add_argument("--output", type=Path, required=True)
+    ood_slices = subparsers.add_parser(
+        "ood-slices",
+        help="Score a Stage F checkpoint on in-range, OOD, and nu < 0.02",
+    )
+    ood_slices.add_argument("--protocol", type=Path, default=Path("docs/v02/stage_f_ood_protocol.json"))
+    ood_slices.add_argument("--pilot", type=Path, default=Path("artifacts/burgers_hard_pilot"))
+    ood_slices.add_argument("--manifest", type=Path, default=Path("docs/stage_a/pilot_manifest.json"))
+    ood_slices.add_argument("--checkpoint", type=Path, required=True)
+    ood_slices.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
+    ood_slices.add_argument("--output", type=Path, required=True)
+    ood_aggregate = subparsers.add_parser(
+        "ood-aggregate",
+        help="Mean and sample std of Stage F slice scores across seeds",
+    )
+    ood_aggregate.add_argument("--protocol", type=Path, default=Path("docs/v02/stage_f_ood_protocol.json"))
+    ood_aggregate.add_argument("--arm", choices=("data_only", "hybrid_1e-2"), required=True)
+    ood_aggregate.add_argument("--inputs", type=Path, nargs="+", required=True)
+    ood_aggregate.add_argument("--output", type=Path, required=True)
+    ood_inverse = subparsers.add_parser(
+        "ood-inverse",
+        help="Stage D sparse viscosity fit with a Stage F restricted operator",
+    )
+    ood_inverse.add_argument("--protocol", type=Path, default=Path("docs/v02/stage_f_ood_protocol.json"))
+    ood_inverse.add_argument("--pilot", type=Path, default=Path("artifacts/burgers_hard_pilot"))
+    ood_inverse.add_argument("--manifest", type=Path, default=Path("docs/stage_a/pilot_manifest.json"))
+    ood_inverse.add_argument("--checkpoint", type=Path, required=True)
+    ood_inverse.add_argument("--output", type=Path, required=True)
+    stage_f = subparsers.add_parser(
+        "stage-f-scores",
+        help="Join Stage F forward and inverse scores to the published full-range tables",
+    )
+    stage_f.add_argument("--protocol", type=Path, default=Path("docs/v02/stage_f_ood_protocol.json"))
+    stage_f.add_argument("--data-only-forward", type=Path, required=True)
+    stage_f.add_argument("--hybrid-forward", type=Path, required=True)
+    stage_f.add_argument("--inverse", type=Path, nargs="+", required=True)
+    stage_f.add_argument("--output", type=Path, required=True)
     return parser
 
 
 def _train(args: argparse.Namespace) -> int:
     loss = _loss_from_train_args(args)
     if args.protocol is not None:
+        from pinnforge.operator.stage_c import protocol_format
+        from pinnforge.operator.stage_f import STAGE_F_PROTOCOL_FORMAT
+
+        if protocol_format(args.protocol) == STAGE_F_PROTOCOL_FORMAT:
+            return _train_stage_f(args, loss)
         _enforce_train_protocol(args)
     train_from_paths = _import_trainer()
     result = train_from_paths(
@@ -291,6 +345,192 @@ def _train(args: argparse.Namespace) -> int:
     print(f"train_mse: {result.train_mse:.8e}")
     print(f"val_mse: {result.val_mse:.8e}")
     print(f"val_relative_l2: {result.val_relative_l2:.8e}")
+    return 0
+
+
+def _train_stage_f(args: argparse.Namespace, loss: LossConfig) -> int:
+    from pinnforge.operator.stage_f import assert_stage_f_train_call, load_stage_f_protocol
+
+    protocol = load_stage_f_protocol(args.protocol)
+    assert_stage_f_train_call(
+        protocol,
+        pilot=args.pilot,
+        manifest=args.manifest,
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        lr=args.lr,
+        width=args.width,
+        modes=args.modes,
+        layers=args.layers,
+        input_frames=args.input_frames,
+        output_frames=args.output_frames,
+        stride=args.stride,
+        seed=args.seed,
+        loss=args.loss,
+        residual_weight=args.residual_weight,
+        residual_scope=args.residual_scope,
+        residual_space=args.residual_space,
+        dt=args.dt,
+    )
+    from pinnforge.ml_import import InstallHint
+
+    try:
+        from pinnforge.operator.stage_f_fit import train_stage_f
+    except InstallHint as exc:
+        print(str(exc), file=sys.stderr)
+        raise SystemExit(1) from exc
+    except ModuleNotFoundError as exc:
+        if exc.name != "torch":
+            raise
+        print(str(InstallHint()), file=sys.stderr)
+        raise SystemExit(1) from exc
+    result = train_stage_f(
+        pilot_dir=args.pilot,
+        manifest_path=args.manifest,
+        output_dir=args.output,
+        protocol_path=args.protocol,
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        lr=args.lr,
+        width=args.width,
+        modes=args.modes,
+        n_layers=args.layers,
+        input_frames=args.input_frames,
+        output_frames=args.output_frames,
+        stride=args.stride,
+        seed=args.seed,
+        loss=loss,
+        log=_print_epoch,
+    )
+    print(f"arm: {result['arm']}")
+    print(f"checkpoint: {result['checkpoint'].as_posix()}")
+    print(f"metrics: {result['metrics_path'].as_posix()}")
+    print(f"manifest: {result['manifest_path'].as_posix()}")
+    print(f"parameters: {result['parameter_count']}")
+    print(f"selected_epoch: {result['selected_epoch']}")
+    print(f"loss: {loss.describe()}")
+    print(f"wall_clock_seconds: {result['wall_clock_seconds']:.4f}")
+    print(f"train_mse: {result['train_mse']:.8e}")
+    print(f"val_mse: {result['val_mse']:.8e}")
+    print(f"val_relative_l2: {result['val_relative_l2']:.8e}")
+    return 0
+
+
+def _ood_slices(args: argparse.Namespace) -> int:
+    from pinnforge.ml_import import InstallHint
+
+    try:
+        from pinnforge.operator.stage_f_fit import evaluate_stage_f_slices
+    except InstallHint as exc:
+        print(str(exc), file=sys.stderr)
+        raise SystemExit(1) from exc
+    except ModuleNotFoundError as exc:
+        if exc.name != "torch":
+            raise
+        print(str(InstallHint()), file=sys.stderr)
+        raise SystemExit(1) from exc
+    from pinnforge.operator.slices import write_json
+
+    payload = evaluate_stage_f_slices(
+        args.checkpoint,
+        args.pilot,
+        args.manifest,
+        args.protocol,
+        batch_size=args.batch_size,
+    )
+    write_json(payload, args.output)
+    print(f"arm: {payload['arm']}")
+    print(f"seed: {payload['seed']}")
+    print(f"selected_epoch: {payload['selected_epoch']}")
+    for name in ("full_test", "in_range", "ood", "below_0_02"):
+        section = payload["slices"][name]
+        rollout = payload["rollout"][name]
+        print(
+            f"{name}: n_instances={section['n_instances']} "
+            f"mean_relative_l2={section['mean_relative_l2']:.8e} "
+            f"rollout_mean_instance_relative_l2={rollout['mean_instance_relative_l2']:.8e}"
+        )
+    print(f"json: {Path(args.output).as_posix()}")
+    return 0
+
+
+def _ood_aggregate(args: argparse.Namespace) -> int:
+    from pinnforge.operator.slices import write_json
+    from pinnforge.operator.stage_f import aggregate_ood_records, load_stage_f_protocol
+
+    protocol = load_stage_f_protocol(args.protocol)
+    summary = aggregate_ood_records(_read_records(args.inputs), protocol, arm=args.arm)
+    summary["training_protocol"] = str(args.protocol)
+    write_json(summary, args.output)
+    gap = summary["ood_gap"]["one_step"]
+    print(f"arm: {args.arm}")
+    print(f"seeds: {summary['seeds']}")
+    for name in ("in_range", "ood", "below_0_02"):
+        metric = summary["slices"][name]["mean_relative_l2"]
+        rollout = summary["rollout"][name]["mean_instance_relative_l2"]
+        print(
+            f"{name}_mean_relative_l2: {metric['mean']:.8e} ± {metric['std']:.8e} "
+            f"rollout: {rollout['mean']:.8e} ± {rollout['std']:.8e}"
+        )
+    print(f"ood_gap_ratio_of_means: {gap['ratio_of_means']:.6f}")
+    print(f"json: {Path(args.output).as_posix()}")
+    return 0
+
+
+def _ood_inverse(args: argparse.Namespace) -> int:
+    from pinnforge.ml_import import InstallHint
+
+    try:
+        from pinnforge.operator.stage_f_fit import run_stage_f_inverse
+    except InstallHint as exc:
+        print(str(exc), file=sys.stderr)
+        raise SystemExit(1) from exc
+    except ModuleNotFoundError as exc:
+        if exc.name != "torch":
+            raise
+        print(str(InstallHint()), file=sys.stderr)
+        raise SystemExit(1) from exc
+    from pinnforge.operator.slices import write_json
+
+    payload = run_stage_f_inverse(
+        protocol_path=args.protocol,
+        pilot_dir=args.pilot,
+        manifest_path=args.manifest,
+        checkpoint=args.checkpoint,
+        split="test",
+    )
+    write_json(payload, args.output)
+    print(f"arm: {payload['arm']}")
+    print(f"seed: {payload['seed']}")
+    print(f"lambda: {payload['lambda']}")
+    print(
+        "can_return_values_outside_training_range: "
+        f"{payload['nu_search']['can_return_values_outside_training_range']}"
+    )
+    print(f"json: {Path(args.output).as_posix()}")
+    return 0
+
+
+def _stage_f_scores(args: argparse.Namespace) -> int:
+    from pinnforge.operator.slices import write_json
+    from pinnforge.operator.stage_f import assemble_stage_f_scores
+
+    if Path(args.output).resolve() == Path(args.protocol).resolve():
+        raise ValueError("refusing to overwrite the training protocol")
+    data_forward = _read_records([args.data_only_forward])[0]
+    hybrid_forward = _read_records([args.hybrid_forward])[0]
+    inverse_runs = _read_records(args.inverse)
+    payload = assemble_stage_f_scores(args.protocol, data_forward, hybrid_forward, inverse_runs)
+    write_json(payload, args.output)
+    for arm in ("data_only", "hybrid_1e-2"):
+        block = payload["forward"][arm]["slices"]["ood"]["mean_relative_l2"]
+        gap = payload["forward"][arm]["ood_gap"]["one_step"]["ratio_of_means"]
+        inverse = payload["inverse"]["arms"][arm]["slices"]["ood"]["mean_rel_error"]
+        print(
+            f"{arm} ood one-step {block['mean']:.8e} ± {block['std']:.8e} "
+            f"gap {gap:.4f} inverse mean rel {inverse['mean']:.8e} ± {inverse['std']:.8e}"
+        )
+    print(f"json: {Path(args.output).as_posix()}")
     return 0
 
 
