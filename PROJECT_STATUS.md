@@ -142,6 +142,13 @@ Operator-conditioned recovery of `ν` from the unchanged `sensors32_bursts` mask
 - Both arms select `λ = 0` on validation `hard_ood`. `λ = 1` and `λ = 10` are worse on every seed and are not scored on test. The record is [docs/v02/stage_d_objective_selection.json](docs/v02/stage_d_objective_selection.json).
 - On test `hard_ood`, data-only mean relative error is `0.049487208469027544 ± 0.0144232271670265` and hybrid `1e-2` is `0.03368266375533967 ± 0.0034734247381767768`. The closed-form residual least squares on the same mask is `0.3494591802034973`, with 9 failures. Both operator arms have 0 failures on that slice. The dense residual least squares remains tighter (`0.0013208386837906374`). The summary is [docs/v02/stage_d_scores.json](docs/v02/stage_d_scores.json).
 
+## Stage E
+
+Noise and sparsity stress for the Stage D viscosity inverse. [STAGE_E_REPORT.md](STAGE_E_REPORT.md) has the protocol, the degradation tables, and the breakdown thresholds. The version string stays `0.1.0`.
+
+- [docs/v02/stage_e_stress_protocol.json](docs/v02/stage_e_stress_protocol.json) was frozen before the test scores. Noise is additive Gaussian at `0`, `0.1%`, `0.5%`, `1%`, `2%`, and `5%` of the clean-field standard deviation. Sensors are `32`, `16`, and `8`. Bursts are `4`, `2`, and `1`. `hard_ood` stays `ν <= 0.027028120493367818`. `λ` stays `0`. The failure rule stays `ν̂ <= 0` or relative error `> 0.5`.
+- On `hard_ood`, closed-form residual least squares is already at `0.3494591802034973` with `9` failures on the clean Stage D mask. Data-only and hybrid `1e-2` stay under `10%` mean relative error with `0` failures through `1%` noise. Both cross `10%` and record their first failures at `2%` noise and at `16` clean sensors. At `5%` noise the closed form has the lower mean and fewer failures. Two bursts do not move the operator. One burst has no operator target. The summary is [docs/v02/stage_e_scores.json](docs/v02/stage_e_scores.json).
+
 ## Known limits
 
 - CPU-first. `TrainConfig.device` is `cpu` only. `pinnforge demo` allows at

@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="460" viewBox="0 0 760 460">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="84" y="28" font-family="sans-serif" font-size="16">hard_ood: mean relative error vs equispaced sensors</text>
+<line x1="84" y1="48.00" x2="732" y2="48.00" stroke="#e6e6e6"/>
+<text x="76" y="52.00" text-anchor="end" font-family="sans-serif" font-size="11">5.529</text>
+<line x1="84" y1="117.60" x2="732" y2="117.60" stroke="#e6e6e6"/>
+<text x="76" y="121.60" text-anchor="end" font-family="sans-serif" font-size="11">0.922</text>
+<line x1="84" y1="187.20" x2="732" y2="187.20" stroke="#e6e6e6"/>
+<text x="76" y="191.20" text-anchor="end" font-family="sans-serif" font-size="11">0.154</text>
+<line x1="84" y1="256.80" x2="732" y2="256.80" stroke="#e6e6e6"/>
+<text x="76" y="260.80" text-anchor="end" font-family="sans-serif" font-size="11">0.026</text>
+<line x1="84" y1="326.40" x2="732" y2="326.40" stroke="#e6e6e6"/>
+<text x="76" y="330.40" text-anchor="end" font-family="sans-serif" font-size="11">4.27e-03</text>
+<line x1="84" y1="396.00" x2="732" y2="396.00" stroke="#e6e6e6"/>
+<text x="76" y="400.00" text-anchor="end" font-family="sans-serif" font-size="11">7.12e-04</text>
+<line x1="84.00" y1="48" x2="84.00" y2="396" stroke="#f3f3f3"/>
+<text x="84.00" y="414" text-anchor="middle" font-family="sans-serif" font-size="11">32</text>
+<line x1="408.00" y1="48" x2="408.00" y2="396" stroke="#f3f3f3"/>
+<text x="408.00" y="414" text-anchor="middle" font-family="sans-serif" font-size="11">16</text>
+<line x1="732.00" y1="48" x2="732.00" y2="396" stroke="#f3f3f3"/>
+<text x="732.00" y="414" text-anchor="middle" font-family="sans-serif" font-size="11">8</text>
+<rect x="84" y="48" width="648" height="348" fill="none" stroke="#222222"/>
+<line x1="84" y1="203.89" x2="732" y2="203.89" stroke="#888888" stroke-dasharray="5 4"/>
+<polyline fill="none" stroke="#b85c38" stroke-width="2" points="84.00,155.28 408.00,130.98 732.00,81.07"/>
+<circle cx="84.00" cy="155.28" r="3.5" fill="#b85c38"/>
+<circle cx="408.00" cy="130.98" r="3.5" fill="#b85c38"/>
+<circle cx="732.00" cy="81.07" r="3.5" fill="#b85c38"/>
+<line x1="96" y1="64" x2="120" y2="64" stroke="#b85c38" stroke-width="2"/>
+<text x="126" y="68" font-family="sans-serif" font-size="12">closed-form LS</text>
+<polyline fill="none" stroke="#1f4e79" stroke-width="2" points="84.00,230.03 408.00,182.06 732.00,86.20"/>
+<circle cx="84.00" cy="230.03" r="3.5" fill="#1f4e79"/>
+<circle cx="408.00" cy="182.06" r="3.5" fill="#1f4e79"/>
+<circle cx="732.00" cy="86.20" r="3.5" fill="#1f4e79"/>
+<line x1="96" y1="80" x2="120" y2="80" stroke="#1f4e79" stroke-width="2"/>
+<text x="126" y="84" font-family="sans-serif" font-size="12">data-only FNO</text>
+<polyline fill="none" stroke="#2f6b4f" stroke-width="2" points="84.00,244.48 408.00,185.36 732.00,86.93"/>
+<circle cx="84.00" cy="244.48" r="3.5" fill="#2f6b4f"/>
+<circle cx="408.00" cy="185.36" r="3.5" fill="#2f6b4f"/>
+<circle cx="732.00" cy="86.93" r="3.5" fill="#2f6b4f"/>
+<line x1="96" y1="96" x2="120" y2="96" stroke="#2f6b4f" stroke-width="2"/>
+<text x="126" y="100" font-family="sans-serif" font-size="12">hybrid FNO</text>
+<polyline fill="none" stroke="#6b4c9a" stroke-width="2" points="84.00,72.00 408.00,72.00 732.00,72.00"/>
+<circle cx="84.00" cy="72.00" r="3.5" fill="#6b4c9a"/>
+<circle cx="408.00" cy="72.00" r="3.5" fill="#6b4c9a"/>
+<circle cx="732.00" cy="72.00" r="3.5" fill="#6b4c9a"/>
+<line x1="96" y1="112" x2="120" y2="112" stroke="#6b4c9a" stroke-width="2"/>
+<text x="126" y="116" font-family="sans-serif" font-size="12">training mean</text>
+<polyline fill="none" stroke="#5c5c5c" stroke-width="2" points="84.00,372.00 408.00,372.00 732.00,372.00"/>
+<circle cx="84.00" cy="372.00" r="3.5" fill="#5c5c5c"/>
+<circle cx="408.00" cy="372.00" r="3.5" fill="#5c5c5c"/>
+<circle cx="732.00" cy="372.00" r="3.5" fill="#5c5c5c"/>
+<line x1="96" y1="128" x2="120" y2="128" stroke="#5c5c5c" stroke-width="2"/>
+<text x="126" y="132" font-family="sans-serif" font-size="12">dense LS</text>
+<text x="408.00" y="444" text-anchor="middle" font-family="sans-serif" font-size="13">equispaced sensors</text>
+<text x="18" y="222.00" text-anchor="middle" transform="rotate(-90 18 222.00)" font-family="sans-serif" font-size="13">mean relative error</text>
+</svg>
