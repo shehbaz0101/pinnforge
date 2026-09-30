@@ -25,16 +25,21 @@ from pinnforge.operator.stage_d import (
 )
 from pinnforge.operator.stage_d_fit import _require_checkpoint, _require_same_norm
 from pinnforge.operator.stage_e import (
+    CERTIFICATE_STRIDE,
     CONDITION_FORMAT,
     SCORES_FORMAT,
     SLICE_NAMES,
     aggregate_seed_summaries,
     apply_noise,
     breakdown_table,
+    coarse_indexes,
     condition_by_id,
+    golden_probe_indexes,
+    golden_shrink,
     grid_from_protocol,
     is_failure,
     load_stage_e_protocol,
+    local_minimum_count,
     noise_seeds_for,
     observation_spec,
     operator_applicable,
@@ -43,6 +48,7 @@ from pinnforge.operator.stage_e import (
     slice_summaries,
     stage_e_protocol_sha256,
     standard_normal_field,
+    unimodal_cache_argmin,
     window_spec,
     write_stage_e_figures,
     write_stage_e_json,
@@ -67,8 +73,8 @@ def sensor_mse_on_grid(
     grid: np.ndarray,
     *,
     n_sensors: int,
-    nu_chunk: int = 16,
-    instance_chunk: int = 32,
+    nu_chunk: int = 32,
+    instance_chunk: int = 64,
 ) -> np.ndarray:
     """Sensor mean square for every instance and every grid viscosity.
 
@@ -95,6 +101,14 @@ def sensor_mse_on_grid(
     if int(nu_chunk) < 1 or int(instance_chunk) < 1:
         raise ValueError("chunks must be positive")
     n_batch, frames, n_space = initial.shape
+    if nodes.ndim == 1:
+        shared = True
+        n_nu = int(nodes.size)
+    elif nodes.ndim == 2 and nodes.shape[0] == n_batch:
+        shared = False
+        n_nu = int(nodes.shape[1])
+    else:
+        raise ValueError("viscosity grid must be 1D or one row per instance")
     if n_space % int(n_sensors) != 0:
         raise ValueError("n_space must be divisible by n_sensors")
     n_steps = max(step for _, step, _, _ in slots) + 1
@@ -106,7 +120,7 @@ def sensor_mse_on_grid(
     u_mean = float(norm.u_mean)
     nu_mean = float(norm.nu_mean)
     nu_std = float(norm.nu_std)
-    mse = np.empty((n_batch, int(nodes.size)), dtype=np.float64)
+    mse = np.empty((n_batch, n_nu), dtype=np.float64)
     model.eval()
     with torch.inference_mode():
         for i0 in range(0, n_batch, int(instance_chunk)):
@@ -114,8 +128,8 @@ def sensor_mse_on_grid(
             base = norm_windows[i0:i1]
             batch = i1 - i0
             goal = targets_t[i0:i1]
-            for g0 in range(0, int(nodes.size), int(nu_chunk)):
-                g1 = min(g0 + int(nu_chunk), int(nodes.size))
+            for g0 in range(0, n_nu, int(nu_chunk)):
+                g1 = min(g0 + int(nu_chunk), n_nu)
                 width = g1 - g0
                 current = (
                     base.unsqueeze(1)
@@ -123,7 +137,13 @@ def sensor_mse_on_grid(
                     .reshape(batch * width, frames, n_space)
                     .contiguous()
                 )
-                nu_phys = torch.as_tensor(nodes[g0:g1], dtype=torch.float64).unsqueeze(0).expand(batch, width)
+                if shared:
+                    nu_phys = torch.as_tensor(nodes[g0:g1], dtype=torch.float64).unsqueeze(0).expand(batch, width)
+                else:
+                    nu_phys = torch.as_tensor(
+                        np.ascontiguousarray(nodes[i0:i1, g0:g1]),
+                        dtype=torch.float64,
+                    )
                 nu_norm = ((nu_phys.reshape(batch * width) - nu_mean) / nu_std).to(dtype=torch.float32)
                 total = torch.zeros((batch, width), dtype=torch.float64)
                 count = 0
@@ -147,6 +167,180 @@ def sensor_mse_on_grid(
     return mse
 
 
+def sensor_curve_hat(
+    model: Any,
+    norm: FieldNorm,
+    windows: np.ndarray,
+    targets: np.ndarray,
+    slots: tuple[tuple[int, int, int, int], ...],
+    grid: np.ndarray,
+    *,
+    n_sensors: int,
+    verify_full: bool = False,
+) -> tuple[np.ndarray, np.ndarray, int]:
+    """Leftmost 191-grid minimizer of the sensor curve, and its range.
+
+    Golden section reads a unimodal curve. A stride-16 subsample with more
+    than one local minimum is scored on the full grid instead. ``verify_full``
+    recomputes that full grid and refuses a mismatch. Identifiability is
+    ``(max - min) / min`` on the nodes that were evaluated, which is the
+    full curve when the fallback or the check runs.
+    """
+
+    nodes = np.asarray(grid, dtype=np.float64)
+    if nodes.ndim != 1 or int(nodes.size) < 2:
+        raise ValueError("viscosity grid must be a vector")
+    n_batch = int(np.asarray(windows).shape[0])
+    n_points = int(nodes.size)
+    cache = np.full((n_batch, n_points), np.nan, dtype=np.float64)
+    coarse = coarse_indexes(n_points, CERTIFICATE_STRIDE)
+    coarse_mse = sensor_mse_on_grid(
+        model,
+        norm,
+        windows,
+        targets,
+        slots,
+        nodes[coarse],
+        n_sensors=n_sensors,
+        nu_chunk=max(int(coarse.size), 32),
+        instance_chunk=max(n_batch, 1),
+    )
+    cache[:, coarse] = coarse_mse
+    multi = np.array(
+        [local_minimum_count(coarse_mse[row]) > 1 for row in range(n_batch)],
+        dtype=bool,
+    )
+    left = np.zeros(n_batch, dtype=int)
+    right = np.full(n_batch, n_points - 1, dtype=int)
+    pending = ~multi
+    for _ in range(n_points + 2):
+        if not bool(pending.any()):
+            break
+        probe_rows: list[tuple[int, int, int]] = []
+        scan_rows: list[int] = []
+        for row in np.flatnonzero(pending):
+            probes = golden_probe_indexes(int(left[row]), int(right[row]))
+            if probes is None:
+                scan_rows.append(int(row))
+                continue
+            i1, i2 = probes
+            if np.isfinite(cache[row, i1]) and np.isfinite(cache[row, i2]):
+                updated = golden_shrink(int(left[row]), int(right[row]), float(cache[row, i1]), float(cache[row, i2]))
+                if updated == (int(left[row]), int(right[row])):
+                    scan_rows.append(int(row))
+                else:
+                    left[row], right[row] = updated
+                continue
+            probe_rows.append((int(row), i1, i2))
+        if scan_rows:
+            _write_brackets(model, norm, windows, targets, slots, nodes, cache, left, right, scan_rows, n_sensors)
+            pending[np.array(scan_rows, dtype=int)] = False
+        if probe_rows:
+            _write_probes(model, norm, windows, targets, slots, nodes, cache, probe_rows, n_sensors)
+            for row, i1, i2 in probe_rows:
+                updated = golden_shrink(int(left[row]), int(right[row]), float(cache[row, i1]), float(cache[row, i2]))
+                if updated == (int(left[row]), int(right[row])):
+                    continue
+                left[row], right[row] = updated
+    if bool(pending.any()):
+        raise ValueError("grid search left an instance unfinished")
+    if bool(multi.any()):
+        rows = np.flatnonzero(multi)
+        cache[rows] = sensor_mse_on_grid(
+            model,
+            norm,
+            windows[rows],
+            targets[rows],
+            slots,
+            nodes,
+            n_sensors=n_sensors,
+        )
+    best = np.array([unimodal_cache_argmin(cache[row]) for row in range(n_batch)], dtype=int)
+    if verify_full:
+        full = sensor_mse_on_grid(model, norm, windows, targets, slots, nodes, n_sensors=n_sensors)
+        if not np.array_equal(np.argmin(full, axis=1), best):
+            raise ValueError("golden search left the full-grid argmin")
+        cache = full
+        best = np.argmin(full, axis=1)
+    floor = cache[np.arange(n_batch), best]
+    if np.any(floor <= 0.0) or not np.isfinite(floor).all():
+        raise ValueError("sensor curve minimum is not positive")
+    peak = np.nanmax(cache, axis=1)
+    ident = (peak - floor) / floor
+    if not np.isfinite(ident).all():
+        raise ValueError("sensor-curve identifiability is not finite")
+    return nodes[best], ident, int(np.sum(multi))
+
+
+def _write_probes(
+    model: Any,
+    norm: FieldNorm,
+    windows: np.ndarray,
+    targets: np.ndarray,
+    slots: tuple[tuple[int, int, int, int], ...],
+    grid: np.ndarray,
+    cache: np.ndarray,
+    probes: list[tuple[int, int, int]],
+    n_sensors: int,
+) -> None:
+    rows = np.array([row for row, _, _ in probes], dtype=int)
+    nodes = np.empty((rows.size, 2), dtype=np.float64)
+    for offset, (_, i1, i2) in enumerate(probes):
+        nodes[offset, 0] = grid[i1]
+        nodes[offset, 1] = grid[i2]
+    mse = sensor_mse_on_grid(
+        model,
+        norm,
+        windows[rows],
+        targets[rows],
+        slots,
+        nodes,
+        n_sensors=n_sensors,
+        nu_chunk=2,
+        instance_chunk=max(int(rows.size), 1),
+    )
+    for offset, (row, i1, i2) in enumerate(probes):
+        cache[row, i1] = mse[offset, 0]
+        cache[row, i2] = mse[offset, 1]
+
+
+def _write_brackets(
+    model: Any,
+    norm: FieldNorm,
+    windows: np.ndarray,
+    targets: np.ndarray,
+    slots: tuple[tuple[int, int, int, int], ...],
+    grid: np.ndarray,
+    cache: np.ndarray,
+    left: np.ndarray,
+    right: np.ndarray,
+    rows: list[int],
+    n_sensors: int,
+) -> None:
+    by_width: dict[int, list[int]] = {}
+    for row in rows:
+        width = int(right[row]) - int(left[row]) + 1
+        by_width.setdefault(width, []).append(int(row))
+    for width, group in by_width.items():
+        picked = np.array(group, dtype=int)
+        nodes = np.empty((picked.size, width), dtype=np.float64)
+        for offset, row in enumerate(group):
+            nodes[offset] = grid[int(left[row]) : int(right[row]) + 1]
+        mse = sensor_mse_on_grid(
+            model,
+            norm,
+            windows[picked],
+            targets[picked],
+            slots,
+            nodes,
+            n_sensors=n_sensors,
+            nu_chunk=max(width, 1),
+            instance_chunk=max(int(picked.size), 1),
+        )
+        for offset, row in enumerate(group):
+            cache[row, int(left[row]) : int(right[row]) + 1] = mse[offset]
+
+
 def run_stage_e(
     *,
     protocol_path: Path,
@@ -156,6 +350,7 @@ def run_stage_e(
     output: Path,
     figures: Path,
     part: str = "all",
+    arm: str | None = None,
 ) -> dict[str, Any]:
     """Score the frozen grid. Existing condition files are kept."""
 
@@ -181,7 +376,7 @@ def run_stage_e(
     if part in ("all", "closed-form"):
         _score_closed_form(protocol, trajectories, baseline, published, root, digest)
     if part in ("all", "operator"):
-        _score_operators(protocol, trajectories, norm, baseline, Path(run_root), root, digest)
+        _score_operators(protocol, trajectories, norm, baseline, Path(run_root), root, digest, arm=arm)
     if part == "closed-form":
         return {"format": SCORES_FORMAT, "partial": "closed-form", "protocol_sha256": digest}
     if part == "operator":
@@ -217,6 +412,15 @@ def assemble_stage_e(
         "protocol": "docs/v02/stage_e_stress_protocol.json",
         "lambda": 0.0,
         "lambda_retuned": False,
+        "nu_search": {
+            "optimizer": "uniform_grid_argmin",
+            "n_grid": int(protocol["nu_search"]["n_grid"]),
+            "tie_break": "smallest nu on the grid",
+            "evaluator": "golden_section",
+            "certificate_stride": CERTIFICATE_STRIDE,
+            "full_grid_when": "the stride subsample has more than one local minimum",
+            "reference_seed0_checked_against_full_grid": True,
+        },
         "threshold_nu": float(protocol["hard_ood"]["threshold_nu"]),
         "failure_rule": protocol["failure_rule"],
         "primary_noise_seed": int(protocol["noise"]["primary_noise_seed"]),
@@ -321,12 +525,14 @@ def _score_operators(
     run_root: Path,
     stress_root: Path,
     digest: str,
+    *,
+    arm: str | None = None,
 ) -> None:
     import torch
 
     from pinnforge.operator.checkpoint import load_fno_checkpoint
 
-    torch.set_num_threads(max(1, int(torch.get_num_threads())))
+    torch.set_num_threads(max(1, int(__import__("os").environ.get("PINNFORGE_THREADS", "4"))))
     window = window_spec(protocol)
     grid = grid_from_protocol(protocol)
     master = int(protocol["noise"]["master_seed"])
@@ -335,22 +541,30 @@ def _score_operators(
         item.instance_id: standard_normal_field(master, primary, item.instance_id, item.u.shape)
         for item in trajectories
     }
-    for condition in protocol["conditions"]:
-        spec = observation_spec(protocol, int(condition["n_sensors"]), int(condition["n_bursts"]))
-        applicable = operator_applicable(spec, window)
-        for arm in ("data_only", "hybrid_1e-2"):
-            for seed in protocol["operator"]["arms"][arm]["seeds"]:
-                destination = stress_root / "operator" / arm / f"seed_{int(seed)}" / f"{condition['id']}.json"
+    arms = ("data_only", "hybrid_1e-2") if arm is None else (arm,)
+    if any(name not in protocol["operator"]["arms"] for name in arms):
+        raise ValueError(f"unknown operator arm {arm}")
+    specs = {
+        str(condition["id"]): observation_spec(protocol, int(condition["n_sensors"]), int(condition["n_bursts"]))
+        for condition in protocol["conditions"]
+    }
+    for arm_name in arms:
+        for seed in protocol["operator"]["arms"][arm_name]["seeds"]:
+            loaded = None
+            for condition in protocol["conditions"]:
+                destination = stress_root / "operator" / arm_name / f"seed_{int(seed)}" / f"{condition['id']}.json"
                 if destination.is_file():
-                    _require_existing(destination, digest, arm)
+                    _require_existing(destination, digest, arm_name)
                     continue
+                spec = specs[str(condition["id"])]
+                applicable = operator_applicable(spec, window)
                 if not applicable:
                     payload = _condition_payload(
                         protocol,
                         condition,
                         digest,
                         baseline,
-                        method=arm,
+                        method=arm_name,
                         noise_seed=primary,
                         records=[],
                         applicable=False,
@@ -359,21 +573,31 @@ def _score_operators(
                     )
                     write_stage_e_json(payload, destination)
                     continue
-                checkpoint = Path(run_root) / arm / f"seed_{int(seed)}" / "checkpoint.pt"
+                if loaded is None:
+                    checkpoint = Path(run_root) / arm_name / f"seed_{int(seed)}" / "checkpoint.pt"
+                    loaded = load_fno_checkpoint(checkpoint)
+                    _require_checkpoint(loaded, _stage_d_view(protocol), arm_name)
+                    _require_same_norm(loaded.norm, norm)
+                    if abs(float(loaded.norm.u_std) - float(norm.u_std)) > _NORM_ABS:
+                        raise ValueError("checkpoint field norm drifted")
                 started = time.perf_counter()
-                loaded = load_fno_checkpoint(checkpoint)
-                _require_checkpoint(loaded, _stage_d_view(protocol), arm)
-                _require_same_norm(loaded.norm, norm)
-                if abs(float(loaded.norm.u_std) - float(norm.u_std)) > _NORM_ABS:
-                    raise ValueError("checkpoint field norm drifted")
                 noisy = _noisy(trajectories, epsilon, float(condition["noise_fraction"]))
-                records = _operator_records(loaded.model, norm, noisy, spec, window, grid, baseline)
+                verify = str(condition["id"]) == "noise0_sensors32_bursts4" and int(seed) == 0
+                records, n_full = _operator_records(
+                    loaded.model,
+                    norm,
+                    noisy,
+                    spec,
+                    window,
+                    grid,
+                    verify_full=verify,
+                )
                 payload = _condition_payload(
                     protocol,
                     condition,
                     digest,
                     baseline,
-                    method=arm,
+                    method=arm_name,
                     noise_seed=primary,
                     records=records,
                     applicable=True,
@@ -385,7 +609,8 @@ def _score_operators(
                 failures = sum(1 for row in records if row["failure"])
                 elapsed = time.perf_counter() - started
                 print(
-                    f"operator {arm} seed {seed} {condition['id']} failures={failures} seconds={elapsed:.1f}",
+                    f"operator {arm_name} seed {seed} {condition['id']} failures={failures} "
+                    f"full_grid={n_full} seconds={elapsed:.1f}",
                     flush=True,
                 )
 
@@ -397,13 +622,13 @@ def _operator_records(
     spec: Any,
     window: Any,
     grid: np.ndarray,
-    baseline: float,
-) -> list[dict[str, Any]]:
+    *,
+    verify_full: bool = False,
+) -> tuple[list[dict[str, Any]], int]:
     from pinnforge.operator.inverse import observed_residual_terms
-    from pinnforge.operator.stage_d import nu_from_objective
 
     prepared = prepare_sparse_batch(trajectories, spec, window)
-    curves = sensor_mse_on_grid(
+    hats, idents, n_full = sensor_curve_hat(
         model,
         norm,
         prepared["windows"],
@@ -411,14 +636,13 @@ def _operator_records(
         prepared["slots"],
         grid,
         n_sensors=int(spec.n_sensors),
+        verify_full=verify_full,
     )
     n_times = int(trajectories[0].u.shape[0])
     records = []
     for index, item in enumerate(trajectories):
-        curve = curves[index]
-        hat = nu_from_objective(curve, grid)
-        floor = float(np.min(curve))
-        ident = float((np.max(curve) - floor) / floor) if floor > 0.0 else float("inf")
+        hat = float(hats[index])
+        ident = float(idents[index])
         if not np.isfinite(ident):
             raise ValueError(f"instance {item.instance_id} sensor curve is flat at 0")
         advection, diffusion = observed_residual_terms(
@@ -444,7 +668,7 @@ def _operator_records(
                 "mean_square_residual_at_truth": truth_square,
             }
         )
-    return records
+    return records, n_full
 
 
 def _assemble_condition(

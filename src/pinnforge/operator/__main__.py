@@ -324,6 +324,12 @@ def build_parser() -> argparse.ArgumentParser:
         default="all",
         help="closed-form and operator can be resumed; assemble only reads condition files",
     )
+    stage_e.add_argument(
+        "--arm",
+        choices=("data_only", "hybrid_1e-2"),
+        default=None,
+        help="score one operator arm; the default scores both",
+    )
     return parser
 
 
@@ -1015,6 +1021,7 @@ def _stage_e_stress(args: argparse.Namespace) -> int:
         output=args.output,
         figures=args.figures,
         part=args.part,
+        arm=args.arm,
     )
     if payload.get("partial"):
         print(f"stage-e {payload['partial']} protocol={payload['protocol_sha256']}")

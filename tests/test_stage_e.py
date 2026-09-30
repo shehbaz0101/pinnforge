@@ -14,14 +14,17 @@ from pinnforge.operator.stage_e import (
     apply_noise,
     axis_conditions,
     breakdown_table,
+    coarse_indexes,
     field_std,
     is_failure,
     load_stage_e_protocol,
+    local_minimum_count,
     noise_seeds_for,
     observation_spec,
     operator_applicable,
     sensor_columns,
     standard_normal_field,
+    unimodal_grid_index,
     window_spec,
     write_stress_chart,
 )
@@ -180,6 +183,27 @@ def test_stress_chart_writes_categories_and_the_ten_percent_line(tmp_path: Path)
     assert "1%" in text
 
 
+def test_golden_search_matches_the_leftmost_unimodal_argmin() -> None:
+    generator = np.random.default_rng(0)
+    for trial in range(40):
+        plateau = 1 if trial % 5 else int(generator.integers(1, 6))
+        minimum = int(generator.integers(0, 191))
+        right_len = 191 - minimum - plateau
+        if right_len < 0:
+            plateau = 191 - minimum
+            right_len = 0
+        left = np.cumsum(generator.uniform(0.01, 1.0, minimum))[::-1] if minimum else np.array([])
+        right = np.cumsum(generator.uniform(0.01, 1.0, right_len)) if right_len else np.array([])
+        curve = np.concatenate([left, np.zeros(plateau), right]) + 1.0
+        assert unimodal_grid_index(curve) == int(np.argmin(curve))
+    indexes = coarse_indexes(191, 16)
+    assert int(indexes[0]) == 0 and int(indexes[-1]) == 190
+    valley = np.concatenate([np.arange(8, 0, -1), np.arange(1, 8)])
+    assert local_minimum_count(valley.astype(np.float64)) == 1
+    two = np.array([3.0, 1.0, 2.0, 0.5, 2.0], dtype=np.float64)
+    assert local_minimum_count(two) == 2
+
+
 @pytest.mark.ml
 def test_batched_sensor_curve_matches_the_single_viscosity_reduction() -> None:
     from pinnforge.operator.fno import FNO1d
@@ -202,4 +226,12 @@ def test_batched_sensor_curve_matches_the_single_viscosity_reduction() -> None:
     )
     assert single.shape == (3, 4)
     assert np.allclose(single, batched)
+    per_row = np.stack([grid[[0, 3]], grid[[1, 2]], grid[[2, 2]]])
+    paired = sensor_mse_on_grid(
+        model, norm, windows, targets, slots, per_row, n_sensors=8, nu_chunk=2, instance_chunk=3
+    )
+    assert paired.shape == (3, 2)
+    assert np.allclose(paired[0], batched[0, [0, 3]])
+    assert np.allclose(paired[1], batched[1, [1, 2]])
+    assert np.allclose(paired[2], batched[2, [2, 2]])
     assert np.isfinite(batched).all()

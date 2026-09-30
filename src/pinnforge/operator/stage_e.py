@@ -79,6 +79,125 @@ _SCORE_KEYS = (
     "n_nonpositive",
     "n_worse_than_baseline",
 )
+_INV_PHI = (math.sqrt(5) - 1.0) / 2.0
+CERTIFICATE_STRIDE = 16
+
+
+def coarse_indexes(n_grid: int, stride: int) -> np.ndarray:
+    """Indexes for a uniform subsample, including both endpoints."""
+
+    if isinstance(n_grid, bool) or not isinstance(n_grid, (int, np.integer)):
+        raise ValueError("n_grid must be an integer")
+    n_points = int(n_grid)
+    step = int(stride)
+    if n_points < 2 or step < 1:
+        raise ValueError("grid search needs at least two nodes and a positive stride")
+    indexes = np.arange(0, n_points, step, dtype=int)
+    if int(indexes[-1]) != n_points - 1:
+        indexes = np.concatenate([indexes, np.array([n_points - 1], dtype=int)])
+    return indexes
+
+
+def local_minimum_count(curve: np.ndarray) -> int:
+    """Count valleys. A flat bottom counts once, on its right edge."""
+
+    finite = np.asarray(curve, dtype=np.float64)
+    if finite.ndim != 1 or finite.size < 1 or not np.isfinite(finite).all():
+        raise ValueError("local-minimum count needs a finite vector")
+    count = 0
+    last = int(finite.size) - 1
+    for index in range(int(finite.size)):
+        left = float(finite[index - 1]) if index > 0 else math.inf
+        right = float(finite[index + 1]) if index < last else math.inf
+        if float(finite[index]) <= left and float(finite[index]) < right:
+            count += 1
+    return count
+
+
+def golden_probe_indexes(left: int, right: int) -> tuple[int, int] | None:
+    """Two interior probes, or ``None`` when the bracket should be scanned."""
+
+    span = int(right) - int(left)
+    if span <= 3:
+        return None
+    i1 = int(left) + int(math.floor(span * (1.0 - _INV_PHI)))
+    i2 = int(left) + int(math.ceil(span * _INV_PHI))
+    if i1 <= int(left):
+        i1 = int(left) + 1
+    if i2 >= int(right):
+        i2 = int(right) - 1
+    if i1 >= i2:
+        third = max(1, span // 3)
+        i1 = int(left) + third
+        i2 = int(right) - third
+        if i1 >= i2:
+            return None
+    return i1, i2
+
+
+def golden_shrink(left: int, right: int, value_left: float, value_right: float) -> tuple[int, int]:
+    """Shrink a unimodal bracket. The smaller probe keeps the side that holds it."""
+
+    probes = golden_probe_indexes(int(left), int(right))
+    if probes is None:
+        return int(left), int(right)
+    i1, i2 = probes
+    if float(value_left) <= float(value_right):
+        updated = (int(left), i2)
+    else:
+        updated = (i1, int(right))
+    if updated == (int(left), int(right)):
+        return int(left), int(right)
+    return updated
+
+
+def unimodal_cache_argmin(cache_row: np.ndarray) -> int:
+    """Leftmost finite entry. Unevaluated nodes are ignored."""
+
+    values = np.asarray(cache_row, dtype=np.float64)
+    if values.ndim != 1:
+        raise ValueError("cache row must be one-dimensional")
+    finite = np.isfinite(values)
+    if not bool(finite.any()):
+        raise ValueError("grid search cache is empty")
+    masked = np.where(finite, values, np.inf)
+    return int(np.argmin(masked))
+
+
+def unimodal_grid_index(curve: np.ndarray) -> int:
+    """Leftmost minimizer of a unimodal curve, without reading every node.
+
+    The bracket is the discrete golden cut. A plateau keeps the smaller
+    index because a tie shrinks toward the left and ``argmin`` breaks ties
+    toward the first finite entry. A curve with several valleys is not
+    covered; the caller falls back to the full grid in that case.
+    """
+
+    values = np.asarray(curve, dtype=np.float64)
+    if values.ndim != 1 or values.size < 2 or not np.isfinite(values).all():
+        raise ValueError("unimodal search needs a finite curve")
+    n_points = int(values.size)
+    cache = np.full(n_points, np.nan, dtype=np.float64)
+    left = 0
+    right = n_points - 1
+    for _ in range(n_points):
+        probes = golden_probe_indexes(left, right)
+        if probes is None:
+            cache[left : right + 1] = values[left : right + 1]
+            break
+        i1, i2 = probes
+        cache[i1] = values[i1]
+        cache[i2] = values[i2]
+        updated = golden_shrink(left, right, float(cache[i1]), float(cache[i2]))
+        if updated == (left, right):
+            cache[left : right + 1] = values[left : right + 1]
+            break
+        left, right = updated
+    else:
+        raise ValueError("grid search did not finish")
+    return unimodal_cache_argmin(cache)
+
+
 def load_stage_e_protocol(path: Path) -> dict[str, Any]:
     """Read the Stage E contract and reject a file that already holds scores."""
 
