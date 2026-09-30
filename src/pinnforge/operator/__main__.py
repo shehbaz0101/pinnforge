@@ -14,10 +14,12 @@ weight, and it does not retrain the data-only arm. ``aggregate`` reduces
 per-seed records. ``select-hybrid`` reads validation manifests only.
 ``operator-inverse`` fits viscosity on the Stage D grid.
 ``select-objective`` reads validation curves only. ``stage-d-scores``
-reduces the test curves after that selection. A Stage F protocol trains
-only on viscosities above the frozen ``hard_ood`` cut. ``ood-slices``,
-``ood-aggregate``, ``ood-inverse``, and ``stage-f-scores`` score that
-restricted operator. The hybrid weight stays ``1e-2``.
+reduces the test curves after that selection. ``stage-e-stress`` scores
+the preregistered noise and sparsity grid and does not retune ``λ``.
+A Stage F protocol trains only on viscosities above the frozen
+``hard_ood`` cut. ``ood-slices``, ``ood-aggregate``, ``ood-inverse``,
+and ``stage-f-scores`` score that restricted operator. The hybrid weight
+stays ``1e-2``.
 Torch is imported only when a command actually trains, scores, or runs
 the Adam viscosity check. ``aggregate``, ``select-hybrid``, and
 ``stage-c-scores`` do not import torch.
@@ -83,6 +85,8 @@ def main(argv: list[str] | None = None) -> int:
             return _ood_inverse(args)
         if args.command == "stage-f-scores":
             return _stage_f_scores(args)
+        if args.command == "stage-e-stress":
+            return _stage_e_stress(args)
     except ValueError as exc:
         parser.error(str(exc))
     parser.error(f"unknown command {args.command}")
@@ -102,6 +106,7 @@ def build_parser() -> argparse.ArgumentParser:
             "slices scores hard_ood on the harder pilot. "
             "A Stage C protocol selects the hybrid weight on validation only. "
             "operator-inverse fits viscosity with a trained FNO on the Stage D grid. "
+            "stage-e-stress scores the preregistered noise and sparsity grid. "
             "A Stage F protocol trains above the frozen hard_ood cut and scores "
             "the low-viscosity test slice separately."
         ),
@@ -303,6 +308,22 @@ def build_parser() -> argparse.ArgumentParser:
     stage_f.add_argument("--hybrid-forward", type=Path, required=True)
     stage_f.add_argument("--inverse", type=Path, nargs="+", required=True)
     stage_f.add_argument("--output", type=Path, required=True)
+    stage_e = subparsers.add_parser(
+        "stage-e-stress",
+        help="Score the preregistered Stage E noise and sparsity grid",
+    )
+    stage_e.add_argument("--protocol", type=Path, default=Path("docs/v02/stage_e_stress_protocol.json"))
+    stage_e.add_argument("--pilot", type=Path, default=Path("artifacts/burgers_hard_pilot"))
+    stage_e.add_argument("--manifest", type=Path, default=Path("docs/stage_a/pilot_manifest.json"))
+    stage_e.add_argument("--run-root", type=Path, default=Path("runs/stage_e"))
+    stage_e.add_argument("--output", type=Path, default=Path("docs/v02/stage_e_scores.json"))
+    stage_e.add_argument("--figures", type=Path, default=Path("docs/v02/stage_e"))
+    stage_e.add_argument(
+        "--part",
+        choices=("all", "closed-form", "operator", "assemble"),
+        default="all",
+        help="closed-form and operator can be resumed; assemble only reads condition files",
+    )
     return parser
 
 
@@ -976,6 +997,35 @@ def _stage_d_scores(args: argparse.Namespace) -> int:
             f"paired delta {paired['mean_rel_error_minus_ls']['mean']:.8e}"
         )
     print(f"json: {Path(args.output).as_posix()}")
+    return 0
+
+
+def _stage_e_stress(args: argparse.Namespace) -> int:
+    from pinnforge.ml_import import InstallHint
+
+    try:
+        from pinnforge.operator.stage_e_fit import run_stage_e
+    except InstallHint as exc:
+        raise SystemExit(str(exc)) from exc
+    payload = run_stage_e(
+        protocol_path=args.protocol,
+        pilot_dir=args.pilot,
+        manifest_path=args.manifest,
+        run_root=args.run_root,
+        output=args.output,
+        figures=args.figures,
+        part=args.part,
+    )
+    if payload.get("partial"):
+        print(f"stage-e {payload['partial']} protocol={payload['protocol_sha256']}")
+        return 0
+    hard = payload["breakdowns"]["noise"]["closed_form_ls"]["hard_ood"]
+    print(
+        "stage-e reference_matches_stage_a="
+        f"{payload['reference_matches_stage_a']} "
+        f"closed_form_hard_ood_failure_onset={hard['failure_onset']}"
+    )
+    print(f"wrote {args.output}")
     return 0
 
 

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Stage E stresses the viscosity inverse under additive noise and coarser masks. The version string stays `0.1.0`. The Stage A–D tables are not edited. `λ` stays 0.
+
+- [docs/v02/stage_e_stress_protocol.json](docs/v02/stage_e_stress_protocol.json) freezes the noise model, the sensor and burst grid, the noise seeds, and the unchanged `0.5` failure rule before the test scores.
+
 Stage D fits viscosity from the unchanged `sensors32_bursts` mask with the Stage B data-only FNO and the Stage C hybrid `1e-2` FNO. The version string stays `0.1.0`. The Stage A–C tables are not edited.
 
 - [docs/v02/stage_d_inverse_protocol.json](docs/v02/stage_d_inverse_protocol.json) freezes the mask, the 191-point grid on `[0.005, 0.1]`, seeds 0 through 4, the `0.5` relative-error rule, and the Stage A `hard_ood` cut before the test scores. The residual weight is chosen on validation `hard_ood` only. Both arms select `λ = 0`.

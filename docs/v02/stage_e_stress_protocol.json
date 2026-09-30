@@ -1,0 +1,204 @@
+{
+  "format": "pinnforge.stage_e_stress_protocol.v1",
+  "frozen_before_test_evaluation": true,
+  "role": "Stage E sparse and noisy observation stress for the viscosity inverse on the Stage A harder Burgers pilot. This file is the scoring contract. It is not a test table.",
+  "test_used_for_selection": false,
+  "hard_ood_refit": false,
+  "prior_protocols_edited": false,
+  "prior_reported_numbers_edited": false,
+  "lambda_retuned": false,
+  "mask_family_retuned_after_scores": false,
+  "question": "How do the closed-form residual least squares and the Stage D operator-conditioned inverse degrade as observations get noisier and sparser, and where does each first exceed 10% mean relative error or first fail the 0.5 rule? A result where the operator advantage vanishes is an acceptable outcome.",
+  "failure_rule": "nu_hat <= 0 or rel_error > 0.5",
+  "failure_relative_error": 0.5,
+  "hard_ood": {
+    "name": "hard_ood",
+    "comparison": "nu <= threshold_nu",
+    "threshold_nu": 0.027028120493367818,
+    "source": "docs/v02/pilot_protocol.json",
+    "refit": false,
+    "complement": "instances in the scored split with nu > threshold_nu"
+  },
+  "below_stage2_floor": {
+    "comparison": "nu < 0.02",
+    "threshold_nu": 0.02,
+    "source": "stage2_nu_min in docs/v02/pilot_protocol.json"
+  },
+  "slices": ["full_test", "hard_ood", "complement", "below_stage2_floor"],
+  "split": "test",
+  "n_space": 1024,
+  "nu_search": {
+    "min": 0.005,
+    "max": 0.1,
+    "source": "nu_range in docs/v02/pilot_protocol.json",
+    "optimizer": "uniform_grid_argmin",
+    "n_grid": 191,
+    "grid": "linspace(min, max, n_grid), both endpoints included",
+    "tie_break": "smallest nu on the grid",
+    "unchanged_from": "docs/v02/stage_d_inverse_protocol.json"
+  },
+  "objective": {
+    "name": "stage_d_sensor_mse",
+    "lambda": 0.0,
+    "retuned": false,
+    "source": "docs/v02/stage_d_objective_selection.json",
+    "source_sha256": "93fe0fb58f4be663bc534528b82f2117f1adbbb0cd765df39a7fbe4b830f0b5a",
+    "rule": "Both Stage D arms selected lambda 0 on validation hard_ood. Stage E holds that choice fixed. It does not read the validation split and it does not add a new weight or a regularizer."
+  },
+  "noise": {
+    "model": "additive_gaussian",
+    "distribution": "i.i.d. standard normal on the saved grid, scaled by fraction times the population standard deviation of the clean field",
+    "ddof": 0,
+    "std_domain": "all stored times and all spatial nodes of that instance's clean trajectory",
+    "std_uses_test_viscosity": false,
+    "fraction_zero_adds_nothing": true,
+    "shared_epsilon": "One epsilon field per (noise_seed, instance_id). Every mask and every positive fraction restricts or rescales that same field. Fraction 0 does not add it.",
+    "estimator_reads_unobserved_nodes": false,
+    "estimator_reads_clean_field": false,
+    "bit_generator": "PCG64",
+    "seed_sequence": ["master_seed", "noise_seed", "instance_id"],
+    "master_seed": 20260930,
+    "noise_seeds": [0, 1, 2],
+    "primary_noise_seed": 0,
+    "fractions": [0.0, 0.001, 0.005, 0.01, 0.02, 0.05],
+    "operator_noise_seeds": [0],
+    "closed_form_extra_seeds_on_noise_axis": [1, 2],
+    "extra_seed_role": "Seeds 1 and 2 repeat only the closed-form noise axis, to show draw-to-draw movement of that estimator. They are not a second operator grid. Breakdown thresholds use the primary seed, which is the seed every method shares."
+  },
+  "sensors": {
+    "counts": [32, 16, 8],
+    "placement": "equispaced periodic nodes starting at index 0, stride = n_space / n_sensors",
+    "n_space_divisible": true
+  },
+  "burst_schedule": {
+    "length": 5,
+    "frame_dt": 0.01,
+    "starts": {
+      "4": [0, 24, 48, 72],
+      "2": [0, 48],
+      "1": [0]
+    },
+    "reference_name": "sensors32_bursts",
+    "reference_matches_stage_5": true
+  },
+  "operator_requires_target_burst": true,
+  "operator_undefined": {
+    "when": "n_bursts == 1 leaves only the opening window, so the Stage D sensor objective has no target burst",
+    "recorded_as": "inapplicable, not as a 0.5-rule failure and not as a fabricated nu_hat"
+  },
+  "conditions": [
+    {"id": "noise0_sensors32_bursts4", "noise_fraction": 0.0, "n_sensors": 32, "n_bursts": 4, "axes": ["noise", "sensors", "bursts"]},
+    {"id": "noise0p001_sensors32_bursts4", "noise_fraction": 0.001, "n_sensors": 32, "n_bursts": 4, "axes": ["noise"]},
+    {"id": "noise0p005_sensors32_bursts4", "noise_fraction": 0.005, "n_sensors": 32, "n_bursts": 4, "axes": ["noise"]},
+    {"id": "noise0p01_sensors32_bursts4", "noise_fraction": 0.01, "n_sensors": 32, "n_bursts": 4, "axes": ["noise"]},
+    {"id": "noise0p02_sensors32_bursts4", "noise_fraction": 0.02, "n_sensors": 32, "n_bursts": 4, "axes": ["noise"]},
+    {"id": "noise0p05_sensors32_bursts4", "noise_fraction": 0.05, "n_sensors": 32, "n_bursts": 4, "axes": ["noise"]},
+    {"id": "noise0_sensors16_bursts4", "noise_fraction": 0.0, "n_sensors": 16, "n_bursts": 4, "axes": ["sensors"]},
+    {"id": "noise0_sensors8_bursts4", "noise_fraction": 0.0, "n_sensors": 8, "n_bursts": 4, "axes": ["sensors"]},
+    {"id": "noise0_sensors32_bursts2", "noise_fraction": 0.0, "n_sensors": 32, "n_bursts": 2, "axes": ["bursts"]},
+    {"id": "noise0_sensors32_bursts1", "noise_fraction": 0.0, "n_sensors": 32, "n_bursts": 1, "axes": ["bursts"]},
+    {"id": "noise0p01_sensors16_bursts4", "noise_fraction": 0.01, "n_sensors": 16, "n_bursts": 4, "axes": ["interaction"]},
+    {"id": "noise0p01_sensors8_bursts4", "noise_fraction": 0.01, "n_sensors": 8, "n_bursts": 4, "axes": ["interaction"]},
+    {"id": "noise0p05_sensors8_bursts4", "noise_fraction": 0.05, "n_sensors": 8, "n_bursts": 4, "axes": ["interaction"]},
+    {"id": "noise0p01_sensors32_bursts2", "noise_fraction": 0.01, "n_sensors": 32, "n_bursts": 2, "axes": ["interaction"]}
+  ],
+  "methods": [
+    "closed_form_ls",
+    "operator_data_only",
+    "operator_hybrid_1e-2",
+    "training_mean",
+    "dense_ls_clean"
+  ],
+  "dense_ls_clean": {
+    "role": "No-noise ceiling. Every saved frame and every grid point of the clean field. Not recomputed under noise or under a sparse mask.",
+    "pattern": "dense_reference"
+  },
+  "training_mean": {
+    "role": "Training-split mean viscosity. It does not read the test observations. The same slice values are the horizontal reference on every curve.",
+    "source": "manifest training-split mean"
+  },
+  "closed_form_ls": {
+    "estimator": "normal equation of the Stage 4 central Burgers residual on the condition mask",
+    "symbol": "pinnforge.operator.inverse.least_squares_viscosity"
+  },
+  "operator": {
+    "estimator": "Stage D sparse rollout sensor mean square, lambda 0, same 191-point grid",
+    "reads_unmasked_field": false,
+    "oracle_onestep": false,
+    "arms": {
+      "data_only": {
+        "train_protocol": "docs/v02/stage_b_train_protocol.json",
+        "train_protocol_sha256": "51d4bb05ca5ae6096c22187c131d6fa52d8e025ac9b7bddfa876485615ae200a",
+        "loss": "data",
+        "seeds": [0, 1, 2, 3, 4]
+      },
+      "hybrid_1e-2": {
+        "train_protocol": "docs/v02/stage_c_train_protocol.json",
+        "train_protocol_sha256": "1631d7d60e83ea1bdecf1d63de550f952f54f835385cf66786e563a643cd9708",
+        "loss": "hybrid",
+        "residual_weight": 0.01,
+        "weight_source": "docs/v02/stage_c_weight_selection.json",
+        "weight_source_sha256": "ff636d79e5eecd8e30690f419c1017674a29cc74896d0de60b83ab48387747f9",
+        "seeds": [0, 1, 2, 3, 4]
+      }
+    }
+  },
+  "aggregation": {
+    "operator_unit": "one scalar per seed per slice",
+    "center": "arithmetic mean",
+    "spread": "sample standard deviation",
+    "ddof": 1,
+    "minimum_seeds": 5,
+    "drop_seeds": false,
+    "threshold_uses": "the across-seed mean, on primary noise seed 0"
+  },
+  "breakdown": {
+    "mean_rel_error_threshold": 0.1,
+    "rel_onset": "first condition along the ordered axis whose mean relative error is greater than 0.1",
+    "failure_onset": "first condition along the ordered axis whose failure count is at least 1; for an operator arm the count is the across-seed mean, and the onset fires when that mean is greater than 0",
+    "reference_already": "if the reference cell already meets the predicate, the onset is that cell",
+    "inapplicable_onset": "first condition on the axis where the operator has no target burst",
+    "primary_noise_seed": 0,
+    "axes": {
+      "noise": {
+        "order": "increasing noise_fraction",
+        "held_fixed": {"n_sensors": 32, "n_bursts": 4, "noise_seed": 0}
+      },
+      "sensors": {
+        "order": "decreasing n_sensors",
+        "held_fixed": {"noise_fraction": 0.0, "n_bursts": 4, "noise_seed": 0}
+      },
+      "bursts": {
+        "order": "decreasing n_bursts",
+        "held_fixed": {"noise_fraction": 0.0, "n_sensors": 32, "noise_seed": 0}
+      }
+    }
+  },
+  "diagnostics_not_used_for_estimates": [
+    "clean-field sensor u_xx alias at the condition's sensor count",
+    "sensor-curve identifiability (max - min) / min on the viscosity grid",
+    "counts of operator estimates sitting on the grid endpoints"
+  ],
+  "stage_d_protocol": "docs/v02/stage_d_inverse_protocol.json",
+  "stage_d_protocol_sha256": "24450a3d7dec8a1c0347b099c82f27f1941f6e869f4041b320cff302adad8a0a",
+  "pilot": "artifacts/burgers_hard_pilot",
+  "manifest": "docs/stage_a/pilot_manifest.json",
+  "data_protocol": "docs/v02/pilot_protocol.json",
+  "data_protocol_sha256": "bc640feab6220d8871cfcdc72997bdb7cd717c1ead67d70bd347eed19ddf8c6c",
+  "baseline_record": "docs/v02/inverse_stress.json",
+  "baseline_record_sha256": "180990be33fdc4a67eb62d610dfdd8be3516ca6876a9769cadb632c2bd78efaf",
+  "zero_noise_reference_must_match_stage_a": true,
+  "window": {"input_frames": 8, "output_frames": 8, "stride": 8},
+  "device": "cpu",
+  "not_claimed": [
+    "a retuned hard_ood threshold, Stage 5 mask, or Stage A, B, C, or D protocol",
+    "a change to any previously reported number",
+    "that lambda was re-selected under noise or sparsity",
+    "a new regularizer, a learned inverse, or an architecture change",
+    "that noise seeds 1 and 2 were scored for the operator",
+    "that the one-burst mask has an operator estimate",
+    "that the dense least squares was shown noisy observations",
+    "that the noise standard deviation is computed from the sensors alone",
+    "that a vanishing operator advantage is a failure of the study"
+  ]
+}
