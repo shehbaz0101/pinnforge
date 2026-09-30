@@ -12,6 +12,9 @@ A Stage B training protocol still requires the data-only loss. A Stage C
 training protocol scores residual and the validation-selected hybrid
 weight, and it does not retrain the data-only arm. ``aggregate`` reduces
 per-seed records. ``select-hybrid`` reads validation manifests only.
+``operator-inverse`` fits viscosity on the Stage D grid.
+``select-objective`` reads validation curves only. ``stage-d-scores``
+reduces the test curves after that selection.
 Torch is imported only when a command actually trains, scores, or runs
 the Adam viscosity check. ``aggregate``, ``select-hybrid``, and
 ``stage-c-scores`` do not import torch.
@@ -63,6 +66,12 @@ def main(argv: list[str] | None = None) -> int:
             return _select_hybrid(args)
         if args.command == "stage-c-scores":
             return _stage_c_scores(args)
+        if args.command == "operator-inverse":
+            return _operator_inverse(args)
+        if args.command == "select-objective":
+            return _select_objective(args)
+        if args.command == "stage-d-scores":
+            return _stage_d_scores(args)
     except ValueError as exc:
         parser.error(str(exc))
     parser.error(f"unknown command {args.command}")
@@ -80,7 +89,8 @@ def build_parser() -> argparse.ArgumentParser:
             "residual and hybrid add the discrete Burgers residual. "
             "inverse recovers scalar viscosity from preregistered sparse sensors. "
             "slices scores hard_ood on the harder pilot. "
-            "A Stage C protocol selects the hybrid weight on validation only."
+            "A Stage C protocol selects the hybrid weight on validation only. "
+            "operator-inverse fits viscosity with a trained FNO on the Stage D grid."
         ),
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -216,6 +226,34 @@ def build_parser() -> argparse.ArgumentParser:
     scores.add_argument("--residual", type=Path, required=True)
     scores.add_argument("--hybrid", type=Path, required=True)
     scores.add_argument("--output", type=Path, required=True)
+    operator_inverse = subparsers.add_parser(
+        "operator-inverse",
+        help="Fit viscosity on the Stage D grid for one trained FNO checkpoint",
+    )
+    operator_inverse.add_argument("--protocol", type=Path, default=Path("docs/v02/stage_d_inverse_protocol.json"))
+    operator_inverse.add_argument("--pilot", type=Path, default=Path("artifacts/burgers_hard_pilot"))
+    operator_inverse.add_argument("--manifest", type=Path, default=Path("docs/stage_a/pilot_manifest.json"))
+    operator_inverse.add_argument("--checkpoint", type=Path, required=True)
+    operator_inverse.add_argument("--arm", choices=("data_only", "hybrid_1e-2"), required=True)
+    operator_inverse.add_argument("--split", choices=("val", "test"), required=True)
+    operator_inverse.add_argument("--output", type=Path, required=True)
+    select_objective = subparsers.add_parser(
+        "select-objective",
+        help="Choose the Stage D residual weight from validation curves only",
+    )
+    select_objective.add_argument("--protocol", type=Path, default=Path("docs/v02/stage_d_inverse_protocol.json"))
+    select_objective.add_argument("--inputs", type=Path, nargs="+", required=True)
+    select_objective.add_argument("--output", type=Path, required=True)
+    stage_d = subparsers.add_parser(
+        "stage-d-scores",
+        help="Aggregate Stage D test curves against the closed-form baselines",
+    )
+    stage_d.add_argument("--protocol", type=Path, default=Path("docs/v02/stage_d_inverse_protocol.json"))
+    stage_d.add_argument("--selection", type=Path, required=True)
+    stage_d.add_argument("--inputs", type=Path, nargs="+", required=True)
+    stage_d.add_argument("--pilot", type=Path, default=Path("artifacts/burgers_hard_pilot"))
+    stage_d.add_argument("--manifest", type=Path, default=Path("docs/stage_a/pilot_manifest.json"))
+    stage_d.add_argument("--output", type=Path, required=True)
     return parser
 
 
@@ -594,6 +632,111 @@ def _read_records(paths: list[Path]) -> list[dict[str, object]]:
             raise ValueError(f"{path} must contain a JSON object")
         records.append(payload)
     return records
+
+
+def _operator_inverse(args: argparse.Namespace) -> int:
+    from pinnforge.ml_import import InstallHint
+
+    try:
+        from pinnforge.operator.stage_d import (
+            choose_nu,
+            load_stage_d_protocol,
+            viscosity_grid,
+            write_stage_d_json,
+        )
+        from pinnforge.operator.stage_d_fit import run_operator_inverse
+    except InstallHint as exc:
+        print(str(exc), file=sys.stderr)
+        raise SystemExit(1) from exc
+    except ModuleNotFoundError as exc:
+        if exc.name != "torch":
+            raise
+        print(str(InstallHint()), file=sys.stderr)
+        raise SystemExit(1) from exc
+    payload = run_operator_inverse(
+        protocol_path=args.protocol,
+        pilot_dir=args.pilot,
+        manifest_path=args.manifest,
+        checkpoint=args.checkpoint,
+        arm=args.arm,
+        split=args.split,
+    )
+    write_stage_d_json(payload, args.output)
+    grid = viscosity_grid(load_stage_d_protocol(args.protocol))
+    hats = [choose_nu(item, grid, 0.0) for item in payload["instances"]]
+    nu = _mean_rel(payload["instances"], hats)
+    print(f"split: {args.split}")
+    print(f"arm: {args.arm}")
+    print(f"seed: {payload['seed']}")
+    print(f"lambda0_mean_rel_error: {nu:.8e}")
+    print(f"json: {Path(args.output).as_posix()}")
+    return 0
+
+
+def _mean_rel(items: list[dict[str, object]], hats: list[float]) -> float:
+    total = 0.0
+    for item, hat in zip(items, hats, strict=True):
+        total += abs(hat - float(item["nu"])) / float(item["nu"])  # type: ignore[arg-type]
+    return total / len(items)
+
+
+def _select_objective(args: argparse.Namespace) -> int:
+    from pinnforge.operator.stage_d import select_objective, write_stage_d_json
+
+    payload = select_objective(args.inputs, args.protocol)
+    write_stage_d_json(payload, args.output)
+    for arm, block in payload["arms"].items():
+        print(
+            f"{arm}_lambda: {block['selected_lambda']} "
+            f"val_hard_ood_mean_rel: {block['selected_mean_hard_ood_mean_rel_error']:.8e}"
+        )
+    print(f"json: {Path(args.output).as_posix()}")
+    return 0
+
+
+def _stage_d_scores(args: argparse.Namespace) -> int:
+    from pinnforge.operator.data import load_split_trajectories
+    from pinnforge.operator.inverse import training_baseline_nu
+    from pinnforge.operator.stage_d import (
+        ARM_NAMES,
+        assemble_scores,
+        assert_published_baselines,
+        baseline_tables,
+        load_objective_selection,
+        load_run,
+        load_stage_d_protocol,
+        protocol_sha256,
+        write_stage_d_json,
+    )
+
+    protocol = load_stage_d_protocol(args.protocol)
+    digest = protocol_sha256(args.protocol)
+    selection = load_objective_selection(args.selection, protocol, digest)
+    runs = [load_run(path) for path in args.inputs]
+    trajectories = load_split_trajectories(
+        args.pilot,
+        args.manifest,
+        ("test",),
+        check_field_hash=True,
+    )
+    baseline = training_baseline_nu(args.manifest)
+    tables = baseline_tables(trajectories, baseline, protocol)
+    assert_published_baselines(tables, Path(protocol["baseline_record"]))
+    payload = assemble_scores(runs, selection, protocol, tables)
+    payload["protocol_sha256"] = digest
+    payload["selection_path"] = Path(args.selection).as_posix()
+    write_stage_d_json(payload, args.output)
+    for arm in ARM_NAMES:
+        block = payload["arms"][arm]["objectives"]["0.0"]["slices"]["hard_ood"]
+        paired = payload["arms"][arm]["objectives"]["0.0"]["paired_hard_ood_vs_sensors32"]
+        print(
+            f"{arm} lambda0 hard_ood mean rel {block['mean_rel_error']['mean']:.8e} "
+            f"± {block['mean_rel_error']['std']:.8e} "
+            f"failures {block['n_failures']['mean']:.4f} "
+            f"paired delta {paired['mean_rel_error_minus_ls']['mean']:.8e}"
+        )
+    print(f"json: {Path(args.output).as_posix()}")
+    return 0
 
 
 def _print_recovery(label: str, score: object) -> None:

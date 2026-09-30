@@ -264,6 +264,43 @@ class RecoveryScore:
         return payload
 
 
+def observed_residual_terms(field: np.ndarray, spec: ObservationSpec) -> tuple[np.ndarray, np.ndarray]:
+    """Flattened ``a`` and ``b`` on the mask, with ``R(ν) = a - ν b``.
+
+    Both vectors are independent of ``ν``. The true viscosity is not read.
+    """
+
+    _require_spec(spec)
+    return _observation_terms(field, spec)
+
+
+def recovery_from_rows(
+    pattern: str,
+    baseline_nu: float,
+    rows: tuple[InstanceRecovery, ...] | list[InstanceRecovery],
+) -> RecoveryScore:
+    """Aggregate recovery rows that were already estimated.
+
+    ``baseline_nu`` is the training-split mean. This does not refit it and
+    does not change the estimates.
+    """
+
+    baseline = _require_finite(baseline_nu, "baseline_nu")
+    if baseline <= 0.0:
+        raise ValueError("baseline_nu must be > 0")
+    if len(rows) < 1:
+        raise ValueError("at least one recovery row is required")
+    ordered = tuple(sorted(rows, key=lambda row: row.instance_id))
+    seen: set[int] = set()
+    for row in ordered:
+        if not isinstance(row, InstanceRecovery):
+            raise TypeError("rows must be InstanceRecovery values")
+        if row.instance_id in seen:
+            raise ValueError(f"instance {row.instance_id} is listed more than once")
+        seen.add(row.instance_id)
+    return _aggregate(pattern, baseline, ordered)
+
+
 def least_squares_viscosity(field: np.ndarray, spec: ObservationSpec) -> float:
     """Viscosity that minimizes the observed residual mean square.
 

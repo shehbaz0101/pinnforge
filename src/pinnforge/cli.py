@@ -347,8 +347,9 @@ def build_parser() -> argparse.ArgumentParser:
             "slices scores that harder test split on full, hard_ood, and complement. "
             "A Stage C protocol adds residual and hybrid losses and selects the hybrid "
             "weight on validation. inverse recovers scalar viscosity from preregistered "
-            "sparse sensors. Training and slices need the ml extra. inverse, aggregate, "
-            "select-hybrid, and stage-c-scores do not."
+            "sparse sensors. operator-inverse fits that viscosity with a trained FNO. "
+            "Training, slices, and operator-inverse need the ml extra. inverse, aggregate, "
+            "select-hybrid, stage-c-scores, select-objective, and stage-d-scores do not."
         ),
     )
     return parser

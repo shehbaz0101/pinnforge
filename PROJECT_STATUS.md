@@ -5,7 +5,7 @@ ODE and PDE residuals. It trains a small network on the residual, scores a
 checkpoint against an analytical or manufactured field, and serves that path
 on localhost. An offline demo trains a checked-in sample on CPU.
 
-**Status:** v0.1.0 remains the tagged freeze. Stage 1 correctness, the Stage 2 Burgers reference, the Stage 3 data-only FNO baseline, the Stage 4 residual ablations, the Stage 5 sparse viscosity recovery, the Stage A harder Burgers pilot, and the Stage B multi-seed data-only FNO on that pilot are unreleased and keep the `0.1.0` version string. See [STAGE1_REPORT.md](STAGE1_REPORT.md), [STAGE2_REPORT.md](STAGE2_REPORT.md), [STAGE3_REPORT.md](STAGE3_REPORT.md), [STAGE4_REPORT.md](STAGE4_REPORT.md), [STAGE5_REPORT.md](STAGE5_REPORT.md), [STAGE_A_REPORT.md](STAGE_A_REPORT.md), and [STAGE_B_REPORT.md](STAGE_B_REPORT.md).
+**Status:** v0.1.0 remains the tagged freeze. Stage 1 correctness, the Stage 2 Burgers reference, the Stage 3 data-only FNO baseline, the Stage 4 residual ablations, the Stage 5 sparse viscosity recovery, the Stage A harder Burgers pilot, the Stage B multi-seed data-only FNO, the Stage C hybrid FNO, and the Stage D operator-conditioned sparse inverse are unreleased and keep the `0.1.0` version string. See [STAGE1_REPORT.md](STAGE1_REPORT.md), [STAGE2_REPORT.md](STAGE2_REPORT.md), [STAGE3_REPORT.md](STAGE3_REPORT.md), [STAGE4_REPORT.md](STAGE4_REPORT.md), [STAGE5_REPORT.md](STAGE5_REPORT.md), [STAGE_A_REPORT.md](STAGE_A_REPORT.md), [STAGE_B_REPORT.md](STAGE_B_REPORT.md), [STAGE_C_REPORT.md](STAGE_C_REPORT.md), and [STAGE_D_REPORT.md](STAGE_D_REPORT.md).
 
 ## Days 1–10
 
@@ -133,6 +133,14 @@ Residual and hybrid losses on the same harder pilot, five seeds. [STAGE_C_REPORT
 - [docs/v02/stage_c_train_protocol.json](docs/v02/stage_c_train_protocol.json) was frozen before the test scores. Seeds, width, modes, depth, window, epochs, and learning rate match Stage B. The hybrid grid is `{1e-6, 1e-4, 1e-2}`. `hard_ood` is still `ν <= 0.027028120493367818`. The data-only arm is the Stage B aggregate and was not retrained.
 - The selected weight is `1e-2`, the lowest mean validation relative L2 across the five seeds. The other two weights were not scored on test.
 - On `hard_ood`, hybrid mean relative L2 is `5.215427637735405e-03 ± 6.736875927560861e-04`, against the Stage B data-only `7.049252763443842e-03 ± 3.032654479273341e-04`. The hybrid number is lower on every seed. Residual-only is `5.704581248709277e-03 ± 7.767311465741109e-04`, also lower on every `hard_ood` seed, and higher than data-only on seed 1 for the full test and the complement. The `hard_ood` mean stays about twice the complement. Neither arm meets the `1e-9` label gate. No inverse model was trained.
+
+## Stage D
+
+Operator-conditioned recovery of `ν` from the unchanged `sensors32_bursts` mask. [STAGE_D_REPORT.md](STAGE_D_REPORT.md) has the protocol, the validation weight choice, and the test tables. The version string stays `0.1.0`.
+
+- [docs/v02/stage_d_inverse_protocol.json](docs/v02/stage_d_inverse_protocol.json) was frozen before the test scores. The mask, the failure rule, and `hard_ood` (`ν <= 0.027028120493367818`) are the Stage A values. Viscosity is a 191-point grid on `[0.005, 0.1]`. It enters only as the normalized FNO channel.
+- Both arms select `λ = 0` on validation `hard_ood`. `λ = 1` and `λ = 10` are worse on every seed and are not scored on test. The record is [docs/v02/stage_d_objective_selection.json](docs/v02/stage_d_objective_selection.json).
+- On test `hard_ood`, data-only mean relative error is `0.049487208469027544 ± 0.0144232271670265` and hybrid `1e-2` is `0.03368266375533967 ± 0.0034734247381767768`. The closed-form residual least squares on the same mask is `0.3494591802034973`, with 9 failures. Both operator arms have 0 failures on that slice. The dense residual least squares remains tighter (`0.0013208386837906374`). The summary is [docs/v02/stage_d_scores.json](docs/v02/stage_d_scores.json).
 
 ## Known limits
 

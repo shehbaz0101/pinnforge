@@ -1,0 +1,135 @@
+{
+  "format": "pinnforge.stage_d_inverse_protocol.v1",
+  "frozen_before_test_evaluation": true,
+  "role": "Stage D operator-conditioned sparse viscosity inverse on the Stage A harder Burgers pilot. This file is the scoring contract. It is not a test table.",
+  "test_used_for_selection": false,
+  "hard_ood_refit": false,
+  "mask_retuned": false,
+  "mask": {
+    "name": "sensors32_bursts",
+    "symbol": "pinnforge.operator.inverse.PREREGISTERED_OBSERVATION",
+    "n_sensors": 32,
+    "burst_starts": [0, 24, 48, 72],
+    "burst_length": 5,
+    "frame_dt": 0.01,
+    "unchanged": true
+  },
+  "failure_rule": "nu_hat <= 0 or rel_error > 0.5",
+  "failure_relative_error": 0.5,
+  "hard_ood": {
+    "name": "hard_ood",
+    "comparison": "nu <= threshold_nu",
+    "threshold_nu": 0.027028120493367818,
+    "source": "docs/v02/pilot_protocol.json",
+    "refit": false,
+    "complement": "instances in the scored split with nu > threshold_nu"
+  },
+  "below_stage2_floor": {
+    "comparison": "nu < 0.02",
+    "threshold_nu": 0.02,
+    "source": "stage2_nu_min in docs/v02/pilot_protocol.json"
+  },
+  "slices": ["full_test", "hard_ood", "complement", "below_stage2_floor"],
+  "nu_search": {
+    "min": 0.005,
+    "max": 0.1,
+    "source": "nu_range in docs/v02/pilot_protocol.json",
+    "optimizer": "uniform_grid_argmin",
+    "n_grid": 191,
+    "grid": "linspace(min, max, n_grid), both endpoints included",
+    "tie_break": "smallest nu on the grid"
+  },
+  "estimator": {
+    "name": "sparse_rollout",
+    "spatial_lift": "real FFT zero-pad from the 32 sensors onto the trajectory grid; the coarse Nyquist coefficient is halved before padding",
+    "initial_window": {
+      "frames_0_to_4": "lifted burst that starts at frame 0",
+      "frames_5_to_7": "degree-2 Newton extrapolation of lifted frames 2, 3, and 4",
+      "coefficients_ahead_of_frame_4": {
+        "3": [1, -3, 3],
+        "4": [3, -8, 6],
+        "5": [6, -15, 10]
+      },
+      "nu_dependent": false
+    },
+    "rollout": "autoregressive FNO; each predicted block is the next input; stop at the block that contains the last masked frame",
+    "nu_channel": "physical nu normalized by the checkpoint training-split mean and population standard deviation",
+    "objective": "mean square error between the rollout and the masked sensors on the bursts that start at frames 24, 48, and 72",
+    "reads_unmasked_field": false
+  },
+  "combined_objective": {
+    "formula": "sensor_mse(nu) / sensor_mse(baseline_nu) + lambda * residual_mse(nu) / residual_mse(baseline_nu)",
+    "residual_mse": "mean square of the Stage 4 central Burgers residual on sensors32_bursts",
+    "baseline_nu": "training-split mean viscosity",
+    "lambda_grid": [0, 1, 10],
+    "lambda_zero_always_scored": true,
+    "selection_split": "val",
+    "selection_slice": "hard_ood",
+    "selection_metric": "arithmetic mean across seeds of mean relative viscosity error",
+    "tie_break": "smallest lambda",
+    "selection_per_arm": true,
+    "nonselected_positive_lambda_scored_on_test": false
+  },
+  "analysis_ceiling": {
+    "name": "oracle_onestep",
+    "role": "Not a sparse estimator and not a claimed improvement on equal observations. Each input window is the true full field. The loss is still only the masked sensors on that one predicted block. It separates operator error from the sparse initial-window construction.",
+    "used_for_selection": false,
+    "teacher_forcing": "one step from each true window whose output overlaps a scored burst"
+  },
+  "arms": {
+    "data_only": {
+      "train_protocol": "docs/v02/stage_b_train_protocol.json",
+      "train_protocol_sha256": "51d4bb05ca5ae6096c22187c131d6fa52d8e025ac9b7bddfa876485615ae200a",
+      "loss": "data",
+      "residual_weight": null,
+      "seeds": [0, 1, 2, 3, 4],
+      "retrain": "deterministic from that protocol when the checkpoint is absent"
+    },
+    "hybrid_1e-2": {
+      "train_protocol": "docs/v02/stage_c_train_protocol.json",
+      "train_protocol_sha256": "1631d7d60e83ea1bdecf1d63de550f952f54f835385cf66786e563a643cd9708",
+      "loss": "hybrid",
+      "residual_weight": 0.01,
+      "weight_source": "docs/v02/stage_c_weight_selection.json",
+      "weight_source_sha256": "ff636d79e5eecd8e30690f419c1017674a29cc74896d0de60b83ab48387747f9",
+      "seeds": [0, 1, 2, 3, 4],
+      "retrain": "deterministic from that protocol when the checkpoint is absent"
+    }
+  },
+  "baselines": [
+    "sensors32_bursts closed-form residual least squares",
+    "dense_reference closed-form residual least squares",
+    "training-split mean viscosity"
+  ],
+  "baseline_record": "docs/v02/inverse_stress.json",
+  "baseline_record_sha256": "180990be33fdc4a67eb62d610dfdd8be3516ca6876a9769cadb632c2bd78efaf",
+  "aggregation": {
+    "unit": "one scalar per seed per slice",
+    "center": "arithmetic mean",
+    "spread": "sample standard deviation",
+    "ddof": 1,
+    "minimum_seeds": 5,
+    "drop_seeds": false
+  },
+  "pilot": "artifacts/burgers_hard_pilot",
+  "manifest": "docs/stage_a/pilot_manifest.json",
+  "data_protocol": "docs/v02/pilot_protocol.json",
+  "data_protocol_sha256": "bc640feab6220d8871cfcdc72997bdb7cd717c1ead67d70bd347eed19ddf8c6c",
+  "inference_batch_size": 32,
+  "device": "cpu",
+  "window": {
+    "input_frames": 8,
+    "output_frames": 8,
+    "stride": 8
+  },
+  "not_claimed": [
+    "a retuned hard_ood threshold, sensor mask, or Stage A, B, or C protocol",
+    "a change to any previously reported number",
+    "that the sparse estimator sees the field off the sensors32_bursts mask",
+    "that the 3-frame quadratic fill is a solution of Burgers",
+    "that the oracle one-step ceiling uses only the sparse mask as input",
+    "a learned inverse network, an architecture search, or a new hybrid weight",
+    "that one seed is the result",
+    "that a positive lambda was scored on test when validation preferred another value, except lambda 0 which is always scored"
+  ]
+}

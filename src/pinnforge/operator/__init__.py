@@ -10,7 +10,8 @@ modules import torch and need the optional ``ml`` extra. The default loss
 is normalized data MSE. A residual or hybrid loss uses the stencil in
 :mod:`pinnforge.operator.residual`. Sparse recovery of the scalar
 viscosity lives in :mod:`pinnforge.operator.inverse`. It reuses that
-stencil. It does not replace
+stencil. Stage D fits the same mask with a trained FNO channel in
+:mod:`pinnforge.operator.stage_d`. Neither replaces
 :func:`pinnforge.reference.burgers.reference_solution`.
 """
 
