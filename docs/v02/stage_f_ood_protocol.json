@@ -1,0 +1,164 @@
+{
+  "format": "pinnforge.stage_f_ood_protocol.v1",
+  "frozen_before_test_evaluation": true,
+  "role": "Stage F out-of-distribution viscosity generalization on the Stage A harder Burgers pilot. Operators are trained only on instances with nu greater than the frozen hard_ood threshold. This file is the training and scoring contract. It is not a test table.",
+  "research_question": "When an operator is trained only on the easier viscosities, does it extrapolate to low nu for forward prediction and for the operator-conditioned viscosity inverse? Does the physics-informed hybrid loss at the Stage C weight 1e-2 extrapolate better than data-only?",
+  "early_stopping": false,
+  "selection": "minimum validation mean relative L2 on the in-range validation subset, ties take the earliest epoch",
+  "test_used_for_training": false,
+  "test_used_for_selection": false,
+  "ood_used_for_selection": false,
+  "hard_ood_refit": false,
+  "hybrid_weight_reselected": false,
+  "lambda_reselected": false,
+  "loss_weight_grid_searched": false,
+  "optimizer": "Adam",
+  "schedule": "constant",
+  "device": "cpu",
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "epochs": 30,
+  "batch_size": 32,
+  "lr": 0.001,
+  "width": 32,
+  "modes": 16,
+  "layers": 4,
+  "input_frames": 8,
+  "output_frames": 8,
+  "stride": 8,
+  "residual_scope": "with_input",
+  "residual_space": "physical",
+  "dt": 0.01,
+  "pilot": "artifacts/burgers_hard_pilot",
+  "manifest": "docs/stage_a/pilot_manifest.json",
+  "data_protocol": "docs/v02/pilot_protocol.json",
+  "data_protocol_sha256": "bc640feab6220d8871cfcdc72997bdb7cd717c1ead67d70bd347eed19ddf8c6c",
+  "threshold_nu": 0.027028120493367818,
+  "below_0_02_threshold": 0.02,
+  "hard_ood": {
+    "name": "hard_ood",
+    "comparison": "nu <= threshold_nu",
+    "threshold_nu": 0.027028120493367818,
+    "source": "docs/v02/pilot_protocol.json",
+    "refit": false,
+    "role_in_this_stage": "The same cut. Training excludes it, so on the test split it is out of distribution."
+  },
+  "train_subset": {
+    "split": "train",
+    "rule": "nu > threshold_nu",
+    "n_instances": 384,
+    "n_windows": 4224,
+    "n_excluded": 128,
+    "nu_min": 0.02704009846210967,
+    "nu_max": 0.09988823841997412,
+    "nu_mean": 0.0637698128512489,
+    "nu_std": 0.02106505306567045
+  },
+  "validation_subset": {
+    "split": "val",
+    "rule": "nu > threshold_nu",
+    "n_instances": 101,
+    "n_windows": 1111,
+    "n_excluded": 27,
+    "nu_min": 0.027299272052398425,
+    "nu_max": 0.09883988734920018,
+    "note": "Checkpoint selection uses only this subset. Validation instances at or below the threshold are not loaded."
+  },
+  "test_counts": {
+    "full_test": 128,
+    "in_range": 98,
+    "ood": 30,
+    "below_0_02": 20
+  },
+  "slices": [
+    "full_test",
+    "in_range",
+    "ood",
+    "below_0_02"
+  ],
+  "slice_rules": {
+    "full_test": "every test instance",
+    "in_range": "nu > threshold_nu",
+    "ood": "nu <= threshold_nu",
+    "below_0_02": "nu < 0.02, a subset of ood"
+  },
+  "normalization": {
+    "fit_on": "restricted_train",
+    "ddof": 0,
+    "order": "ascending instance_id",
+    "includes_ood": false,
+    "includes_validation_or_test": false,
+    "u_mean": -6.93012725267756e-19,
+    "u_std": 0.3472358145478557,
+    "nu_mean": 0.0637698128512489,
+    "nu_std": 0.02106505306567045,
+    "definition": "population mean and standard deviation of raw u and of nu on training instances with nu > threshold_nu"
+  },
+  "arms": {
+    "data_only": {
+      "loss": "data",
+      "residual_weight": null
+    },
+    "hybrid_1e-2": {
+      "loss": "hybrid",
+      "residual_weight": 0.01,
+      "weight_source": "docs/v02/stage_c_weight_selection.json",
+      "reselected_on_ood": false
+    }
+  },
+  "mask_name": "sensors32_bursts",
+  "mask_retuned": false,
+  "inverse_lambda": 0.0,
+  "nu_search": {
+    "min": 0.005,
+    "max": 0.1,
+    "n_grid": 191,
+    "grid": "linspace(min, max, n_grid), both endpoints included",
+    "tie_break": "smallest nu on the grid",
+    "optimizer": "uniform_grid_argmin",
+    "clipped_to_training_support": false,
+    "source": "nu_range in docs/v02/pilot_protocol.json, the Stage D grid"
+  },
+  "published_references": {
+    "data_protocol": "docs/v02/pilot_protocol.json",
+    "data_protocol_sha256": "bc640feab6220d8871cfcdc72997bdb7cd717c1ead67d70bd347eed19ddf8c6c",
+    "stage_b_scores": "docs/v02/stage_b_scores.json",
+    "stage_b_scores_sha256": "2602029a8c3b88ac92c78ef7b118700cbf035c98f545c74920cdd4110efb4bc7",
+    "stage_c_scores": "docs/v02/stage_c_scores.json",
+    "stage_c_scores_sha256": "e80a9eea355a872f88db6768aca4abc319a6f044249e9792026c67d40b6f67a6",
+    "stage_c_weight_selection": "docs/v02/stage_c_weight_selection.json",
+    "stage_c_weight_selection_sha256": "ff636d79e5eecd8e30690f419c1017674a29cc74896d0de60b83ab48387747f9",
+    "stage_d_inverse_protocol": "docs/v02/stage_d_inverse_protocol.json",
+    "stage_d_inverse_protocol_sha256": "24450a3d7dec8a1c0347b099c82f27f1941f6e869f4041b320cff302adad8a0a",
+    "stage_d_scores": "docs/v02/stage_d_scores.json",
+    "stage_d_scores_sha256": "9eec8e3e177dc8f7bf4708567d3fef648f47e3fd4f9c29dce6a5e606aca614a3",
+    "inverse_stress": "docs/v02/inverse_stress.json",
+    "inverse_stress_sha256": "180990be33fdc4a67eb62d610dfdd8be3516ca6876a9769cadb632c2bd78efaf"
+  },
+  "aggregation": {
+    "unit": "one scalar per seed per slice",
+    "center": "arithmetic mean",
+    "spread": "sample standard deviation",
+    "ddof": 1,
+    "minimum_seeds": 5,
+    "pool_windows_across_seeds": false,
+    "drop_seeds": false
+  },
+  "not_claimed": [
+    "a retuned hard_ood threshold or a refit of the Stage A, B, C, or D protocols",
+    "a change to any previously reported number",
+    "a new hybrid weight, or a weight chosen on OOD or test data",
+    "a new inverse lambda, or a lambda chosen on OOD or test data",
+    "that the viscosity search is clipped to the restricted training range",
+    "that hard_ood in Stages B and C was an out-of-distribution slice",
+    "an architecture, window, or learning-rate search",
+    "that 16 Fourier modes resolve the 48-mode initial band",
+    "that one seed is the result",
+    "that rollout error or inverse error was used to pick the checkpoint"
+  ]
+}

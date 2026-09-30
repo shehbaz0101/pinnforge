@@ -40,6 +40,7 @@ def load_split_trajectories(
     splits: tuple[str, ...] = SPLIT_NAMES,
     *,
     check_field_hash: bool = True,
+    keep_ids: set[int] | None = None,
 ) -> list[Trajectory]:
     """Load raw trajectories for the requested splits.
 
@@ -47,6 +48,10 @@ def load_split_trajectories(
     to leave the train and validation files unread. Every loaded instance
     must belong to the manifest split named in the request. The arrays are
     the stored fields. They are not windowed and not normalized.
+
+    ``keep_ids`` limits the load to those instance ids. Ids outside the
+    requested splits raise. Ids that are in the splits but not in
+    ``keep_ids`` are not read. ``None`` loads the whole split.
     """
 
     requested = _requested_splits(splits)
@@ -58,10 +63,13 @@ def load_split_trajectories(
         raise ValueError(f"pilot directory does not exist: {root}")
     _check_local_manifest(root, assignment, norm)
     records = _records_by_id(manifest)
+    allowed = _keep_ids(keep_ids, assignment, requested)
     pilot_format = str(manifest.get("format"))
     trajectories: list[Trajectory] = []
     for name in requested:
         for instance_id in sorted(assignment[name]):
+            if allowed is not None and instance_id not in allowed:
+                continue
             trajectories.append(
                 _load_trajectory(
                     root,
@@ -105,6 +113,30 @@ def load_split_windows(
     if missing:
         raise ValueError(f"no windows were cut for {missing}")
     return {name: datasets[name] for name in requested}
+
+
+def _keep_ids(
+    keep_ids: set[int] | None,
+    assignment: Mapping[str, set[int]],
+    requested: tuple[str, ...],
+) -> set[int] | None:
+    if keep_ids is None:
+        return None
+    if len(keep_ids) < 1:
+        raise ValueError("keep_ids must be non-empty when it is set")
+    allowed: set[int] = set()
+    for instance_id in keep_ids:
+        if isinstance(instance_id, bool) or not isinstance(instance_id, int):
+            raise ValueError("keep_ids must be integers")
+        allowed.add(int(instance_id))
+    known: set[int] = set()
+    for name in requested:
+        known |= assignment[name]
+    unknown = allowed - known
+    if unknown:
+        sample = ", ".join(str(item) for item in sorted(unknown)[:5])
+        raise ValueError(f"keep_ids are not in the requested splits: {sample}")
+    return allowed
 
 
 def _requested_splits(splits: tuple[str, ...]) -> tuple[str, ...]:
