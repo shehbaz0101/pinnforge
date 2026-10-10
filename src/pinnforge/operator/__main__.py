@@ -87,6 +87,8 @@ def main(argv: list[str] | None = None) -> int:
             return _stage_f_scores(args)
         if args.command == "stage-e-stress":
             return _stage_e_stress(args)
+        if args.command == "strong-baselines":
+            return _strong_baselines(args)
     except ValueError as exc:
         parser.error(str(exc))
     parser.error(f"unknown command {args.command}")
@@ -330,6 +332,19 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="score one operator arm; the default scores both",
     )
+    strong = subparsers.add_parser(
+        "strong-baselines",
+        help="Score the frozen weak-form and solver-in-the-loop viscosity baselines",
+    )
+    strong.add_argument(
+        "--protocol",
+        type=Path,
+        default=Path("docs/research/strong_baselines_protocol.json"),
+    )
+    strong.add_argument("--pilot", type=Path, default=Path("artifacts/burgers_hard_pilot"))
+    strong.add_argument("--manifest", type=Path, default=Path("docs/stage_a/pilot_manifest.json"))
+    strong.add_argument("--output", type=Path, default=Path("docs/research/strong_baselines_scores.json"))
+    strong.add_argument("--report", type=Path, default=Path("docs/research/strong_baselines.md"))
     return parser
 
 
@@ -1003,6 +1018,19 @@ def _stage_d_scores(args: argparse.Namespace) -> int:
             f"paired delta {paired['mean_rel_error_minus_ls']['mean']:.8e}"
         )
     print(f"json: {Path(args.output).as_posix()}")
+    return 0
+
+
+def _strong_baselines(args: argparse.Namespace) -> int:
+    from pinnforge.operator.strong_baselines import run_strong_baselines
+
+    run_strong_baselines(
+        protocol_path=args.protocol,
+        pilot_dir=args.pilot,
+        manifest_path=args.manifest,
+        output=args.output,
+        report_path=args.report,
+    )
     return 0
 
 
