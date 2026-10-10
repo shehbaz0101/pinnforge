@@ -409,6 +409,8 @@ def run_strong_baselines(
         initial_condition="sensor_lift",
         workers=int(protocol["workers"]),
         with_truth=True,
+        cache_name="reference_sensor_lift",
+        protocol_sha256=digest,
     )
     print("solver sensor_lift reference done", flush=True)
     oracle_rows = _fit_solver_rows(
@@ -418,6 +420,8 @@ def run_strong_baselines(
         initial_condition="oracle_ic",
         workers=int(protocol["workers"]),
         with_truth=True,
+        cache_name="reference_oracle_ic",
+        protocol_sha256=digest,
     )
     print("solver oracle_ic reference done", flush=True)
 
@@ -427,6 +431,7 @@ def run_strong_baselines(
         "solver_sensor_ic": _method_block(sensor_rows, baseline_nu, "solver_sensor_ic", protocol),
         "solver_oracle_ic": _method_block(oracle_rows, baseline_nu, "solver_oracle_ic", protocol),
     }
+    protocol["_protocol_sha256"] = digest
     fno = _fno_from_stage_d(stage_d, protocol, methods["closed_form_ls"])
     _assert_fno_matches_published(fno, stage_d)
     paired = _all_paired(methods, fno, protocol)
@@ -496,7 +501,7 @@ def _solver_worker(payload: dict[str, Any]) -> dict[str, Any]:
     found["nu"] = float(payload["nu"])
     print(
         f"{payload['initial_condition']} id={payload['instance_id']} "
-        f"nu_hat={found['nu_hat']:.6g} evals={found['n_evaluations']} "
+        f"nu_hat={found['nu_hat']:.16g} evals={found['n_evaluations']} "
         f"seconds={found['seconds']:.2f}",
         flush=True,
     )
@@ -511,7 +516,15 @@ def _fit_solver_rows(
     initial_condition: str,
     workers: int,
     with_truth: bool,
+    cache_name: str | None = None,
+    protocol_sha256: str | None = None,
 ) -> list[dict[str, Any]]:
+    expected = {int(item.instance_id) for item in trajectories}
+    if cache_name is not None and protocol_sha256:
+        cached = _read_fit_cache(cache_name, protocol_sha256, expected)
+        if cached is not None:
+            print(f"reused {cache_name} n={len(cached)}", flush=True)
+            return cached
     search_payload = {
         "nu_min": search.nu_min,
         "nu_max": search.nu_max,
@@ -554,7 +567,40 @@ def _fit_solver_rows(
                 objective_at_truth=result["objective_at_truth"],
             )
         )
+    if cache_name is not None and protocol_sha256:
+        _write_fit_cache(cache_name, protocol_sha256, rows)
     return rows
+
+
+def _fit_cache_path(cache_name: str) -> Path:
+    return Path("runs/strong_baselines") / f"{cache_name}.json"
+
+
+def _read_fit_cache(
+    cache_name: str,
+    protocol_sha256: str,
+    expected_ids: set[int],
+) -> list[dict[str, Any]] | None:
+    path = _fit_cache_path(cache_name)
+    if not path.is_file():
+        return None
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if payload.get("protocol_sha256") != protocol_sha256:
+        return None
+    rows = payload.get("rows")
+    if not isinstance(rows, list):
+        return None
+    got = {int(row["instance_id"]) for row in rows}
+    if got != expected_ids:
+        return None
+    return [dict(row) for row in rows]
+
+
+def _write_fit_cache(cache_name: str, protocol_sha256: str, rows: Sequence[Mapping[str, Any]]) -> None:
+    path = _fit_cache_path(cache_name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {"protocol_sha256": protocol_sha256, "rows": _json_ready(list(rows))}
+    path.write_text(json.dumps(payload) + "\n", encoding="utf-8")
 
 
 def _run_stress(
@@ -613,9 +659,11 @@ def _run_stress(
             noisy,
             spec,
             search,
-            initial_condition="solver_sensor_ic",
+            initial_condition="sensor_lift",
             workers=int(protocol["workers"]),
             with_truth=False,
+            cache_name=f"stress_{condition_id}",
+            protocol_sha256=str(protocol.get("_protocol_sha256", "")),
         )
         score = score_method_rows(rows, baseline_nu, "solver_sensor_ic")
         solver_blocks[str(condition_id)] = {
@@ -1091,9 +1139,9 @@ def _stress_table(scores: Mapping[str, Any], method: str) -> str:
                             f"`{slice_name}`",
                             _fmt(row["mean_rel_error"]),
                             str(int(row["n_failures"])),
-                            _fmt(pub["closed_form_ls"]),
-                            _fmt_pm(pub["operator_data_only"], pub["operator_data_only_std"]),
-                            _fmt_pm(pub["operator_hybrid_1e-2"], pub["operator_hybrid_1e-2_std"]),
+                            _fmt_pub(pub["closed_form_ls"], None),
+                            _fmt_pub(pub["operator_data_only"], pub["operator_data_only_std"]),
+                            _fmt_pub(pub["operator_hybrid_1e-2"], pub["operator_hybrid_1e-2_std"]),
                         ]
                     )
                     + " |"
@@ -1118,9 +1166,9 @@ def _stress_table(scores: Mapping[str, Any], method: str) -> str:
                     str(int(block["n_instances"])),
                     _fmt(summary["mean_rel_error"]),
                     str(int(summary["n_failures"])),
-                    _fmt(pub["closed_form_ls"]),
-                    _fmt_pm(pub["operator_data_only"], pub["operator_data_only_std"]),
-                    _fmt_pm(pub["operator_hybrid_1e-2"], pub["operator_hybrid_1e-2_std"]),
+                    _fmt_pub(pub["closed_form_ls"], None),
+                    _fmt_pub(pub["operator_data_only"], pub["operator_data_only_std"]),
+                    _fmt_pub(pub["operator_hybrid_1e-2"], pub["operator_hybrid_1e-2_std"]),
                 ]
             )
             + " |"
@@ -1152,9 +1200,9 @@ def _published_stage_e(
     return payload
 
 
-def _method_slice_mean(method_block: Mapping[str, Any], slice_name: str) -> tuple[float, float | None]:
+def _method_slice_mean(method_block: Mapping[str, Any], slice_name: str) -> tuple[float | None, float | None]:
     if method_block.get("applicable") is False:
-        return math.nan, None
+        return None, None
     return _stage_e_pair(method_block["slices"][slice_name])
 
 
@@ -1316,20 +1364,20 @@ def _require_sha(path: Path, expected: str) -> None:
         raise ValueError(f"{path.as_posix()} sha256 is {actual}, protocol records {expected}")
 
 
-def _json_ready(value: Any) -> Any:
+def _json_ready(value: Any, path: str = "") -> Any:
     if isinstance(value, dict):
-        return {str(key): _json_ready(item) for key, item in value.items()}
+        return {str(key): _json_ready(item, f"{path}.{key}") for key, item in value.items()}
     if isinstance(value, (list, tuple)):
-        return [_json_ready(item) for item in value]
+        return [_json_ready(item, f"{path}[{index}]") for index, item in enumerate(value)]
     if isinstance(value, np.ndarray):
-        return _json_ready(value.tolist())
+        return _json_ready(value.tolist(), path)
     if isinstance(value, np.floating):
-        return float(value)
+        return _json_ready(float(value), path)
     if isinstance(value, np.integer):
         return int(value)
     if isinstance(value, float):
         if not math.isfinite(value):
-            raise ValueError("score record has a non-finite number")
+            raise ValueError(f"score record has a non-finite number at {path}")
         return value
     return value
 
@@ -1353,6 +1401,12 @@ def _fmt_optional(value: object) -> str:
     if value is None:
         return "null"
     return _fmt(value)
+
+
+def _fmt_pub(center: object, spread: object) -> str:
+    if center is None:
+        return "inapplicable"
+    return _fmt_pm(center, spread)
 
 
 def _fmt_pm(center: object, spread: object) -> str:

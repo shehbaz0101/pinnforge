@@ -57,3 +57,9 @@ def test_paired_delta_is_fno_minus_baseline() -> None:
     assert paired["baseline_n_failures"] == 1
     assert paired["fno_minus_baseline_mean_rel"] < 0.0
     assert paired["per_seed_fno_minus_baseline"][0] < 0.0
+
+
+def test_solver_stress_calls_the_sensor_lift() -> None:
+    source = (ROOT / "src" / "pinnforge" / "operator" / "strong_baselines.py").read_text(encoding="utf-8")
+    assert 'initial_condition="solver_sensor_ic"' not in source
+    assert 'initial_condition="sensor_lift"' in source
