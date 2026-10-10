@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_version_constant_matches_pyproject() -> None:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    assert project["project"]["version"] == __version__ == "0.1.0"
+    assert project["project"]["version"] == __version__ == "0.2.0"
 
 
 def test_version_command(capsys: pytest.CaptureFixture[str]) -> None:
@@ -76,10 +76,10 @@ def test_import_does_not_load_torch() -> None:
     code = (
         "import pinnforge, pinnforge.reference, pinnforge.sampling, pinnforge.experiments, "
         "pinnforge.specs, pinnforge.ml_import, pinnforge.cli, pinnforge.demo, "
-        "pinnforge.api.bind, sys; "
+        "pinnforge.demo_inverse, pinnforge.figures, pinnforge.api.bind, sys; "
         "assert 'torch' not in sys.modules; "
         "assert 'fastapi' not in sys.modules; "
-        "assert pinnforge.__version__ == '0.1.0'"
+        "assert pinnforge.__version__ == '0.2.0'"
     )
     completed = subprocess.run(
         [sys.executable, "-c", code],

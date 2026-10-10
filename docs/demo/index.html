@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PINNForge Burgers inverse demo</title>
+<style>
+body { font-family: sans-serif; margin: 2rem; max-width: 52rem; color: #1c1c1c; }
+table { border-collapse: collapse; }
+td, th { border: 1px solid #ccc; padding: 0.3rem 0.6rem; text-align: right; }
+td:first-child, th:first-child { text-align: left; }
+img { max-width: 100%; height: auto; }
+</style>
+</head>
+<body>
+<h1>Burgers inverse demo</h1>
+<p>Small CPU example of sparse viscosity recovery. Not a rerun of the Stage D sensors32_bursts study.</p>
+<p>Command: <code>pinnforge demo burgers-inverse --output runs/burgers-inverse</code></p>
+<table>
+<thead>
+<tr><th>estimator</th><th>n</th><th>mean abs error</th><th>mean rel error</th><th>max rel error</th><th>failures</th></tr>
+</thead>
+<tbody>
+<tr><td>closed form, 32 sensors</td><td>4</td><td>1.66974755e-04</td><td>4.05968068e-03</td><td>7.08700857e-03</td><td>0</td></tr>
+<tr><td>FNO sensor match</td><td>4</td><td>2.55609737e-03</td><td>4.96650095e-02</td><td>1.18468303e-01</td><td>0</td></tr>
+<tr><td>training-mean constant</td><td>4</td><td>1.05151535e-02</td><td>2.59304474e-01</td><td>5.41994932e-01</td><td>1</td></tr>
+</tbody>
+</table>
+<p>Selected epoch 40, validation relative L2 3.69904987e-02, wall clock 2.77327819e+00 seconds.</p>
+<h2>True viscosity against the estimate</h2>
+<img src="viscosity_scatter.png" alt="True viscosity versus closed-form and FNO estimates">
+<h2>Mean relative error</h2>
+<img src="relative_error.png" alt="Mean relative error of the closed form, the FNO, and the training mean">
+<h2>One test field and the sensors</h2>
+<img src="field_sensors.png" alt="First test field at the first and last frames, with sensor markers">
+</body>
+</html>

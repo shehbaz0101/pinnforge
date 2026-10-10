@@ -7,9 +7,9 @@ they need the optional ``api`` extra.
 Importing this package does not import FastAPI or torch.
 :mod:`pinnforge.api.bind` is the loopback bind check and does not import
 them either. ``GET /health`` and ``GET /equations`` do not import torch.
-``POST /train``, ``POST /eval``, and ``POST /run`` do. Those three POSTs
-share a per-client rate limit. Building the app installs an offline
-socket guard.
+``POST /train``, ``POST /eval``, ``POST /run``, and
+``POST /demo/burgers-inverse`` do. Those POSTs share a per-client rate
+limit. Building the app installs an offline socket guard.
 """
 
 from __future__ import annotations

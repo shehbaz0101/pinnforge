@@ -6,13 +6,14 @@
 ``POST /train`` and ``POST /eval`` match the flag-based CLI commands.
 ``POST /run`` trains and then evaluates an experiment file or an inline
 document, the same path as ``pinnforge run --config``.
+``POST /demo/burgers-inverse`` runs the small CPU viscosity demo.
 
 File paths must stay inside the sandbox root (the working directory, or
 ``PINNFORGE_DATA_ROOT``). A missing ``ml`` extra is HTTP 503. A bad body
-or a path that escapes is HTTP 422. ``POST /train``, ``POST /eval``, and
-``POST /run`` share a per-client rate limit. Over the limit the response
-is HTTP 429 with ``Retry-After``. Catalog reads are not counted. There
-is no authentication.
+or a path that escapes is HTTP 422. ``POST /train``, ``POST /eval``, ``POST /run``, and
+``POST /demo/burgers-inverse`` share a per-client rate limit. Over the
+limit the response is HTTP 429 with ``Retry-After``. Catalog reads are
+not counted. There is no authentication.
 
 Building the app installs an offline socket guard. Non-loopback TCP
 connects raise ``OfflineError``. Loopback stays open.
@@ -41,6 +42,8 @@ from pinnforge.api.schemas import (
     EvalRequest,
     EvalResponse,
     HealthResponse,
+    InverseDemoRequest,
+    InverseDemoResponse,
     RunRequest,
     RunResponse,
     TrainSummary,
@@ -59,7 +62,8 @@ _ERRORS: dict[int | str, dict[str, object]] = {
     },
     429: {
         "description": (
-            "Too many requests on POST /train, POST /eval, and POST /run. "
+            "Too many requests on POST /train, POST /eval, POST /run, "
+            "and POST /demo/burgers-inverse. "
             "Retry-After is the wait in seconds. GET /health and GET /equations are not limited."
         ),
         "headers": {
@@ -83,7 +87,8 @@ def create_app() -> FastAPI:
             "Local research API for the equation catalog, a CPU train, "
             "an evaluation, and a train-then-eval experiment. "
             "Paths must stay inside the sandbox root. "
-            "POST /train, POST /eval, and POST /run share a per-client rate limit. "
+            "POST /train, POST /eval, POST /run, and POST /demo/burgers-inverse "
+            "share a per-client rate limit. "
             "The process refuses non-loopback TCP connects. "
             "pinnforge serve listens on 127.0.0.1 unless --allow-remote is set."
         ),
@@ -145,6 +150,21 @@ def create_app() -> FastAPI:
         """
 
         return _call(lambda: service.eval_request(body))
+
+    @app.post(
+        "/demo/burgers-inverse",
+        response_model=InverseDemoResponse,
+        responses=_ERRORS,
+    )
+    def burgers_inverse(body: InverseDemoRequest) -> InverseDemoResponse:
+        """Train a small Burgers FNO and recover viscosity from 32 sensors.
+
+        ``output`` is a relative directory. The run writes JSON, markdown,
+        HTML, plots, and a checkpoint there. HTTP 503 when torch is not
+        installed. This is the same path as ``pinnforge demo burgers-inverse``.
+        """
+
+        return _call(lambda: service.burgers_inverse_request(body))
 
     install_offline_guard()
     return app
