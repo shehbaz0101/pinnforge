@@ -159,9 +159,11 @@ def create_app() -> FastAPI:
     def burgers_inverse(body: InverseDemoRequest) -> InverseDemoResponse:
         """Train a small Burgers FNO and recover viscosity from 32 sensors.
 
-        ``output`` is a relative directory. The run writes JSON, markdown,
-        HTML, plots, and a checkpoint there. HTTP 503 when torch is not
-        installed. This is the same path as ``pinnforge demo burgers-inverse``.
+        ``output`` is a relative directory inside the sandbox root. An
+        absolute path is rejected. The CLI accepts an absolute ``--output``;
+        this route does not. The run writes JSON, markdown, HTML, plots,
+        and a checkpoint there. HTTP 503 when torch is not installed. This
+        is the same computation as ``pinnforge demo burgers-inverse``.
         """
 
         return _call(lambda: service.burgers_inverse_request(body))

@@ -1,6 +1,6 @@
 # PINNForge
 
-PINNForge is a CPU sandbox for a few classic physics-informed residuals, plus one operator inverse problem that is small enough to rerun. The equation side covers a harmonic oscillator, viscous Burgers in one dimension, and a Poisson toy. The inverse demo trains a small Fourier neural operator on periodic Burgers trajectories and recovers the viscosity from 32 sparse sensors, then compares that fit with the closed-form residual least squares estimator. Version 0.2.0 is the tree described here. The annotated tag is not created in this commit. v0.1.0 remains the previous sandbox freeze.
+PINNForge is a CPU sandbox for a few classic physics-informed residuals, plus one operator inverse problem that is small enough to rerun. The equation side covers a harmonic oscillator, viscous Burgers in one dimension, and a Poisson toy. The inverse demo trains a small Fourier neural operator on periodic Burgers trajectories and recovers the viscosity from 32 sparse sensors, then compares that fit with the closed-form residual least squares estimator. Version 0.2.1 is the tree described here. The annotated tag is not created in this commit. v0.1.0 remains the previous sandbox freeze.
 
 ## Quickstart
 
@@ -28,7 +28,7 @@ curl -s -X POST http://127.0.0.1:8000/demo/burgers-inverse \
   -d '{"output":"runs/burgers-inverse"}'
 ```
 
-The server binds `127.0.0.1:8000`. There is no authentication. `POST /train`, `POST /eval`, `POST /run`, and `POST /demo/burgers-inverse` share a limit of 60 requests per 60 seconds per client. A path that leaves the working directory is rejected.
+The server binds `127.0.0.1:8000`. There is no authentication. `POST /train`, `POST /eval`, `POST /run`, and `POST /demo/burgers-inverse` share a limit of 60 requests per 60 seconds per client. A relative path that leaves the working directory is rejected. On the CLI, `--output` may be an absolute directory. The API `output` field stays relative to the sandbox root.
 
 `pinnforge demo` with no case still trains the checked-in harmonic sample (`samples/configs/harmonic.yaml`, 2 epochs) and prints the error against the closed form. `--equation poisson` and `--equation burgers` use the other checked-in samples. Burgers evaluation on that path reports residual metrics only, because the coordinate network has no closed-form field.
 

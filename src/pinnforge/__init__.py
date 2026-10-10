@@ -12,7 +12,8 @@ sandbox root, rate-limits the train, eval, and run routes, and refuses
 non-loopback TCP connects on those commands. Day 9 adds ``pinnforge demo``,
 which trains a checked-in sample on CPU and prints the reference error.
 Version 0.2.0 adds ``pinnforge demo burgers-inverse``, a small CPU
-viscosity recovery from 32 sensors.
+viscosity recovery from 32 sensors. Version 0.2.1 draws that demo's
+plots with Matplotlib's DejaVu Sans and prints a short terminal table.
 The model, residual, loss,
 training, and evaluation modules import torch and raise
 :class:`~pinnforge.ml_import.InstallHint` when the optional ``ml`` extra
@@ -34,7 +35,7 @@ from pinnforge.equations import (
 from pinnforge.ml_import import InstallHint
 from pinnforge.sampling import CollocationBatch, SampleConfig, sample_equation
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 __all__ = [
     "Burgers1DSpec",
