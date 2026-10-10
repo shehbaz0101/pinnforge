@@ -7,6 +7,7 @@ configs before any file is written.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -186,18 +187,32 @@ class RunRequest(BaseModel):
 class InverseDemoRequest(BaseModel):
     """Body for ``POST /demo/burgers-inverse``.
 
-    ``output`` is a relative directory inside the sandbox root. The
+    ``output`` is a relative directory inside the sandbox root. Absolute
+    paths are rejected here. ``pinnforge demo burgers-inverse --output``
+    accepts an absolute directory because that command is local. The
     published CPU demo writes its JSON, markdown, HTML, plots, and
-    checkpoint there.
+    checkpoint under ``output``.
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    output: str = "runs/burgers-inverse"
+    output: str = Field(
+        default="runs/burgers-inverse",
+        description=(
+            "Relative directory inside the sandbox root. Absolute paths are "
+            "rejected. The pinnforge demo burgers-inverse CLI accepts an "
+            "absolute --output; this API does not."
+        ),
+    )
 
     @field_validator("output")
     @classmethod
     def _output_path(cls, value: str) -> str:
+        if isinstance(value, str) and (value.startswith("~") or Path(value).is_absolute()):
+            raise ValueError(
+                "output must be a relative path inside the working directory. "
+                "The HTTP API does not accept an absolute path."
+            )
         return _relative_text(value, label="output")
 
 

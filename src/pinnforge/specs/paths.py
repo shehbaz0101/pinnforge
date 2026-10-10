@@ -5,9 +5,13 @@ is set or a caller passes ``root``. ``pinnforge sample``, ``train``,
 ``eval``, ``run``, and ``serve`` accept ``--data-root``, which sets that
 variable for the command. Config files, checkpoints, metrics, eval JSON,
 and sample output must be relative to the root. Absolute paths and ``~``
-are rejected. ``..`` and symlinks are resolved before the containment
-check, so a path that leaves the root is rejected even when the text
-looks nested. Importing this module does not import torch.
+are rejected for those inputs. ``..`` and symlinks are resolved before the
+containment check, so a path that leaves the root is rejected even when
+the text looks nested. :func:`resolve_cli_output` is the local exception
+for ``pinnforge demo burgers-inverse --output``: a relative directory
+still stays inside the root, and an absolute directory is accepted.
+The HTTP API does not call that function. Importing this module does not
+import torch.
 """
 
 from __future__ import annotations
@@ -118,6 +122,53 @@ def resolve_inside_cwd(
         raise PathSandboxError(message)
     if suffix is not None and resolved.suffix.lower() != suffix:
         raise PathSandboxError(f"{label} must end in {suffix}")
+    return resolved
+
+
+def resolve_cli_output(path: str | Path, *, label: str = "output") -> tuple[Path, str]:
+    """Resolve a directory from the local ``--output`` flag.
+
+    A relative path must stay inside the sandbox root, the same rule as
+    :func:`resolve_inside_cwd`. An absolute path, or ``~`` expanded to
+    one, is accepted because the CLI is a local process. It is resolved,
+    it must name a directory other than the filesystem root or the home
+    directory, and an existing path must already be a directory. The
+    directory does not have to exist yet.
+
+    The returned label is the relative text the user passed, or the
+    resolved POSIX path when the input was absolute. Request bodies for
+    the HTTP API stay on :func:`resolve_inside_cwd` and remain relative.
+
+    Raises:
+        PathSandboxError: the path is empty, escapes the sandbox root,
+            or is an absolute location this command will not write.
+    """
+
+    if isinstance(path, Path):
+        text = path.as_posix()
+    elif isinstance(path, str):
+        text = path
+    else:
+        raise PathSandboxError(f"{label} must be a path")
+    if text == "" or text != text.strip() or "\x00" in text:
+        raise PathSandboxError(f"{label} must be a non-empty path")
+    expanded = Path(text).expanduser()
+    if expanded.is_absolute():
+        resolved = _resolve_absolute_directory(expanded, label=label)
+        return resolved, resolved.as_posix()
+    resolved = resolve_inside_cwd(text, label=label)
+    return resolved, Path(text).as_posix()
+
+
+def _resolve_absolute_directory(path: Path, *, label: str) -> Path:
+    try:
+        resolved = path.resolve()
+    except (OSError, ValueError) as exc:
+        raise PathSandboxError(f"{label} could not be resolved: {path.as_posix()}") from exc
+    if resolved == Path(resolved.anchor) or resolved == Path.home():
+        raise PathSandboxError(f"{label} must name a directory under a parent, not {resolved}")
+    if resolved.exists() and not resolved.is_dir():
+        raise PathSandboxError(f"{label} is not a directory: {resolved}")
     return resolved
 
 

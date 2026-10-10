@@ -179,6 +179,96 @@ def format_result_number(value: float) -> str:
     return f"{float(value):.8e}"
 
 
+def format_percent(value: float) -> str:
+    """Short percent for the terminal table. Full precision stays in the files."""
+
+    percent = float(value) * 100.0
+    if not math.isfinite(percent):
+        raise ValueError("percent is not finite")
+    if percent == 0.0 or abs(percent) >= 0.01:
+        return f"{percent:.2f}%"
+    return f"{percent:.2e}%"
+
+
+def results_table_terminal(record: dict[str, Any]) -> str:
+    """Aligned text table. Relative errors are percents; abs errors are short."""
+
+    sensors = int(record["config"]["n_sensors"])
+    specs = (
+        ("closed_form", f"closed form, {sensors} sensors"),
+        ("operator", "FNO sensor match"),
+        ("baseline", "training-mean constant"),
+    )
+    header = ("estimator", "n", "mean abs", "mean rel", "max rel", "failures")
+    rows: list[tuple[str, ...]] = [header]
+    for key, label in specs:
+        item = record["aggregates"][key]
+        rows.append(
+            (
+                label,
+                str(int(item["n"])),
+                f"{float(item['mean_abs_error']):.3e}",
+                format_percent(item["mean_rel_error"]),
+                format_percent(item["max_rel_error"]),
+                str(int(item["n_failures"])),
+            )
+        )
+    widths = [max(len(row[index]) for row in rows) for index in range(len(header))]
+    right = {1, 2, 3, 4, 5}
+
+    def line(row: tuple[str, ...], *, rule: bool = False) -> str:
+        cells: list[str] = []
+        for index, cell in enumerate(row):
+            text = "-" * widths[index] if rule else cell
+            if index in right and not rule:
+                cells.append(text.rjust(widths[index]))
+            else:
+                cells.append(text.ljust(widths[index]))
+        return "  ".join(cells)
+
+    lines = [line(rows[0]), line(rows[0], rule=True)]
+    lines.extend(line(row) for row in rows[1:])
+    return "\n".join(lines) + "\n"
+
+
+def results_takeaway(record: dict[str, Any]) -> str:
+    """One sentence from this record, plus the Stage D doc for the hard slice.
+
+    The published demo is the smooth four-mode sample. On that sample the
+    closed form has the lower mean relative error. The FNO comparison that
+    goes the other way is Stage D ``hard_ood``, not this command.
+    """
+
+    closed = float(record["aggregates"]["closed_form"]["mean_rel_error"])
+    operator = float(record["aggregates"]["operator"]["mean_rel_error"])
+    closed_pct = format_percent(closed)
+    operator_pct = format_percent(operator)
+    config = record.get("config")
+    smooth = False
+    if isinstance(config, dict) and config.get("n_modes") == 4:
+        nu_min = config.get("nu_min")
+        nu_max = config.get("nu_max")
+        if isinstance(nu_min, (int, float)) and isinstance(nu_max, (int, float)):
+            smooth = math.isclose(float(nu_min), 0.02) and math.isclose(float(nu_max), 0.08)
+    sample = "this smooth sample" if smooth else "this sample"
+    if closed < operator:
+        opening = (
+            f"On {sample} the closed form wins "
+            f"({closed_pct} vs {operator_pct} mean relative error)."
+        )
+        pointer = "The FNO edge shows on the hard-OOD Stage D slice (STAGE_D_REPORT.md)."
+    elif operator < closed:
+        opening = (
+            f"On {sample} the FNO wins "
+            f"({operator_pct} vs {closed_pct} mean relative error)."
+        )
+        pointer = "The hard-OOD Stage D slice is in STAGE_D_REPORT.md."
+    else:
+        opening = f"On {sample} the closed form and the FNO tie ({closed_pct} mean relative error)."
+        pointer = "The hard-OOD Stage D slice is in STAGE_D_REPORT.md."
+    return f"{opening} {pointer}"
+
+
 def results_table_markdown(record: dict[str, Any]) -> str:
     """Markdown table of the three estimators. Built only from ``record``."""
 
@@ -215,8 +305,9 @@ def run_burgers_inverse_demo(
 ) -> InverseDemoResult:
     """Train the small FNO, recover viscosity, and write the report files.
 
-    ``output_dir`` is the resolved directory. ``output_label`` is the
-    sandbox-relative path stored in the JSON. Torch is imported here.
+    ``output_dir`` is the resolved directory. ``output_label`` is the path
+    stored in the JSON: a sandbox-relative path, or an absolute path when
+    the CLI was given one. Torch is imported here.
 
     Raises:
         DemoDependencyError: the ``ml`` extra is not installed.
@@ -226,8 +317,13 @@ def run_burgers_inverse_demo(
 
     if not isinstance(output_dir, Path):
         raise TypeError("output_dir must be a Path")
-    if not isinstance(output_label, str) or output_label == "":
-        raise ValueError("output_label must be a non-empty relative path")
+    if (
+        not isinstance(output_label, str)
+        or output_label == ""
+        or output_label != output_label.strip()
+        or "\x00" in output_label
+    ):
+        raise ValueError("output_label must be a non-empty path")
     settings = config if config is not None else PUBLISHED_INVERSE_DEMO
     if not isinstance(settings, InverseDemoConfig):
         raise TypeError("config must be an InverseDemoConfig")
@@ -600,22 +696,22 @@ def _write_plots(
         output_dir / "viscosity_scatter.png",
         truth,
         [
-            ("closed", [row["closed_form_nu_hat"] for row in instances], _CLOSED),
-            ("fno", [row["operator_nu_hat"] for row in instances], _OPERATOR),
+            ("Closed", [row["closed_form_nu_hat"] for row in instances], _CLOSED),
+            ("FNO", [row["operator_nu_hat"] for row in instances], _OPERATOR),
         ],
-        xlabel="true nu",
-        ylabel="estimate",
+        xlabel="True viscosity",
+        ylabel="Estimate",
     )
     write_bars_png(
         output_dir / "relative_error.png",
-        ["closed", "fno", "base"],
+        ["Closed", "FNO", "Baseline"],
         [
             _aggregate(instances, "closed_form")["mean_rel_error"],
             _aggregate(instances, "operator")["mean_rel_error"],
             _aggregate(instances, "baseline")["mean_rel_error"],
         ],
         [_CLOSED, _OPERATOR, _BASELINE],
-        ylabel="rel error",
+        ylabel="Relative error",
     )
     shown = test[0]
     stride = settings.n_space // settings.n_sensors
@@ -626,14 +722,79 @@ def _write_plots(
         output_dir / "field_sensors.png",
         [float(value) for value in space],
         [
-            ("t0", [float(value) for value in shown.u[0]], _CLOSED),
-            ("tend", [float(value) for value in shown.u[-1]], _FIELD_LATER),
+            ("t = 0", [float(value) for value in shown.u[0]], _CLOSED),
+            ("t = end", [float(value) for value in shown.u[-1]], _FIELD_LATER),
         ],
         [float(value) for value in space[::stride]],
         [float(value) for value in shown.u[0, ::stride]],
         xlabel="x",
         ylabel="u",
     )
+
+
+def redraw_plots(output_dir: Path, record: dict[str, Any]) -> None:
+    """Rewrite the three PNGs from a saved record.
+
+    Scatter and bar values come from ``record``. The field plot is the
+    first test trajectory of the Fourier solver at the recorded config.
+    This does not train and does not rewrite JSON or markdown.
+    """
+
+    if not isinstance(output_dir, Path):
+        raise TypeError("output_dir must be a Path")
+    if not isinstance(record, dict):
+        raise TypeError("record must be a dict")
+    settings = _config_from_record(record)
+    labeled = _label(_integrate(settings), settings)
+    test = [item for item in labeled if item.split == "test"]
+    instances = record["instances"]
+    if not isinstance(instances, list) or len(instances) != len(test):
+        raise ValueError("record instances do not match the test split")
+    for item, row in zip(test, instances, strict=True):
+        if not isinstance(row, dict):
+            raise ValueError("record instances must be objects")
+        if int(row["instance_id"]) != int(item.instance_id):
+            raise ValueError("record instance order does not match the solver")
+        if abs(float(row["nu"]) - float(item.nu)) > 1e-12:
+            raise ValueError("record viscosity does not match the solver")
+    _write_plots(output_dir, test, instances, settings)
+
+
+def _config_from_record(record: dict[str, Any]) -> InverseDemoConfig:
+    config = record["config"]
+    if not isinstance(config, dict):
+        raise TypeError("config must be an object")
+    floats = {"nu_min", "nu_max", "dt", "t_final", "save_dt", "lr"}
+    kwargs: dict[str, Any] = {}
+    for name in (
+        "seed",
+        "n_space",
+        "n_modes",
+        "nu_min",
+        "nu_max",
+        "n_train",
+        "n_val",
+        "n_test",
+        "dt",
+        "t_final",
+        "save_dt",
+        "n_sensors",
+        "input_frames",
+        "output_frames",
+        "stride",
+        "width",
+        "modes",
+        "layers",
+        "epochs",
+        "batch_size",
+        "lr",
+        "nu_grid",
+    ):
+        value = config[name]
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"{name} must be a number")
+        kwargs[name] = float(value) if name in floats else int(value)
+    return InverseDemoConfig(**kwargs)
 
 
 def _write_reports(output_dir: Path, record: dict[str, Any]) -> None:
@@ -654,7 +815,9 @@ def _summary(output_label: str, record: dict[str, Any]) -> str:
         f"wall_clock_seconds: {format_result_number(record['wall_clock_seconds'])}",
         f"nu_grid_step: {format_result_number(record['nu_grid_step'])}",
         "",
-        results_table_markdown(record).rstrip("\n"),
+        results_table_terminal(record).rstrip("\n"),
+        "",
+        results_takeaway(record),
         "",
         "json: result.json",
         "markdown: result.md",

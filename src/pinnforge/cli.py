@@ -313,8 +313,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--output",
         default=None,
         help=(
-            "Relative output directory for burgers-inverse "
-            "(default: runs/burgers-inverse). Not used by the harmonic, Poisson, or Burgers sample demo."
+            "Directory for burgers-inverse (default: runs/burgers-inverse). "
+            "A relative path stays inside the working directory, or inside "
+            "--data-root when that is set. An absolute path is allowed on "
+            "this local command and is created if needed. It cannot be the "
+            "filesystem root, the home directory, or an existing file. "
+            "POST /demo/burgers-inverse accepts only a relative path, so a "
+            "request cannot write outside the sandbox. Not used by the "
+            "harmonic, Poisson, or Burgers sample demo."
         ),
     )
     serve = subparsers.add_parser(
@@ -705,7 +711,7 @@ def _demo_burgers_inverse(parser: argparse.ArgumentParser, args: argparse.Namesp
 
     from pinnforge.demo import DemoDependencyError
     from pinnforge.demo_inverse import DEFAULT_INVERSE_OUTPUT, run_burgers_inverse_demo
-    from pinnforge.specs.paths import resolve_inside_cwd
+    from pinnforge.specs.paths import resolve_cli_output
 
     if args.equation != "harmonic":
         parser.error("burgers-inverse does not use --equation")
@@ -714,10 +720,10 @@ def _demo_burgers_inverse(parser: argparse.ArgumentParser, args: argparse.Namesp
     output = DEFAULT_INVERSE_OUTPUT if args.output is None else args.output
     try:
         with _data_root_env(args):
-            resolved = resolve_inside_cwd(output, label="output")
+            resolved, output_label = resolve_cli_output(output, label="output")
             _install_offline_guard()
             try:
-                result = run_burgers_inverse_demo(resolved, output_label=output)
+                result = run_burgers_inverse_demo(resolved, output_label=output_label)
             except DemoDependencyError as exc:
                 print(str(exc), file=sys.stderr)
                 return 1

@@ -49,7 +49,7 @@ def test_torch_modules_raise_install_hint_without_torch() -> None:
         "    else:\n"
         "        raise SystemExit(name + ' imported without torch')\n"
         "from pinnforge.sampling import sample_equation\n"
-        "assert pinnforge.__version__ == '0.2.0'\n"
+        "assert pinnforge.__version__ == '0.2.1'\n"
         "assert sample_equation.__name__ == 'sample_equation'\n"
     )
     completed = subprocess.run(

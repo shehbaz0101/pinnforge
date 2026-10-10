@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.1 (2026-10-10)
+
+Not tagged in this commit. Measured demo scores are unchanged. The plots were redrawn from [docs/demo/result.json](docs/demo/result.json) and the Fourier solver:
+
+```bash
+python -c "import json; from pathlib import Path; from pinnforge.demo_inverse import redraw_plots; redraw_plots(Path('docs/demo'), json.loads(Path('docs/demo/result.json').read_text()))"
+```
+
+- Demo plots use Matplotlib's bundled DejaVu Sans at 120 DPI. The previous 3x5 bitmap drew `closed`, `base`, and `rel error` as jagged mixed-case pixels.
+- `pinnforge demo burgers-inverse` prints an aligned table with relative errors in percent and a one-line reading of that table. `result.json` and `result.md` keep full precision.
+- `--output` on that command accepts an absolute directory. `POST /demo/burgers-inverse` still requires a relative path inside the sandbox.
+
 ## 0.2.0 (2026-10-10)
 
 Not tagged in this commit. The stage studies below were run while the package version was `0.1.0`. Their tables were not recomputed or edited for this release. Headlines in those tables are checked against `docs/v02/*.json` by `tests/test_published_scores.py`.

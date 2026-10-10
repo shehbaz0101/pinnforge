@@ -12,6 +12,8 @@ from pinnforge.demo_inverse import (
     InverseDemoConfig,
     format_result_number,
     results_table_markdown,
+    results_table_terminal,
+    results_takeaway,
     run_burgers_inverse_demo,
 )
 
@@ -51,6 +53,9 @@ def test_demo_help_lists_burgers_inverse(capsys: pytest.CaptureFixture[str]) -> 
     text = capsys.readouterr().out
     assert "burgers-inverse" in text
     assert "--output" in text
+    assert "absolute path is allowed" in text
+    assert "relative path" in text
+    assert "sandbox" in text
     assert "samples/configs/harmonic.yaml" in text
 
 
@@ -105,6 +110,97 @@ def test_readme_quotes_the_committed_demo_record() -> None:
         assert blob.startswith(b"\x89PNG\r\n\x1a\n")
         assert len(blob) < 200_000
         assert f"docs/demo/{name}" in readme
+
+
+def test_terminal_table_uses_percents_and_markdown_keeps_full_precision() -> None:
+    record = json.loads((ROOT / "docs" / "demo" / "result.json").read_text(encoding="utf-8"))
+    text = results_table_terminal(record)
+    assert "0.41%" in text
+    assert "4.97%" in text
+    assert "25.93%" in text
+    assert "1.66974755e-04" not in text
+    assert results_table_markdown(record) in (ROOT / "docs" / "demo" / "result.md").read_text(encoding="utf-8")
+    takeaway = results_takeaway(record)
+    assert takeaway == (
+        "On this smooth sample the closed form wins "
+        "(0.41% vs 4.97% mean relative error). "
+        "The FNO edge shows on the hard-OOD Stage D slice (STAGE_D_REPORT.md)."
+    )
+    assert "\n" not in takeaway
+
+
+def test_takeaway_follows_the_record_when_the_fno_is_ahead() -> None:
+    record = {
+        "config": {"n_sensors": 8, "n_modes": 2, "nu_min": 0.01, "nu_max": 0.2},
+        "aggregates": {
+            "closed_form": {"mean_rel_error": 0.2},
+            "operator": {"mean_rel_error": 0.04},
+            "baseline": {"mean_rel_error": 0.5},
+        },
+    }
+    text = results_takeaway(record)
+    assert text.startswith("On this sample the FNO wins (4.00% vs 20.00% mean relative error).")
+    assert "smooth sample" not in text
+    assert "STAGE_D_REPORT.md" in text
+
+
+def test_cli_output_accepts_an_absolute_directory(tmp_path: Path) -> None:
+    from pinnforge.specs.paths import resolve_cli_output
+
+    target = tmp_path / "abs-demo"
+    resolved, label = resolve_cli_output(str(target))
+    assert resolved == target.resolve()
+    assert label == target.resolve().as_posix()
+    assert Path(label).is_absolute()
+
+
+def test_cli_output_rejects_root_home_and_a_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from pinnforge.specs.paths import PathSandboxError, resolve_cli_output
+
+    with pytest.raises(PathSandboxError, match="parent"):
+        resolve_cli_output("/")
+    home = Path.home()
+    with pytest.raises(PathSandboxError, match="parent"):
+        resolve_cli_output(str(home))
+    target = tmp_path / "not-a-dir"
+    target.write_text("x", encoding="utf-8")
+    with pytest.raises(PathSandboxError, match="not a directory"):
+        resolve_cli_output(str(target))
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(PathSandboxError, match="working directory"):
+        resolve_cli_output("../outside")
+
+
+def test_cli_rejects_an_absolute_file_output(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    from pinnforge.cli import main
+
+    target = tmp_path / "not-a-dir"
+    target.write_text("x", encoding="utf-8")
+    with pytest.raises(SystemExit) as caught:
+        main(["demo", "burgers-inverse", "--output", str(target)])
+    assert caught.value.code == 2
+    assert "not a directory" in capsys.readouterr().err
+
+
+def test_cli_passes_an_absolute_output_through(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from pinnforge.cli import main
+
+    target = tmp_path / "abs-demo"
+    seen: dict[str, object] = {}
+
+    def fake(output_dir: Path, *, output_label: str) -> object:
+        seen["dir"] = output_dir
+        seen["label"] = output_label
+
+        class Result:
+            summary = "pinnforge demo burgers-inverse\n"
+
+        return Result()
+
+    monkeypatch.setattr("pinnforge.demo_inverse.run_burgers_inverse_demo", fake)
+    assert main(["demo", "burgers-inverse", "--output", str(target)]) == 0
+    assert seen["dir"] == target.resolve()
+    assert seen["label"] == target.resolve().as_posix()
 
 
 def test_results_table_is_built_from_the_record() -> None:
@@ -169,8 +265,11 @@ def test_fast_demo_writes_finite_scores_and_pngs(tmp_path: Path) -> None:
     for name in ("closed_form", "operator", "baseline"):
         assert record["aggregates"][name]["mean_rel_error"] >= 0.0
     table = results_table_markdown(record)
-    assert table in (tmp_path / "out" / "result.md").read_text(encoding="utf-8")
-    assert table in result.summary
+    report = (tmp_path / "out" / "result.md").read_text(encoding="utf-8")
+    assert table in report
+    assert table not in result.summary
+    assert results_table_terminal(record) in result.summary
+    assert results_takeaway(record) in result.summary
     for name in ("viscosity_scatter.png", "relative_error.png", "field_sensors.png"):
         blob = (tmp_path / "out" / name).read_bytes()
         assert blob.startswith(b"\x89PNG\r\n\x1a\n")
@@ -190,7 +289,27 @@ def test_cli_published_demo_exits_zero(tmp_path: Path, capsys: pytest.CaptureFix
     record = json.loads((tmp_path / "runs" / "burgers-inverse" / "result.json").read_text(encoding="utf-8"))
     assert record["config"]["epochs"] == 40
     assert record["config"]["n_sensors"] == 32
-    assert results_table_markdown(record) in text
+    assert results_table_terminal(record) in text
+    assert results_takeaway(record) in text
+    report = (tmp_path / "runs" / "burgers-inverse" / "result.md").read_text(encoding="utf-8")
+    assert results_table_markdown(record) in report
+    payload = json.loads((tmp_path / "runs" / "burgers-inverse" / "result.json").read_text(encoding="utf-8"))
+    assert f"{payload['aggregates']['closed_form']['mean_rel_error']:.8e}" in report
+
+
+def test_api_rejects_an_absolute_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    pytest.importorskip("fastapi")
+    pytest.importorskip("httpx2")
+    from fastapi.testclient import TestClient
+
+    from pinnforge.api import create_app
+
+    monkeypatch.chdir(tmp_path)
+    with TestClient(create_app()) as client:
+        response = client.post("/demo/burgers-inverse", json={"output": str(tmp_path / "abs-demo")})
+    assert response.status_code == 422
+    assert "relative" in response.text
+    assert "absolute" in response.text
 
 
 def test_api_rejects_an_escaping_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
