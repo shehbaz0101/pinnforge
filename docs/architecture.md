@@ -1,6 +1,6 @@
 # Architecture
 
-PINNForge trains a small network on a classic residual and scores it against an analytical or fixed reference. The package version is 0.1.0. Day 10 freezes that version. [PROJECT_STATUS.md](../PROJECT_STATUS.md) is the status note. This tree has the Day 1 equation schemas and harmonic closed form, the Day 2 samplers, the Day 3 MLP and residual operators, the Day 4 Adam trainer, the Day 5 evaluation metrics, the Day 6 experiment config, the Day 7 localhost HTTP API, the Day 8 path sandbox, rate limit, and offline guard, and the Day 9 offline demo.
+PINNForge trains a small network on a classic residual and scores it against an analytical or fixed reference. The package version is 0.2.0. Day 10 froze the sandbox at 0.1.0. [PROJECT_STATUS.md](../PROJECT_STATUS.md) is the status note. This tree has the Day 1 equation schemas and harmonic closed form, the Day 2 samplers, the Day 3 MLP and residual operators, the Day 4 Adam trainer, the Day 5 evaluation metrics, the Day 6 experiment config, the Day 7 localhost HTTP API, the Day 8 path sandbox, rate limit, and offline guard, the Day 9 offline demo, and the 0.2.0 Burgers viscosity demo (`pinnforge demo burgers-inverse`).
 
 Importing `pinnforge` loads pydantic specs and the numpy samplers. It does not import torch or FastAPI. Torch is the optional `ml` extra. FastAPI and uvicorn are the optional `api` extra. `pinnforge.models`, `pinnforge.residuals`, `pinnforge.losses`, `pinnforge.training`, and `pinnforge.evaluation` raise `InstallHint` when torch is missing. `pinnforge.specs` and `pinnforge.experiments` validate train, eval, and experiment files without torch. `pinnforge.api` imports FastAPI only when the app is built. Default CI runs `pytest -m "not ml"` without torch and with the `api` extra installed. A separate job installs a CPU wheel and runs the full suite, including the residual, training, eval, `pinnforge run`, and HTTP train/eval/run tests.
 
@@ -9,7 +9,7 @@ Importing `pinnforge` loads pydantic specs and the numpy samplers. It does not i
 | Piece | Now |
 | --- | --- |
 | Harmonic oscillator | Spec with ω or k and m, a time interval, state IC `(u, du_dt)`, optional BC descriptors. Numpy solution `u(t) = A cos(ω(t-t0)) + B sin(ω(t-t0))`. |
-| Burgers 1D | Spec with viscosity ν > 0, x and t intervals, a named IC profile, and BC descriptors. Reference raises `NotImplementedError`. Eval reports residual metrics only. |
+| Burgers 1D | Spec with viscosity ν > 0, x and t intervals, a named IC profile, and BC descriptors. The coordinate-network reference raises `NotImplementedError`, so `pinnforge eval` reports residual metrics only. Periodic trajectories come from the Fourier solver, and `pinnforge demo burgers-inverse` recovers viscosity from those trajectories. |
 | Poisson toy | Spec with dimension 1 or 2, a named source, and BC descriptors. A reference field is returned only when it matches the source, the domain, and every prescribed boundary condition. Source `one` on `[0, 1]` with zero Dirichlet ends is `x(1 - x) / 2`. Otherwise evaluation marks the reference unavailable. |
 | Registry | In-process map from `equation_id` to the spec class, plus a catalog of the three built-ins (`list_equations`, aliases, overridable parameters). |
 | Sampler | Uniform, Latin-hypercube, or stratified draws on a `CollocationDomain`, plus IC and BC faces. A `CollocationBatch` holds float64 coordinates and `interior` / `ic` / `bc` labels. |
@@ -86,4 +86,4 @@ The same operator accepts `--loss residual` and `--loss hybrid`. The residual is
 8. **Day 9 — Demo.** Done. `pinnforge demo` trains a checked-in sample and prints the loss and the reference error. See [daily/day09.md](daily/day09.md).
 9. **Day 10 — Freeze.** Done. v0.1.0 status note and changelog. See [daily/day10.md](daily/day10.md).
 
-v0.1.0 stops here. Authentication stays out of this release.
+v0.1.0 stopped at that freeze. v0.2.0 keeps the same sandbox and adds the Burgers FNO studies plus `pinnforge demo burgers-inverse` and `POST /demo/burgers-inverse`. Authentication stays out.

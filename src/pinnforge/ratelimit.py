@@ -1,9 +1,9 @@
 """In-process rate limit for the expensive HTTP routes.
 
 ``GET /health`` and ``GET /equations`` are not limited. ``POST /train``,
-``POST /eval``, and ``POST /run`` share one sliding window per client
-address. ``TestClient`` has no peer address other than ``testclient``,
-so those calls share one bucket.
+``POST /eval``, ``POST /run``, and ``POST /demo/burgers-inverse`` share
+one sliding window per client address. ``TestClient`` has no peer address
+other than ``testclient``, so those calls share one bucket.
 
 ``PINNFORGE_RATE_LIMIT`` is the number of those POSTs allowed per window
 (default 60). ``PINNFORGE_RATE_WINDOW_SECONDS`` is the window length in
@@ -23,8 +23,8 @@ DEFAULT_RATE_WINDOW_SECONDS = 60.0
 RATE_LIMIT_ENV = "PINNFORGE_RATE_LIMIT"
 RATE_WINDOW_ENV = "PINNFORGE_RATE_WINDOW_SECONDS"
 
-# Train, eval, and run load a model. Catalog reads are not counted.
-LIMITED_PATHS = frozenset({"/train", "/eval", "/run"})
+# Train, eval, run, and the inverse demo load a model. Catalog reads are not counted.
+LIMITED_PATHS = frozenset({"/train", "/eval", "/run", "/demo/burgers-inverse"})
 
 
 class RateLimitConfigError(ValueError):

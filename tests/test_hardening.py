@@ -375,7 +375,7 @@ def test_rate_limit_returns_429_with_retry_after(
 
 def test_openapi_documents_429_on_expensive_routes_only(client: object) -> None:
     paths = client.get("/openapi.json").json()["paths"]  # type: ignore[attr-defined]
-    for path in ("/train", "/eval", "/run"):
+    for path in ("/train", "/eval", "/run", "/demo/burgers-inverse"):
         assert "429" in paths[path]["post"]["responses"]
     assert "429" not in paths["/health"]["get"]["responses"]
     assert "429" not in paths["/equations"]["get"]["responses"]

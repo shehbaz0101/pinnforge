@@ -15,6 +15,8 @@ from pinnforge.api.schemas import (
     EvalBody,
     EvalRequest,
     EvalResponse,
+    InverseDemoRequest,
+    InverseDemoResponse,
     RunRequest,
     RunResponse,
     TrainSummary,
@@ -99,6 +101,45 @@ def run_request(body: RunRequest) -> RunResponse:
         train=_train_summary(config.train, final, checkpoint, log),
         evaluation=EvalBody.model_validate(result.evaluation.as_dict()),
         eval_json=None if config.eval_json is None else Path(config.eval_json).as_posix(),
+    )
+
+
+def burgers_inverse_request(body: InverseDemoRequest) -> InverseDemoResponse:
+    """Run the Burgers inverse demo inside the sandbox root.
+
+    The output directory is checked before torch is imported.
+
+    Raises:
+        MlExtraMissing: torch is not installed.
+        ValueError: ``output`` leaves the sandbox root or is not a directory.
+    """
+
+    if not isinstance(body, InverseDemoRequest):
+        raise TypeError("body must be an InverseDemoRequest")
+    from pinnforge.demo import DemoDependencyError
+
+    resolved = resolve_inside_cwd(body.output, label="output")
+    run_burgers_inverse_demo = _import_burgers_inverse()
+    try:
+        result = run_burgers_inverse_demo(resolved, output_label=body.output)
+    except DemoDependencyError as exc:
+        raise MlExtraMissing(str(exc)) from exc
+    aggregates = result.record["aggregates"]
+    files = result.record["files"]
+    output = body.output
+    return InverseDemoResponse(
+        output=output,
+        result_json=f"{output}/{files['result_json']}",
+        result_markdown=f"{output}/{files['result_markdown']}",
+        report_html=f"{output}/{files['report_html']}",
+        checkpoint=f"{output}/{files['checkpoint']}",
+        n_test=int(aggregates["closed_form"]["n"]),
+        closed_form_mean_rel_error=float(aggregates["closed_form"]["mean_rel_error"]),
+        operator_mean_rel_error=float(aggregates["operator"]["mean_rel_error"]),
+        baseline_mean_rel_error=float(aggregates["baseline"]["mean_rel_error"]),
+        val_relative_l2=float(result.record["val_relative_l2"]),
+        selected_epoch=int(result.record["selected_epoch"]),
+        wall_clock_seconds=float(result.record["wall_clock_seconds"]),
     )
 
 
@@ -199,6 +240,22 @@ def _summary(info: object) -> EquationSummary:
         summary=info.summary,
         parameters=list(info.parameters),
     )
+
+
+def _import_burgers_inverse() -> object:
+    from pinnforge.demo import DemoDependencyError
+
+    try:
+        from pinnforge.demo_inverse import run_burgers_inverse_demo
+    except DemoDependencyError as exc:
+        raise MlExtraMissing(str(exc)) from exc
+    except ModuleNotFoundError as exc:
+        if exc.name != "torch":
+            raise
+        from pinnforge.ml_import import InstallHint
+
+        raise MlExtraMissing(str(InstallHint())) from exc
+    return run_burgers_inverse_demo
 
 
 def _import_run_experiment() -> object:

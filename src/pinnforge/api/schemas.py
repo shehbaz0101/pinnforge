@@ -183,6 +183,43 @@ class RunRequest(BaseModel):
         return self
 
 
+class InverseDemoRequest(BaseModel):
+    """Body for ``POST /demo/burgers-inverse``.
+
+    ``output`` is a relative directory inside the sandbox root. The
+    published CPU demo writes its JSON, markdown, HTML, plots, and
+    checkpoint there.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    output: str = "runs/burgers-inverse"
+
+    @field_validator("output")
+    @classmethod
+    def _output_path(cls, value: str) -> str:
+        return _relative_text(value, label="output")
+
+
+class InverseDemoResponse(BaseModel):
+    """Summary of one Burgers inverse demo. The full table is in ``result_json``."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    output: str
+    result_json: str
+    result_markdown: str
+    report_html: str
+    checkpoint: str
+    n_test: int
+    closed_form_mean_rel_error: float
+    operator_mean_rel_error: float
+    baseline_mean_rel_error: float
+    val_relative_l2: float
+    selected_epoch: int
+    wall_clock_seconds: float
+
+
 class EvalRequest(BaseModel):
     """Score one relative checkpoint. Same inputs as ``pinnforge eval``."""
 

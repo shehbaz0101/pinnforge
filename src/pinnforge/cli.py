@@ -11,11 +11,14 @@ metrics. ``residual``, ``train``, ``eval``, ``run``, and ``demo`` import torch
 and need the optional ``ml`` extra. ``run --config`` trains and then
 evaluates from a relative YAML or JSON experiment file. ``demo`` does
 that for a checked-in sample under ``samples/configs/`` (harmonic by
-default) and prints the loss and the reference error. The flag-based
+default) and prints the loss and the reference error. ``demo
+burgers-inverse`` trains a small Burgers FNO and recovers viscosity from
+32 sensors. The flag-based
 ``train`` and ``eval`` commands are unchanged. ``serve`` starts the
 localhost HTTP API and needs the optional ``api`` extra. It binds to
 ``127.0.0.1`` and refuses ``0.0.0.0`` unless ``--allow-remote`` is set.
-``POST /train``, ``POST /eval``, and ``POST /run`` share a rate limit.
+``POST /train``, ``POST /eval``, ``POST /run``, and
+``POST /demo/burgers-inverse`` share a rate limit.
 ``serve``, ``train``, ``eval``, ``run``, and ``demo`` refuse
 non-loopback TCP connects. ``fno`` trains or scores a 1D Fourier neural operator on Burgers windows
 (``python -m pinnforge.operator`` is the same command). The default loss
@@ -296,6 +299,24 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Replace the sample epoch count. Must be from 1 to 5. The sample file is not rewritten.",
     )
+    demo.add_argument(
+        "case",
+        nargs="?",
+        choices=("burgers-inverse",),
+        default=None,
+        help=(
+            "Optional case. burgers-inverse trains a small FNO and recovers "
+            "viscosity from 32 sensors. It does not use --equation or --epochs."
+        ),
+    )
+    demo.add_argument(
+        "--output",
+        default=None,
+        help=(
+            "Relative output directory for burgers-inverse "
+            "(default: runs/burgers-inverse). Not used by the harmonic, Poisson, or Burgers sample demo."
+        ),
+    )
     serve = subparsers.add_parser(
         "serve",
         parents=[path_flags],
@@ -325,7 +346,7 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         help=(
-            "POST /train, POST /eval, and POST /run requests allowed per window "
+            "POST /train, POST /eval, POST /run, and POST /demo/burgers-inverse requests allowed per window "
             "for each client (default: 60, or PINNFORGE_RATE_LIMIT)."
         ),
     )
@@ -382,6 +403,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "run":
         return _run(parser, args)
     if args.command == "demo":
+        if getattr(args, "case", None) == "burgers-inverse":
+            return _demo_burgers_inverse(parser, args)
         return _demo(parser, args)
     if args.command == "serve":
         return _serve(parser, args)
@@ -652,6 +675,8 @@ def _demo(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
 
     from pinnforge.demo import DemoDependencyError, execute_demo, load_demo_experiment
 
+    if args.output is not None:
+        parser.error("--output is only used with pinnforge demo burgers-inverse")
     try:
         with _data_root_env(args):
             config_path, config = load_demo_experiment(args.equation, epochs=args.epochs)
@@ -663,6 +688,39 @@ def _demo(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
                 return 1
     except ValidationError as exc:
         parser.error(_format_validation(exc))
+    except ValueError as exc:
+        parser.error(str(exc))
+    else:
+        print(result.summary, end="")
+        return 0
+    return 2
+
+
+def _demo_burgers_inverse(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
+    """Train a small Burgers FNO and recover viscosity from 32 sensors.
+
+    The output path is checked before torch is imported. ``--equation``
+    and ``--epochs`` belong to the sample demo and are rejected here.
+    """
+
+    from pinnforge.demo import DemoDependencyError
+    from pinnforge.demo_inverse import DEFAULT_INVERSE_OUTPUT, run_burgers_inverse_demo
+    from pinnforge.specs.paths import resolve_inside_cwd
+
+    if args.equation != "harmonic":
+        parser.error("burgers-inverse does not use --equation")
+    if args.epochs is not None:
+        parser.error("burgers-inverse does not use --epochs")
+    output = DEFAULT_INVERSE_OUTPUT if args.output is None else args.output
+    try:
+        with _data_root_env(args):
+            resolved = resolve_inside_cwd(output, label="output")
+            _install_offline_guard()
+            try:
+                result = run_burgers_inverse_demo(resolved, output_label=output)
+            except DemoDependencyError as exc:
+                print(str(exc), file=sys.stderr)
+                return 1
     except ValueError as exc:
         parser.error(str(exc))
     else:

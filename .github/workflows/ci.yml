@@ -53,6 +53,40 @@ jobs:
       - name: Unit tests including training, eval, and run
         run: python -m pytest
 
+  demo-smoke:
+    name: burgers inverse demo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install CPU torch and package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e ".[api]"
+      - name: Run the published inverse demo
+        run: pinnforge demo burgers-inverse --output runs/burgers-inverse
+      - name: Check the demo wrote a finite result
+        run: |
+          python - << 'PY'
+          import json
+          from pathlib import Path
+          record = json.loads(Path("runs/burgers-inverse/result.json").read_text(encoding="utf-8"))
+          assert record["format"] == "pinnforge.burgers_inverse_demo.v1"
+          assert record["config"]["n_sensors"] == 32
+          assert record["aggregates"]["closed_form"]["n"] == 4
+          for name in ("closed_form", "operator", "baseline"):
+              row = record["aggregates"][name]
+              assert row["mean_rel_error"] == row["mean_rel_error"]
+              assert row["mean_rel_error"] >= 0.0
+          for name in ("viscosity_scatter.png", "relative_error.png", "field_sensors.png", "index.html", "result.md"):
+              path = Path("runs/burgers-inverse") / name
+              assert path.is_file() and path.stat().st_size > 0
+          assert Path("runs/burgers-inverse/viscosity_scatter.png").read_bytes().startswith(b"\x89PNG")
+          PY
+
   lint:
     name: ruff check
     runs-on: ubuntu-latest
