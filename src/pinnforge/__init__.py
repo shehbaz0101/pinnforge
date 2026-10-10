@@ -14,7 +14,8 @@ which trains a checked-in sample on CPU and prints the reference error.
 Version 0.2.0 adds ``pinnforge demo burgers-inverse``, a small CPU
 viscosity recovery from 32 sensors. Version 0.2.1 draws that demo's
 plots with Matplotlib's DejaVu Sans and prints a short terminal table.
-The model, residual, loss,
+Version 0.2.2 puts that table and its one-line reading at the top of
+``result.md`` and ``index.html``. The model, residual, loss,
 training, and evaluation modules import torch and raise
 :class:`~pinnforge.ml_import.InstallHint` when the optional ``ml`` extra
 is missing. The HTTP app imports FastAPI when the optional ``api`` extra
@@ -35,7 +36,7 @@ from pinnforge.equations import (
 from pinnforge.ml_import import InstallHint
 from pinnforge.sampling import CollocationBatch, SampleConfig, sample_equation
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 __all__ = [
     "Burgers1DSpec",

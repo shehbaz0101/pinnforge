@@ -1,6 +1,6 @@
 # PINNForge
 
-PINNForge is a CPU sandbox for a few classic physics-informed residuals, plus one operator inverse problem that is small enough to rerun. The equation side covers a harmonic oscillator, viscous Burgers in one dimension, and a Poisson toy. The inverse demo trains a small Fourier neural operator on periodic Burgers trajectories and recovers the viscosity from 32 sparse sensors, then compares that fit with the closed-form residual least squares estimator. Version 0.2.1 is the tree described here. The annotated tag is not created in this commit. v0.1.0 remains the previous sandbox freeze.
+PINNForge is a CPU sandbox for a few classic physics-informed residuals, plus one operator inverse problem that is small enough to rerun. The equation side covers a harmonic oscillator, viscous Burgers in one dimension, and a Poisson toy. The inverse demo trains a small Fourier neural operator on periodic Burgers trajectories and recovers the viscosity from 32 sparse sensors, then compares that fit with the closed-form residual least squares estimator. Version 0.2.2 is the tree described here. The annotated tag is not created in this commit. v0.1.0 remains the previous sandbox freeze.
 
 ## Quickstart
 
@@ -34,13 +34,25 @@ The server binds `127.0.0.1:8000`. There is no authentication. `POST /train`, `P
 
 ## Results
 
-The table is the aggregate block of [docs/demo/result.json](docs/demo/result.json), written by:
+The command prints this table. Relative errors are percents of the true viscosity. [docs/demo/result.md](docs/demo/result.md) and [docs/demo/index.html](docs/demo/index.html) lead with the same table and the sentence under it. The copy in the tree is that run (Python 3.12.3, NumPy 1.26.4, torch 2.14.1+cpu, one torch thread), from:
 
 ```bash
 pinnforge demo burgers-inverse --output runs/burgers-inverse
 ```
 
-The copy in the tree is that run (Python 3.12.3, NumPy 1.26.4, torch 2.14.1+cpu, one torch thread). `tests/test_demo_inverse.py` checks that this table matches the JSON.
+`tests/test_demo_inverse.py` checks that this table and the full-precision table match [docs/demo/result.json](docs/demo/result.json).
+
+```text
+estimator                n   mean abs  mean rel  max rel  failures
+-----------------------  -  ---------  --------  -------  --------
+closed form, 32 sensors  4  1.670e-04     0.41%    0.71%         0
+FNO sensor match         4  2.556e-03     4.97%   11.85%         0
+training-mean constant   4  1.052e-02    25.93%   54.20%         1
+```
+
+On this smooth sample the closed form wins (0.41% vs 4.97% mean relative error). The FNO edge shows on the hard-OOD Stage D slice (STAGE_D_REPORT.md).
+
+Full precision:
 
 | estimator | n | mean abs error | mean rel error | max rel error | failures |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -64,7 +76,7 @@ The bars are the mean relative errors above. The axis is log10 because the three
 
 The first held-out trajectory at the first and last saved frames. Black dots are the 32 sensors on the first frame.
 
-A static page with the same table and figures is [docs/demo/index.html](docs/demo/index.html). Per-instance rows are in the JSON.
+A static page with the same tables and figures is [docs/demo/index.html](docs/demo/index.html). Per-instance rows are in the JSON.
 
 ## Limitations
 

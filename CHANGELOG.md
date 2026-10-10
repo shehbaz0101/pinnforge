@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.2 (2026-10-10)
+
+Not tagged in this commit. Measured demo scores are unchanged. `result.md` and `index.html` were rewritten from the existing [docs/demo/result.json](docs/demo/result.json). The plots and that JSON were not regenerated.
+
+```bash
+python -c "import json; from pathlib import Path; from pinnforge.demo_inverse import rewrite_reports; rewrite_reports(Path('docs/demo'), json.loads(Path('docs/demo/result.json').read_text()))"
+```
+
+- `result.md` and `index.html` lead with the aligned percent table and the one-line reading that `pinnforge demo burgers-inverse` prints. The scientific-notation table stays under that reading. `result.json` keeps full precision.
+
 ## 0.2.1 (2026-10-10)
 
 Not tagged in this commit. Measured demo scores are unchanged. The plots were redrawn from [docs/demo/result.json](docs/demo/result.json) and the Fourier solver:
