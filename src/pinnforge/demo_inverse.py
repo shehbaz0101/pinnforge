@@ -180,7 +180,11 @@ def format_result_number(value: float) -> str:
 
 
 def format_percent(value: float) -> str:
-    """Short percent for the terminal table. Full precision stays in the files."""
+    """Short percent for the aligned results table.
+
+    ``result.json`` and the full-precision table under that reading keep
+    ``.8e`` text.
+    """
 
     percent = float(value) * 100.0
     if not math.isfinite(percent):
@@ -191,7 +195,11 @@ def format_percent(value: float) -> str:
 
 
 def results_table_terminal(record: dict[str, Any]) -> str:
-    """Aligned text table. Relative errors are percents; abs errors are short."""
+    """Aligned text table. Relative errors are percents; abs errors are short.
+
+    The CLI prints this table. ``result.md`` and ``index.html`` lead with
+    the same text.
+    """
 
     sensors = int(record["config"]["n_sensors"])
     specs = (
@@ -797,11 +805,27 @@ def _config_from_record(record: dict[str, Any]) -> InverseDemoConfig:
     return InverseDemoConfig(**kwargs)
 
 
+def rewrite_reports(output_dir: Path, record: dict[str, Any]) -> None:
+    """Rewrite ``result.md`` and ``index.html`` from a saved record.
+
+    Both files lead with :func:`results_table_terminal` and
+    :func:`results_takeaway`. The scientific-notation table stays under
+    that reading. This does not train, does not rewrite ``result.json``,
+    and does not redraw plots.
+    """
+
+    if not isinstance(output_dir, Path):
+        raise TypeError("output_dir must be a Path")
+    if not isinstance(record, dict):
+        raise TypeError("record must be a dict")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "result.md").write_text(_markdown(record), encoding="utf-8")
+    (output_dir / "index.html").write_text(_html(record), encoding="utf-8")
+
+
 def _write_reports(output_dir: Path, record: dict[str, Any]) -> None:
     (output_dir / "result.json").write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
-    markdown = _markdown(record)
-    (output_dir / "result.md").write_text(markdown, encoding="utf-8")
-    (output_dir / "index.html").write_text(_html(record), encoding="utf-8")
+    rewrite_reports(output_dir, record)
 
 
 def _summary(output_label: str, record: dict[str, Any]) -> str:
@@ -839,6 +863,14 @@ def _markdown(record: dict[str, Any]) -> str:
         scope["illustration"],
         "",
         "## Results",
+        "",
+        "```text",
+        results_table_terminal(record).rstrip("\n"),
+        "```",
+        "",
+        results_takeaway(record),
+        "",
+        "### Full precision",
         "",
         results_table_markdown(record).rstrip("\n"),
         "",
@@ -895,6 +927,8 @@ def _html(record: dict[str, Any]) -> str:
             "</tr>"
         )
     body = "\n".join(table_rows)
+    percent = escape(results_table_terminal(record).rstrip("\n"))
+    takeaway = escape(results_takeaway(record))
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -905,6 +939,7 @@ body {{ font-family: sans-serif; margin: 2rem; max-width: 52rem; color: #1c1c1c;
 table {{ border-collapse: collapse; }}
 td, th {{ border: 1px solid #ccc; padding: 0.3rem 0.6rem; text-align: right; }}
 td:first-child, th:first-child {{ text-align: left; }}
+pre {{ font-family: "DejaVu Sans Mono", ui-monospace, monospace; background: #f4f4f4; padding: 0.75rem 1rem; overflow-x: auto; line-height: 1.45; }}
 img {{ max-width: 100%; height: auto; }}
 </style>
 </head>
@@ -912,6 +947,9 @@ img {{ max-width: 100%; height: auto; }}
 <h1>Burgers inverse demo</h1>
 <p>{escape(record["scope"]["illustration"])}</p>
 <p>Command: <code>{escape(record["command"])}</code></p>
+<pre>{percent}</pre>
+<p>{takeaway}</p>
+<h2>Full precision</h2>
 <table>
 <thead>
 <tr><th>estimator</th><th>n</th><th>mean abs error</th><th>mean rel error</th><th>max rel error</th><th>failures</th></tr>

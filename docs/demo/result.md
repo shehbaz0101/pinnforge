@@ -6,6 +6,18 @@ Small CPU example of sparse viscosity recovery. Not a rerun of the Stage D senso
 
 ## Results
 
+```text
+estimator                n   mean abs  mean rel  max rel  failures
+-----------------------  -  ---------  --------  -------  --------
+closed form, 32 sensors  4  1.670e-04     0.41%    0.71%         0
+FNO sensor match         4  2.556e-03     4.97%   11.85%         0
+training-mean constant   4  1.052e-02    25.93%   54.20%         1
+```
+
+On this smooth sample the closed form wins (0.41% vs 4.97% mean relative error). The FNO edge shows on the hard-OOD Stage D slice (STAGE_D_REPORT.md).
+
+### Full precision
+
 | estimator | n | mean abs error | mean rel error | max rel error | failures |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | closed form, 32 sensors | 4 | 1.66974755e-04 | 4.05968068e-03 | 7.08700857e-03 | 0 |

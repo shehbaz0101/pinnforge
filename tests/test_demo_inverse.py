@@ -14,6 +14,7 @@ from pinnforge.demo_inverse import (
     results_table_markdown,
     results_table_terminal,
     results_takeaway,
+    rewrite_reports,
     run_burgers_inverse_demo,
 )
 
@@ -96,8 +97,16 @@ def test_readme_quotes_the_committed_demo_record() -> None:
     report = (ROOT / "docs" / "demo" / "result.md").read_text(encoding="utf-8")
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     table = results_table_markdown(record)
+    terminal = results_table_terminal(record).rstrip("\n")
+    takeaway = results_takeaway(record)
     assert table in report
     assert table in readme
+    assert terminal in report
+    assert terminal in readme
+    assert takeaway in report
+    assert takeaway in readme
+    assert report.index(terminal) < report.index(takeaway) < report.index(table)
+    assert readme.index(terminal) < readme.index(takeaway) < readme.index(table)
     assert format_result_number(record["val_relative_l2"]) in readme
     assert format_result_number(record["wall_clock_seconds"]) in readme
     assert format_result_number(record["nu_grid_step"]) in readme
@@ -119,8 +128,19 @@ def test_terminal_table_uses_percents_and_markdown_keeps_full_precision() -> Non
     assert "4.97%" in text
     assert "25.93%" in text
     assert "1.66974755e-04" not in text
-    assert results_table_markdown(record) in (ROOT / "docs" / "demo" / "result.md").read_text(encoding="utf-8")
+    report = (ROOT / "docs" / "demo" / "result.md").read_text(encoding="utf-8")
+    page = (ROOT / "docs" / "demo" / "index.html").read_text(encoding="utf-8")
+    terminal = text.rstrip("\n")
+    full = results_table_markdown(record)
+    assert terminal in report
+    assert terminal in page
+    assert full in report
+    assert "1.66974755e-04" in page
     takeaway = results_takeaway(record)
+    assert takeaway in report
+    assert takeaway in page
+    assert report.index(terminal) < report.index(takeaway) < report.index(full)
+    assert page.index(terminal) < page.index(takeaway) < page.index("1.66974755e-04")
     assert takeaway == (
         "On this smooth sample the closed form wins "
         "(0.41% vs 4.97% mean relative error). "
@@ -203,6 +223,25 @@ def test_cli_passes_an_absolute_output_through(tmp_path: Path, monkeypatch: pyte
     assert seen["label"] == target.resolve().as_posix()
 
 
+def test_rewrite_reports_leaves_the_json_and_plots_alone(tmp_path: Path) -> None:
+    record = json.loads((ROOT / "docs" / "demo" / "result.json").read_text(encoding="utf-8"))
+    frozen = (ROOT / "docs" / "demo" / "result.json").read_bytes()
+    (tmp_path / "result.json").write_bytes(frozen)
+    (tmp_path / "viscosity_scatter.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+    rewrite_reports(tmp_path, record)
+    assert (tmp_path / "result.json").read_bytes() == frozen
+    assert (ROOT / "docs" / "demo" / "result.json").read_bytes() == frozen
+    assert (tmp_path / "viscosity_scatter.png").read_bytes() == b"\x89PNG\r\n\x1a\n"
+    report = (tmp_path / "result.md").read_text(encoding="utf-8")
+    page = (tmp_path / "index.html").read_text(encoding="utf-8")
+    terminal = results_table_terminal(record).rstrip("\n")
+    assert terminal in report
+    assert terminal in page
+    assert results_takeaway(record) in report
+    assert results_takeaway(record) in page
+    assert results_table_markdown(record) in report
+
+
 def test_results_table_is_built_from_the_record() -> None:
     record = {
         "config": {"n_sensors": 32},
@@ -266,10 +305,20 @@ def test_fast_demo_writes_finite_scores_and_pngs(tmp_path: Path) -> None:
         assert record["aggregates"][name]["mean_rel_error"] >= 0.0
     table = results_table_markdown(record)
     report = (tmp_path / "out" / "result.md").read_text(encoding="utf-8")
+    page = (tmp_path / "out" / "index.html").read_text(encoding="utf-8")
+    terminal = results_table_terminal(record).rstrip("\n")
+    takeaway = results_takeaway(record)
     assert table in report
     assert table not in result.summary
     assert results_table_terminal(record) in result.summary
-    assert results_takeaway(record) in result.summary
+    assert takeaway in result.summary
+    assert terminal in report
+    assert terminal in page
+    assert takeaway in report
+    assert takeaway in page
+    full_cell = format_result_number(record["aggregates"]["closed_form"]["mean_rel_error"])
+    assert report.index(terminal) < report.index(takeaway) < report.index(table)
+    assert page.index(terminal) < page.index(takeaway) < page.index(full_cell)
     for name in ("viscosity_scatter.png", "relative_error.png", "field_sensors.png"):
         blob = (tmp_path / "out" / name).read_bytes()
         assert blob.startswith(b"\x89PNG\r\n\x1a\n")
@@ -292,7 +341,12 @@ def test_cli_published_demo_exits_zero(tmp_path: Path, capsys: pytest.CaptureFix
     assert results_table_terminal(record) in text
     assert results_takeaway(record) in text
     report = (tmp_path / "runs" / "burgers-inverse" / "result.md").read_text(encoding="utf-8")
+    page = (tmp_path / "runs" / "burgers-inverse" / "index.html").read_text(encoding="utf-8")
     assert results_table_markdown(record) in report
+    assert results_table_terminal(record).rstrip("\n") in report
+    assert results_table_terminal(record).rstrip("\n") in page
+    assert results_takeaway(record) in report
+    assert results_takeaway(record) in page
     payload = json.loads((tmp_path / "runs" / "burgers-inverse" / "result.json").read_text(encoding="utf-8"))
     assert f"{payload['aggregates']['closed_form']['mean_rel_error']:.8e}" in report
 

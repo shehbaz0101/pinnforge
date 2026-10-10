@@ -8,6 +8,7 @@ body { font-family: sans-serif; margin: 2rem; max-width: 52rem; color: #1c1c1c; 
 table { border-collapse: collapse; }
 td, th { border: 1px solid #ccc; padding: 0.3rem 0.6rem; text-align: right; }
 td:first-child, th:first-child { text-align: left; }
+pre { font-family: "DejaVu Sans Mono", ui-monospace, monospace; background: #f4f4f4; padding: 0.75rem 1rem; overflow-x: auto; line-height: 1.45; }
 img { max-width: 100%; height: auto; }
 </style>
 </head>
@@ -15,6 +16,13 @@ img { max-width: 100%; height: auto; }
 <h1>Burgers inverse demo</h1>
 <p>Small CPU example of sparse viscosity recovery. Not a rerun of the Stage D sensors32_bursts study.</p>
 <p>Command: <code>pinnforge demo burgers-inverse --output runs/burgers-inverse</code></p>
+<pre>estimator                n   mean abs  mean rel  max rel  failures
+-----------------------  -  ---------  --------  -------  --------
+closed form, 32 sensors  4  1.670e-04     0.41%    0.71%         0
+FNO sensor match         4  2.556e-03     4.97%   11.85%         0
+training-mean constant   4  1.052e-02    25.93%   54.20%         1</pre>
+<p>On this smooth sample the closed form wins (0.41% vs 4.97% mean relative error). The FNO edge shows on the hard-OOD Stage D slice (STAGE_D_REPORT.md).</p>
+<h2>Full precision</h2>
 <table>
 <thead>
 <tr><th>estimator</th><th>n</th><th>mean abs error</th><th>mean rel error</th><th>max rel error</th><th>failures</th></tr>
