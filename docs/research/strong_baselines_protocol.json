@@ -1,0 +1,141 @@
+{
+  "format": "pinnforge.strong_baselines_protocol.v1",
+  "frozen_before_test_evaluation": true,
+  "test_used_for_selection": false,
+  "hyperparameters_tuned_on_test": false,
+  "hyperparameters_tuned_on_validation": false,
+  "role": "Strong baselines for the Stage D sparse viscosity inverse. This file is the scoring contract. It is not a test table.",
+  "question": "On the Stage A harder Burgers pilot, with the Stage D sensors32_bursts mask, does the Fourier neural operator still have lower hard_ood mean relative viscosity error than a weak-form identifier and a solver-in-the-loop fit? A negative answer is an acceptable outcome.",
+  "failure_rule": "nu_hat <= 0 or rel_error > 0.5",
+  "failure_relative_error": 0.5,
+  "device": "cpu",
+  "workers": 4,
+  "split": "test",
+  "mask": {
+    "name": "sensors32_bursts",
+    "n_sensors": 32,
+    "burst_starts": [0, 24, 48, 72],
+    "burst_length": 5,
+    "frame_dt": 0.01,
+    "unchanged": true
+  },
+  "hard_ood": {
+    "name": "hard_ood",
+    "comparison": "nu <= threshold_nu",
+    "threshold_nu": 0.027028120493367818,
+    "source": "docs/v02/pilot_protocol.json",
+    "refit": false
+  },
+  "below_stage2_floor": 0.02,
+  "slices": ["full_test", "hard_ood", "complement", "below_stage2_floor"],
+  "weak_form": {
+    "name": "wsin_dy_style",
+    "citation": "Messenger and Bortz, Weak SINDy for partial differential equations, arXiv:2007.02848",
+    "description": "Burgers is known. Nu is the only unknown. Each test function is separable, phi(x, t) = psi(x) eta(t), with psi and eta equal to (1 - xi^2)_+^degree. Derivatives fall on phi. The field is never differentiated. Integrals use the periodic trapezoidal rule on the sensor nodes and the trapezoidal rule in time, with half-weights on the first and last frame of each burst. Bursts are pooled into one normal equation. There is no interpolation of u.",
+    "degree": 4,
+    "radius_in_spacings": 8,
+    "center_stride": 4,
+    "projection_floor": 1e-12,
+    "interpolation_of_u": "none",
+    "quadrature": "periodic trapezoid in x, trapezoid in t",
+    "row_weighting": "unnormalized least squares",
+    "tuned": false
+  },
+  "solver_search": {
+    "nu_min": 0.005,
+    "nu_max": 0.1,
+    "n_coarse": 7,
+    "refine_width": 0.0005,
+    "max_refine": 10,
+    "n": 1024,
+    "dt": 0.00025,
+    "save_dt": 0.01,
+    "optimizer": "coarse_grid_plus_golden_section",
+    "tie_break": "smallest evaluated nu",
+    "returned_value": "evaluated point, not an interpolated vertex",
+    "forward_model": "pinnforge.reference.numerical.solver.solve",
+    "targets": "every burst except the opening burst",
+    "opening_frame": 0
+  },
+  "solver_sensor_ic": {
+    "name": "solver_sensor_ic",
+    "description": "The initial condition is the real-FFT zero-pad lift of the 32 (or fewer) sensors at frame 0 onto the N=1024 grid, the same lift_sensors map as Stage D. Modes above the sensor Nyquist are zero. This is interpolation, and it is not a Burgers state. The fit then matches the true spectral solver to the sensors on the later bursts. It does not read off-sensor samples.",
+    "initial_condition": "sensor_lift",
+    "reads_off_sensor_samples": false,
+    "interpolation": "real FFT zero-pad; coarse Nyquist coefficient halved before padding"
+  },
+  "solver_oracle_ic": {
+    "name": "solver_oracle_ic",
+    "description": "The initial condition is the stored full-grid field at frame 0. The fit matches the true spectral solver to the same later-burst sensors. This ceiling reads the initial condition off the sensors. It is not a sparse-sensor estimator.",
+    "initial_condition": "oracle_ic",
+    "reads_full_initial_condition": true,
+    "role": "ceiling"
+  },
+  "fno_reference": {
+    "source": "docs/v02/stage_d_scores.json",
+    "arms": ["data_only", "hybrid_1e-2"],
+    "seeds": [0, 1, 2, 3, 4],
+    "lambda": 0.0,
+    "field": "lambda0_nu_hat",
+    "retrained": false,
+    "reason": "Published per-instance estimates are reused. Checkpoints are not in git."
+  },
+  "stress": {
+    "noise_seed": 0,
+    "noise_source": "docs/v02/stage_e_stress_protocol.json",
+    "weak_form_conditions": "every condition in the Stage E protocol, all test slices",
+    "solver_sensor_ic": {
+      "slices": ["hard_ood"],
+      "condition_ids": [
+        "noise0p02_sensors32_bursts4",
+        "noise0p05_sensors32_bursts4",
+        "noise0_sensors16_bursts4",
+        "noise0_sensors8_bursts4"
+      ],
+      "truth_diagnostic": false
+    },
+    "notes": "Weak form is scored on the full Stage E condition list at noise seed 0. The solver-in-the-loop stress is only the sensor-lift initial condition, only hard_ood, and only the four Stage E cells where the published operator mean relative error crossed 10% or the sensor count dropped. A full solver grid was outside the CPU budget. Published Stage E aggregates in the comparison columns are read from docs/v02/stage_e_scores.json by this script. They are not a new operator run. The one-burst mask has no solver target and is not in the solver list. Noise is the Stage E full-field Gaussian model. After the noisy field is built, each estimator reads only its mask."
+  },
+  "stage_d_scores": "docs/v02/stage_d_scores.json",
+  "stage_d_scores_sha256": "9eec8e3e177dc8f7bf4708567d3fef648f47e3fd4f9c29dce6a5e606aca614a3",
+  "stage_d_inverse_protocol": "docs/v02/stage_d_inverse_protocol.json",
+  "stage_d_inverse_protocol_sha256": "24450a3d7dec8a1c0347b099c82f27f1941f6e869f4041b320cff302adad8a0a",
+  "stage_e_protocol": "docs/v02/stage_e_stress_protocol.json",
+  "stage_e_protocol_sha256": "f53f6d3d98f49335a6e64108048f74d7353b8df22543995851a07d6e428fed19",
+  "stage_e_scores": "docs/v02/stage_e_scores.json",
+  "stage_e_scores_sha256": "bb9d260b725085823992bbed47a60b5424b00f7b45a0a1b888d9f3895564e3a3",
+  "data_protocol": "docs/v02/pilot_protocol.json",
+  "data_protocol_sha256": "bc640feab6220d8871cfcdc72997bdb7cd717c1ead67d70bd347eed19ddf8c6c",
+  "inverse_stress": "docs/v02/inverse_stress.json",
+  "inverse_stress_sha256": "180990be33fdc4a67eb62d610dfdd8be3516ca6876a9769cadb632c2bd78efaf",
+  "pilot": "artifacts/burgers_hard_pilot",
+  "manifest": "docs/stage_a/pilot_manifest.json",
+  "aggregation": {
+    "fno_unit": "one scalar per seed per slice",
+    "fno_center": "arithmetic mean",
+    "fno_spread": "sample standard deviation",
+    "ddof": 1,
+    "deterministic_baselines": "one run; no seed standard deviation",
+    "paired_delta": "fno relative error minus baseline relative error; negative means the FNO is lower"
+  },
+  "limitations": [
+    "One scalar viscosity, one-dimensional periodic Burgers, and the Stage A pilot. This is not a multi-equation benchmark.",
+    "The weak form never interpolates u. With five frames in a burst the time integral is a five-node trapezoidal rule. Degree, radius, and center stride were fixed before test scoring and were not swept.",
+    "The sensor-lift solver interpolates frame 0 only. The Stage D operator also sees frames 1 through 4. Both match the later bursts and not the opening burst.",
+    "The oracle initial-condition solver reads the full field at t = 0. It is a ceiling, not a sensor-only method.",
+    "The solver search is a 7-point coarse grid plus at most 10 golden-section steps, down to a bracket of width 0.0005. It is not an exhaustive 191-point grid. A missed local minimum would be a property of that search.",
+    "Fourier neural operator errors are the committed Stage D per-instance estimates at lambda 0. Those networks were not retrained in this run, and the published checkpoints are not in the repository.",
+    "The Fourier neural operator wall clock is one instance of the Stage D 191-point rollout with a randomly initialized network of the Stage D architecture. It measures the arithmetic, not a published checkpoint.",
+    "Solver stress covers four Stage E cells on hard_ood only. The weak form covers the full Stage E condition list at noise seed 0.",
+    "Stage E noise is scaled by the clean full-field standard deviation. The estimators then read the mask. They do not read the clean field."
+  ],
+  "not_claimed": [
+    "a retuned hard_ood threshold, sensor mask, or Stage A through F protocol",
+    "a change to any previously reported number",
+    "that the weak form interpolates the sensor data onto the solver grid",
+    "that the sensor-lift initial condition is the stored field",
+    "that the oracle initial condition is available to a sensor-only method",
+    "that one Fourier neural operator seed is the result",
+    "that a negative comparison for the operator is a failure of the study"
+  ]
+}
