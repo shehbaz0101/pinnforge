@@ -53,3 +53,13 @@ def test_protocol_is_frozen_and_has_no_v062_test_scores() -> None:
 def test_protocol_hash(capsys: pytest.CaptureFixture[str]) -> None:
     assert v062_main(["protocol-hash"]) == 0
     assert capsys.readouterr().out.strip() == protocol_sha256(V062_PROTOCOL)
+
+
+def test_committed_scores_match_frozen_protocol() -> None:
+    scores_path = ROOT / "docs" / "v062" / "scores.json"
+    if not scores_path.is_file():
+        pytest.skip("v062 scores are written after the protocol freeze")
+    scores = json.loads(scores_path.read_text(encoding="utf-8"))
+    assert scores["protocol_sha256"] == protocol_sha256(V062_PROTOCOL)
+    report = (ROOT / "docs" / "v062" / "report.md").read_text(encoding="utf-8")
+    assert "FAIL" in report or "PASS" in report

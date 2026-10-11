@@ -158,6 +158,12 @@ leaf_documents:
     evidence:
       - docs/v062/protocol.json
       - docs/v062/solver_validation.json
+  - file: docs/v062/report.md
+    evidence:
+      - docs/v062/scores.json
+      - docs/v062/protocol.json
+      - docs/v062/validation.json
+      - docs/v062/solver_validation.json
 
 claims:
   - id: number-0_41pct
@@ -2763,3 +2769,97 @@ claims:
         right:
           evidence: docs/v061/protocol.json
           path: identifiability_gate
+
+  - id: v062-overall-fail
+    class: comparison
+    locations:
+      - file: CHANGELOG.md
+        pattern: 'The inverse fails the preregistered bars on The Well'
+      - file: docs/README.md
+        pattern: 'The inverse fails the preregistered bars on The Well'
+      - file: README.md
+        pattern: 'sim-train / The Well-test inverse; fails the preregistered bars on The Well'
+      - file: docs/v062/report.md
+        pattern: 'Result: FAIL'
+    comparisons:
+      - label: overall fail
+        op: "=="
+        left:
+          evidence: docs/v062/scores.json
+          path: bars/overall
+        right:
+          literal: false
+
+  - id: v062-error-bars-fail
+    class: comparison
+    locations:
+      - file: CHANGELOG.md
+        pattern: 'The in-distribution median-rel bar, the OOD median-rel bar, the gap bar, the coverage bar, the hybrid-below-baselines bar, and the constant-predictor bar fail'
+      - file: docs/README.md
+        pattern: 'The in-distribution median-rel bar, the OOD median-rel bar, the gap bar, the coverage bar, the hybrid-below-baselines bar, and the constant-predictor bar fail'
+    comparisons:
+      - label: in-dist fail
+        op: "=="
+        left:
+          evidence: docs/v062/scores.json
+          path: bars/pass/in_dist_median_rel
+        right:
+          literal: false
+      - label: ood fail
+        op: "=="
+        left:
+          evidence: docs/v062/scores.json
+          path: bars/pass/ood_median_rel
+        right:
+          literal: false
+      - label: gap fail
+        op: "=="
+        left:
+          evidence: docs/v062/scores.json
+          path: bars/pass/ood_over_in_dist
+        right:
+          literal: false
+      - label: coverage fail
+        op: "=="
+        left:
+          evidence: docs/v062/scores.json
+          path: bars/pass/interval_coverage
+        right:
+          literal: false
+      - label: hybrid below baselines fail
+        op: "=="
+        left:
+          evidence: docs/v062/scores.json
+          path: bars/pass/hybrid_beats_baselines_ood
+        right:
+          literal: false
+      - label: constant predictor fail
+        op: "=="
+        left:
+          evidence: docs/v062/scores.json
+          path: bars/pass/beats_constant_predictor
+        right:
+          literal: false
+
+  - id: v062-noise-and-solver
+    class: comparison
+    locations:
+      - file: CHANGELOG.md
+        pattern: 'The noise-robustness bar passes. The solver meets the pre-stated The Well field gates'
+      - file: docs/README.md
+        pattern: 'The noise-robustness bar passes'
+    comparisons:
+      - label: noise robustness pass
+        op: "=="
+        left:
+          evidence: docs/v062/scores.json
+          path: bars/pass/noise_5pct_not_worse_than_wsindy
+        right:
+          literal: true
+      - label: solver validation pass
+        op: "=="
+        left:
+          evidence: docs/v062/solver_validation.json
+          path: overall_pass
+        right:
+          literal: true
