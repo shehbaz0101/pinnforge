@@ -21,6 +21,7 @@ stronger_baselines:
 scan:
   superiority:
     - README.md
+    - docs/README.md
     - CHANGELOG.md
     - PROJECT_STATUS.md
     - docs/demo/result.md
@@ -40,6 +41,7 @@ scan:
     - STAGE_F_REPORT.md
   numbers:
     - README.md
+    - docs/README.md
     - CHANGELOG.md
     - PROJECT_STATUS.md
     - docs/demo/result.md
@@ -279,14 +281,6 @@ claims:
           - docs/demo/result.md
         evidence: docs/demo/result.json
         path: nu_grid_step
-  - id: number-0_001
-    class: numeric
-    numbers:
-      - token: "0.001"
-        files:
-          - README.md
-        evidence: docs/demo/result.json
-        path: nu_grid_step
   - id: number-0_5
     class: numeric
     numbers:
@@ -350,6 +344,7 @@ claims:
     numbers:
       - token: "1e-2"
         files:
+          - README.md
           - CHANGELOG.md
           - PROJECT_STATUS.md
         evidence: docs/v02/stage_c_train_protocol.json
@@ -753,7 +748,7 @@ claims:
       kind: ranking
     locations:
       - file: README.md
-        pattern: 'closed form wins'
+        pattern: 'On this smooth sample the closed form wins'
       - file: docs/demo/result.md
         pattern: 'closed form wins'
       - file: docs/demo/index.html
@@ -1306,3 +1301,511 @@ claims:
     locations:
       - file: STAGE_F_REPORT.md
         pattern: 'not a win'
+
+  # README (Stage H). The hard_ood numbers are the strong-baseline record on
+  # the Stage D sensors32_bursts mask. Integer tokens are registered with a
+  # location so each one is anchored to the sentence that uses it.
+
+  - id: readme-problem-statement-is-a-question
+    class: superiority
+    assertion:
+      kind: not_a_ranking
+      note: states the research question. The hard_ood table and the breakdown list answer it in both directions
+    locations:
+      - file: README.md
+        pattern: "Measure when a learned operator beats running the solver, and when it doesn't"
+
+  - id: readme-hard-ood-table
+    class: comparison
+    locations:
+      - file: README.md
+        pattern: '\| closed-form residual least squares \| sensors \| 0\.349 \| 9 \|'
+      - file: README.md
+        pattern: '\| weak-form identifier \| sensors \| 0\.090 \| 0 \|'
+      - file: README.md
+        pattern: '\| FNO, data loss \| sensors \| 0\.049 \| 0 \|'
+      - file: README.md
+        pattern: '\| FNO, hybrid physics loss \(weight `1e-2`\) \| sensors \| 0\.034 \| 0 \|'
+      - file: README.md
+        pattern: '\| solver in the loop, sensor-lift initial condition \| sensors \| 0\.0138 \| 0 \|'
+      - file: README.md
+        pattern: '\| solver in the loop, oracle initial condition \(ceiling\) \| full field at `t = 0`, then sensors \| 0\.0025 \| 0 \|'
+      - file: README.md
+        pattern: 'Each row recovers `ν` on the 30 `hard_ood` test instances'
+    numbers:
+      - token: "0.349"
+        files: [README.md]
+        evidence: docs/research/strong_baselines_scores.json
+        path: methods/closed_form_ls/slices/hard_ood/mean_rel_error
+      - token: "0.090"
+        files: [README.md]
+        evidence: docs/research/strong_baselines_scores.json
+        path: methods/weak_form/slices/hard_ood/mean_rel_error
+      - token: "0.049"
+        files: [README.md]
+        evidence: docs/research/strong_baselines_scores.json
+        path: fno/arms/data_only/slices/hard_ood/mean_rel_error
+      - token: "0.034"
+        files: [README.md]
+        evidence: docs/research/strong_baselines_scores.json
+        path: fno/arms/hybrid_1e-2/slices/hard_ood/mean_rel_error
+      - token: "0.0138"
+        files: [README.md]
+        evidence: docs/research/strong_baselines_scores.json
+        path: methods/solver_sensor_ic/slices/hard_ood/mean_rel_error
+      - token: "0.0025"
+        files: [README.md]
+        evidence: docs/research/strong_baselines_scores.json
+        path: methods/solver_oracle_ic/slices/hard_ood/mean_rel_error
+      - token: "9"
+        files: [README.md]
+        evidence: docs/research/strong_baselines_scores.json
+        path: methods/closed_form_ls/slices/hard_ood/n_failures
+      - token: "30"
+        files: [README.md]
+        evidence: docs/research/strong_baselines_scores.json
+        path: methods/closed_form_ls/slices/hard_ood/n_instances
+    comparisons:
+      - label: weak form hard_ood failures == 0
+        op: "=="
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/weak_form/slices/hard_ood/n_failures
+        right: 0
+      - label: data-loss FNO hard_ood failures == 0
+        op: "=="
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/data_only/slices/hard_ood/n_failures
+        right: 0
+      - label: hybrid FNO hard_ood failures == 0
+        op: "=="
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/hybrid_1e-2/slices/hard_ood/n_failures
+        right: 0
+      - label: sensor-lift solver hard_ood failures == 0
+        op: "=="
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/solver_sensor_ic/slices/hard_ood/n_failures
+        right: 0
+      - label: oracle-IC solver hard_ood failures == 0
+        op: "=="
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/solver_oracle_ic/slices/hard_ood/n_failures
+        right: 0
+      - label: FNO arms are five-seed means
+        op: "=="
+        left:
+          evidence: docs/research/strong_baselines_protocol.json
+          path: fno_reference/seeds/4
+        right: 4
+
+  - id: readme-hard-ood-fno-between-baselines
+    class: comparison
+    locations:
+      - file: README.md
+        pattern: 'On this slice the FNO mean relative error is lower than the closed form and the weak form, and higher than the solver-in-the-loop fit from a sensor-lifted initial condition'
+    comparisons:
+      - label: data-loss FNO < closed form
+        op: "<"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/data_only/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/closed_form_ls/slices/hard_ood/mean_rel_error
+      - label: hybrid FNO < closed form
+        op: "<"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/hybrid_1e-2/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/closed_form_ls/slices/hard_ood/mean_rel_error
+      - label: data-loss FNO < weak form
+        op: "<"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/data_only/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/weak_form/slices/hard_ood/mean_rel_error
+      - label: hybrid FNO < weak form
+        op: "<"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/hybrid_1e-2/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/weak_form/slices/hard_ood/mean_rel_error
+      - label: data-loss FNO > sensor-lift solver
+        op: ">"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/data_only/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/solver_sensor_ic/slices/hard_ood/mean_rel_error
+      - label: hybrid FNO > sensor-lift solver
+        op: ">"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/hybrid_1e-2/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/solver_sensor_ic/slices/hard_ood/mean_rel_error
+
+  - id: readme-wall-clock
+    class: comparison
+    locations:
+      - file: README.md
+        pattern: 'about 19 s for the sensor-lift solver fit'
+      - file: README.md
+        pattern: 'about 2 s for one FNO inversion over the 191-point `ν` grid'
+      - file: README.md
+        pattern: 'measured with randomly initialized weights of the Stage D architecture'
+    numbers:
+      - token: "19"
+        files: [README.md]
+        evidence: docs/research/strong_baselines_scores.json
+        path: timing/methods/solver_sensor_ic/seconds_per_instance_mean
+      - token: "2"
+        files: [README.md]
+        evidence: docs/research/strong_baselines_scores.json
+        path: timing/fno_stage_d_grid/seconds_per_instance
+      - token: "191"
+        files: [README.md]
+        evidence: docs/research/strong_baselines_scores.json
+        path: timing/fno_stage_d_grid/n_grid
+    comparisons:
+      - label: sensor-lift solver seconds per instance > FNO grid seconds per instance
+        op: ">"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: timing/methods/solver_sensor_ic/seconds_per_instance_mean
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: timing/fno_stage_d_grid/seconds_per_instance
+
+  - id: readme-stage-e-breakdown
+    class: comparison
+    locations:
+      - file: README.md
+        pattern: 'Both FNO arms stay under 10% mean relative error with no failures through 1% noise \(of the field standard deviation\)\. Both cross 10% and start failing at 2% noise, and at 16 clean sensors\.'
+      - file: README.md
+        pattern: 'On the same noisy `hard_ood` cells the sensor-lift solver stays at 0\.0142 \(2% noise\) and 0\.0182 \(5% noise\)\. At 16 clean sensors that solver degrades as well \(0\.154, 2 failures\), close to the FNO arms \(0\.175 and 0\.161\)\.'
+    numbers:
+      - token: "1%"
+        files: [README.md]
+        evidence: docs/v02/stage_e_stress_protocol.json
+        path: noise/fractions/3
+        scale: 100
+      - token: "2%"
+        files: [README.md]
+        evidence: docs/v02/stage_e_stress_protocol.json
+        path: noise/fractions/4
+        scale: 100
+      - token: "5%"
+        files: [README.md]
+        evidence: docs/v02/stage_e_stress_protocol.json
+        path: noise/fractions/5
+        scale: 100
+      - token: "16"
+        files: [README.md]
+        evidence: docs/v02/stage_e_scores.json
+        path: conditions/noise0_sensors16_bursts4/n_sensors
+      - token: "0.0142"
+        files: [README.md]
+        evidence: docs/research/strong_baselines_scores.json
+        path: stress/solver_sensor_ic/noise0p02_sensors32_bursts4/summary/mean_rel_error
+      - token: "0.0182"
+        files: [README.md]
+        evidence: docs/research/strong_baselines_scores.json
+        path: stress/solver_sensor_ic/noise0p05_sensors32_bursts4/summary/mean_rel_error
+      - token: "0.154"
+        files: [README.md]
+        evidence: docs/research/strong_baselines_scores.json
+        path: stress/solver_sensor_ic/noise0_sensors16_bursts4/summary/mean_rel_error
+      - token: "0.175"
+        files: [README.md]
+        evidence: docs/v02/stage_e_scores.json
+        path: conditions/noise0_sensors16_bursts4/operator_data_only/slices/hard_ood/mean_rel_error
+      - token: "0.161"
+        files: [README.md]
+        evidence: docs/v02/stage_e_scores.json
+        path: conditions/noise0_sensors16_bursts4/operator_hybrid_1e-2/slices/hard_ood/mean_rel_error
+    comparisons:
+      - label: data-loss FNO 1% noise hard_ood under 10%
+        op: "<"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p01_sensors32_bursts4/operator_data_only/slices/hard_ood/mean_rel_error
+        right: 0.10
+      - label: hybrid FNO 1% noise hard_ood under 10%
+        op: "<"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p01_sensors32_bursts4/operator_hybrid_1e-2/slices/hard_ood/mean_rel_error
+        right: 0.10
+      - label: data-loss FNO 1% noise hard_ood failures == 0
+        op: "=="
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p01_sensors32_bursts4/operator_data_only/slices/hard_ood/n_failures
+        right: 0
+      - label: hybrid FNO 1% noise hard_ood failures == 0
+        op: "=="
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p01_sensors32_bursts4/operator_hybrid_1e-2/slices/hard_ood/n_failures
+        right: 0
+      - label: data-loss FNO 2% noise hard_ood over 10%
+        op: ">"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p02_sensors32_bursts4/operator_data_only/slices/hard_ood/mean_rel_error
+        right: 0.10
+      - label: hybrid FNO 2% noise hard_ood over 10%
+        op: ">"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p02_sensors32_bursts4/operator_hybrid_1e-2/slices/hard_ood/mean_rel_error
+        right: 0.10
+      - label: data-loss FNO 2% noise hard_ood failures > 0
+        op: ">"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p02_sensors32_bursts4/operator_data_only/slices/hard_ood/n_failures
+        right: 0
+      - label: hybrid FNO 2% noise hard_ood failures > 0
+        op: ">"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p02_sensors32_bursts4/operator_hybrid_1e-2/slices/hard_ood/n_failures
+        right: 0
+      - label: data-loss FNO 16 sensors hard_ood over 10%
+        op: ">"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0_sensors16_bursts4/operator_data_only/slices/hard_ood/mean_rel_error
+        right: 0.10
+      - label: hybrid FNO 16 sensors hard_ood over 10%
+        op: ">"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0_sensors16_bursts4/operator_hybrid_1e-2/slices/hard_ood/mean_rel_error
+        right: 0.10
+      - label: data-loss FNO 16 sensors hard_ood failures > 0
+        op: ">"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0_sensors16_bursts4/operator_data_only/slices/hard_ood/n_failures
+        right: 0
+      - label: hybrid FNO 16 sensors hard_ood failures > 0
+        op: ">"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0_sensors16_bursts4/operator_hybrid_1e-2/slices/hard_ood/n_failures
+        right: 0
+      - label: sensor-lift solver 16 sensors hard_ood failures == 2
+        op: "=="
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: stress/solver_sensor_ic/noise0_sensors16_bursts4/summary/n_failures
+        right: 2
+
+  - id: readme-stage-e-closed-form-wins-at-five-percent
+    class: superiority
+    assertion:
+      kind: ranking
+    locations:
+      - file: README.md
+        pattern: 'At 5% noise the closed form wins on `hard_ood`: 0\.299 against 0\.750 \(data loss\) and 0\.835 \(hybrid\)'
+    numbers:
+      - token: "0.299"
+        files: [README.md]
+        evidence: docs/v02/stage_e_scores.json
+        path: conditions/noise0p05_sensors32_bursts4/closed_form_ls/slices/hard_ood/mean_rel_error
+      - token: "0.750"
+        files: [README.md]
+        evidence: docs/v02/stage_e_scores.json
+        path: conditions/noise0p05_sensors32_bursts4/operator_data_only/slices/hard_ood/mean_rel_error
+      - token: "0.835"
+        files: [README.md]
+        evidence: docs/v02/stage_e_scores.json
+        path: conditions/noise0p05_sensors32_bursts4/operator_hybrid_1e-2/slices/hard_ood/mean_rel_error
+    comparisons:
+      - label: closed form 5% noise hard_ood < data-loss FNO
+        op: "<"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p05_sensors32_bursts4/closed_form_ls/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p05_sensors32_bursts4/operator_data_only/slices/hard_ood/mean_rel_error
+      - label: closed form 5% noise hard_ood < hybrid FNO
+        op: "<"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p05_sensors32_bursts4/closed_form_ls/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p05_sensors32_bursts4/operator_hybrid_1e-2/slices/hard_ood/mean_rel_error
+
+  - id: readme-stage-f-ood
+    class: comparison
+    locations:
+      - file: README.md
+        pattern: 'the FNO one-step forecast error on the held-out low-viscosity slice is about 11 times its in-range error \(data loss; 12 for hybrid\)\. The viscosity inverse error on that slice rises to 0\.233 \(data loss\) and 0\.213 \(hybrid\)\. The hybrid physics loss does not close the gap: its out-of-distribution to in-range ratio is larger than the data loss, and the paired per-seed differences change sign\.'
+    numbers:
+      - token: "11"
+        files: [README.md]
+        evidence: docs/v02/stage_f_scores.json
+        path: forward/data_only/ood_gap/one_step/ratio_of_means
+      - token: "12"
+        files: [README.md]
+        evidence: docs/v02/stage_f_scores.json
+        path: forward/hybrid_1e-2/ood_gap/one_step/ratio_of_means
+      - token: "0.233"
+        files: [README.md]
+        evidence: docs/v02/stage_f_scores.json
+        path: inverse/arms/data_only/slices/ood/mean_rel_error/mean
+      - token: "0.213"
+        files: [README.md]
+        evidence: docs/v02/stage_f_scores.json
+        path: inverse/arms/hybrid_1e-2/slices/ood/mean_rel_error/mean
+    comparisons:
+      - label: hybrid OOD one-step gap > data-loss gap
+        op: ">"
+        left:
+          evidence: docs/v02/stage_f_scores.json
+          path: forward/hybrid_1e-2/ood_gap/one_step/ratio_of_means
+        right:
+          evidence: docs/v02/stage_f_scores.json
+          path: forward/data_only/ood_gap/one_step/ratio_of_means
+      - label: paired hybrid minus data OOD one-step has a negative seed
+        op: "<"
+        left:
+          evidence: docs/v02/stage_f_scores.json
+          path: forward/hybrid_minus_data_only/ood/one_step_hybrid_minus_data/min
+        right: 0
+      - label: paired hybrid minus data OOD one-step has a positive seed
+        op: ">"
+        left:
+          evidence: docs/v02/stage_f_scores.json
+          path: forward/hybrid_minus_data_only/ood/one_step_hybrid_minus_data/max
+        right: 0
+      - label: restricted data-loss OOD inverse > full-range Stage D data-loss
+        op: ">"
+        left:
+          evidence: docs/v02/stage_f_scores.json
+          path: inverse/arms/data_only/slices/ood/mean_rel_error/mean
+        right:
+          evidence: docs/v02/stage_d_scores.json
+          path: arms/data_only/objectives/0.0/slices/hard_ood/mean_rel_error/mean
+      - label: restricted hybrid OOD inverse > full-range Stage D hybrid
+        op: ">"
+        left:
+          evidence: docs/v02/stage_f_scores.json
+          path: inverse/arms/hybrid_1e-2/slices/ood/mean_rel_error/mean
+        right:
+          evidence: docs/v02/stage_d_scores.json
+          path: arms/hybrid_1e-2/objectives/0.0/slices/hard_ood/mean_rel_error/mean
+
+  - id: readme-smooth-demo-closed-form-more-accurate
+    class: comparison
+    locations:
+      - file: README.md
+        pattern: 'On the small smooth demo below, the closed form is more accurate than the FNO'
+    comparisons:
+      - label: smooth demo closed form mean rel < FNO mean rel
+        op: "<"
+        left:
+          evidence: docs/demo/result.json
+          path: aggregates/closed_form/mean_rel_error
+        right:
+          evidence: docs/demo/result.json
+          path: aggregates/operator/mean_rel_error
+
+  - id: readme-denies-fno-most-accurate
+    class: superiority
+    assertion:
+      kind: denies_best
+      scope: hard_ood_inverse_mean_rel
+      method: fno_inverse
+    locations:
+      - file: README.md
+        pattern: 'The FNO inverse is not the most accurate method on `hard_ood`\. The sensor-lift solver has lower error than both FNO arms\. It is slower per instance and needs no training\.'
+    comparisons:
+      - label: sensor-lift solver < hybrid FNO
+        op: "<"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/solver_sensor_ic/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/hybrid_1e-2/slices/hard_ood/mean_rel_error
+      - label: sensor-lift solver < data-loss FNO
+        op: "<"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/solver_sensor_ic/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/data_only/slices/hard_ood/mean_rel_error
+      - label: sensor-lift solver seconds per instance > FNO grid seconds per instance
+        op: ">"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: timing/methods/solver_sensor_ic/seconds_per_instance_mean
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: timing/fno_stage_d_grid/seconds_per_instance
+
+  - id: readme-hybrid-helps-in-distribution-only
+    class: comparison
+    locations:
+      - file: README.md
+        pattern: 'The hybrid physics loss lowers in-distribution error\. It does not fix noise robustness or out-of-distribution extrapolation\.'
+    comparisons:
+      - label: hybrid hard_ood inverse < data-loss when hard_ood is in the training range
+        op: "<"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/hybrid_1e-2/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/data_only/slices/hard_ood/mean_rel_error
+      - label: hybrid hard_ood forecast < data-loss (Stage C vs Stage B)
+        op: "<"
+        left:
+          evidence: docs/v02/stage_c_scores.json
+          path: hybrid/slices/hard_ood/mean_relative_l2/mean
+        right:
+          evidence: docs/v02/stage_b_scores.json
+          path: slices/hard_ood/mean_relative_l2/mean
+      - label: hybrid 2% noise hard_ood > data-loss
+        op: ">"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p02_sensors32_bursts4/operator_hybrid_1e-2/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p02_sensors32_bursts4/operator_data_only/slices/hard_ood/mean_rel_error
+      - label: hybrid OOD one-step gap > data-loss gap
+        op: ">"
+        left:
+          evidence: docs/v02/stage_f_scores.json
+          path: forward/hybrid_1e-2/ood_gap/one_step/ratio_of_means
+        right:
+          evidence: docs/v02/stage_f_scores.json
+          path: forward/data_only/ood_gap/one_step/ratio_of_means
+
+  - id: readme-hyperparameters-are-not-optimal
+    class: comparison
+    locations:
+      - file: README.md
+        pattern: 'No width, mode count, depth, or loss weight is claimed optimal outside the set frozen before the run that measured it'
