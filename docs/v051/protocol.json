@@ -1,0 +1,208 @@
+{
+  "format": "pinnforge.v051_sensor_density_protocol.v1",
+  "study_version": 5.1,
+  "frozen_before_test_evaluation": true,
+  "test_used_for_selection": false,
+  "hyperparameters_tuned_on_test": false,
+  "hyperparameters_chosen_on_validation": true,
+  "role": "Preregistered contract for the v0.5.1 sensor-density study. It asks at which equispaced lattice WSINDy recovers the exact PDE support. It holds no v0.5.1 test number. It does not edit v0.5, v0.4.1, or v0.4 artifacts.",
+  "parent_study": "v0.5",
+  "parent_protocol": "docs/v05/protocol.json",
+  "parent_protocol_sha256": "f4d7f8584cf003bc3b28f5d554e645ff3f5f5160f646538d854cbdae0362e902",
+  "question": "At what sensor density does numpy WSINDy recover the exact PDE support on the existing 2D Burgers and vorticity-form Navier-Stokes generators?",
+  "not_claimed": [
+    "a result on The Well shear_flow or Petrobras 3W",
+    "3D or time-dependent 3D+time",
+    "that an FNO denoiser was scored; that arm is optional and is skipped",
+    "that PySR was run",
+    "a retuned threshold list after seeing test scores",
+    "that a sparsity finding is valid if the 64x64 noise-0 control fails",
+    "a change to any v0.5, v0.4.1, or v0.4 number, protocol, or score file"
+  ],
+  "device": "cpu",
+  "workers": 1,
+  "seeds": [0, 1, 2, 3, 4],
+  "aggregation": {
+    "unit": "one support set per seed per lattice per noise, from a single STLSQ fit that stacks every primary-family test instance",
+    "seed_success": "the recovered support equals the true support of that family",
+    "exact_support_rate": "fraction of the five seeds that succeed",
+    "instance_exact_rate": "mean over seeds of the fraction of test instances whose own STLSQ support is exact",
+    "coeff_rel_error": "mean over test instances and true terms of |c_hat - c_true| / max(|c_true|, 1e-12), after a least-squares refit of the recovered support on that instance"
+  },
+  "domain": {
+    "shape": "periodic square",
+    "length": 6.283185307179586,
+    "n": 64,
+    "grid": "x_j = L * j / N, j = 0..N-1"
+  },
+  "time": {
+    "t_final": 0.2,
+    "dt": 0.0025,
+    "save_dt": 0.025,
+    "n_frames": 9
+  },
+  "viscosity": {
+    "distribution": "independent Uniform(nu_min, nu_max) per instance",
+    "nu_min": 0.012,
+    "nu_max": 0.072,
+    "draw_seed_offset": 17
+  },
+  "splits": {
+    "n_train": 16,
+    "n_val": 12,
+    "n_test": 12,
+    "assignment": "by instance id before any windowing: train 0..n_train-1, validation n_train..n_train+n_val-1, test n_train+n_val..total-1",
+    "split_seed": 0,
+    "note": "The generator's n_val slot is the validation split used only to choose the STLSQ threshold."
+  },
+  "problems": {
+    "burgers2d": {
+      "pde": "u_t + (u · ∇)u = nu Δu",
+      "field": "velocity (u, v)",
+      "n_components": 2,
+      "primary_family": "all",
+      "true_support": ["u_qx", "v_qy", "q_xx", "q_yy"],
+      "true_coefficients": {
+        "u_qx": -1.0,
+        "v_qy": -1.0,
+        "q_xx": "instance nu",
+        "q_yy": "instance nu"
+      },
+      "forcing": "none",
+      "initial": {
+        "family": "bandlimited_velocity",
+        "max_mode": 3
+      }
+    },
+    "ns2d": {
+      "pde": "ω_t + u · ∇ω = nu Δω + f,  u = ∇^⊥ ψ,  −Δψ = ω",
+      "field": "vorticity ω",
+      "n_components": 1,
+      "primary_family": "kolmogorov",
+      "true_support_kolmogorov": ["u_wx", "v_wy", "w_xx", "w_yy", "force_y"],
+      "true_support_decaying": ["u_wx", "v_wy", "w_xx", "w_yy"],
+      "true_coefficients": {
+        "u_wx": -1.0,
+        "v_wy": -1.0,
+        "w_xx": "instance nu",
+        "w_yy": "instance nu",
+        "force_y": 1.0
+      },
+      "forcing": {
+        "kolmogorov": {"wavenumber": 4, "form": "f = -k cos(k y) with k = 4"},
+        "decaying": {"form": "f = 0"},
+        "assignment": "instance_id even => kolmogorov, odd => decaying"
+      },
+      "initial": {
+        "family": "bandlimited_vorticity",
+        "max_mode": 4
+      }
+    }
+  },
+  "sensors": {
+    "burst_starts": [0, 3, 6],
+    "burst_length": 3,
+    "frame_dt": 0.025,
+    "layout": "equispaced square lattice, stride = N / n_side on the 64 by 64 grid"
+  },
+  "lattices": [
+    {"name": "8x8", "n_side": 8},
+    {"name": "16x16", "n_side": 16},
+    {"name": "32x32", "n_side": 32},
+    {"name": "64x64", "n_side": 64, "role": "full-field positive control at noise 0"}
+  ],
+  "noise": {
+    "model": "additive iid Gaussian on observed field values, scaled by the clean-field standard deviation of that instance",
+    "fractions": [0.0, 0.01, 0.02, 0.05],
+    "noise_seed": 0,
+    "per_seed": "realization seed is noise_seed + 100 * seed so the five seeds are distinct at every positive noise fraction"
+  },
+  "library": {
+    "role": "Same frozen candidate terms as v0.5. Derivatives of linear terms can move onto the test function; mixed products use spectral derivatives of the field on the grid that method sees.",
+    "burgers2d": {
+      "target": "q_t",
+      "stacking": "rows of the u-equation and the v-equation are stacked; q is that component",
+      "true": ["u_qx", "v_qy", "q_xx", "q_yy"],
+      "distractors": ["q2", "uv", "q", "q_xy", "q_xxx", "q_yyy", "q_xxxx", "v_qx", "u_qy", "const", "force_y"],
+      "all": ["u_qx", "v_qy", "q_xx", "q_yy", "q2", "uv", "q", "q_xy", "q_xxx", "q_yyy", "q_xxxx", "v_qx", "u_qy", "const", "force_y"]
+    },
+    "ns2d": {
+      "target": "w_t",
+      "true_kolmogorov": ["u_wx", "v_wy", "w_xx", "w_yy", "force_y"],
+      "true_decaying": ["u_wx", "v_wy", "w_xx", "w_yy"],
+      "distractors": ["w2", "w", "w_xy", "w_xxx", "w_yyy", "w_xxxx", "uv", "const", "force_x", "u_wy"],
+      "all": ["u_wx", "v_wy", "w_xx", "w_yy", "force_y", "w2", "w", "w_xy", "w_xxx", "w_yyy", "w_xxxx", "uv", "const", "force_x", "u_wy"]
+    }
+  },
+  "methods": {
+    "wsindy": {
+      "role": "primary sparse identifier; same frozen choices as v0.5",
+      "estimator": "numpy WSINDy: compact polynomial test functions, trapezoidal quadrature, sequential thresholded least squares",
+      "implementation": "pinnforge.v05.wsindy",
+      "external_packages": "none",
+      "test_function": {
+        "family": "(1 - xi^2)_+^degree",
+        "degree": 4,
+        "space_radius_fraction": 0.25,
+        "center_stride_fraction": 0.25,
+        "time": "one bump on each sensor burst"
+      },
+      "stlsq": {
+        "column_normalize": true,
+        "max_iter": 10,
+        "threshold_candidates": [0.02, 0.05, 0.08, 0.12, 0.18, 0.25, 0.35],
+        "selection": "on the validation split only: maximize the number of primary-family validation instances with exact support; ties take the largest threshold",
+        "refit_on_test": false
+      }
+    },
+    "wsindy_raw": {
+      "role": "primary. WSINDy on the chosen sensor lattice. The field is not lifted and not denoised.",
+      "used": true,
+      "field": "sensor lattice"
+    },
+    "wsindy_fno": {
+      "role": "optional FNO-denoise arm",
+      "used": false,
+      "reason": "This study isolates raw sensor density. The v0.5 FNO-denoise arm is not trained and not scored."
+    },
+    "pysr": {
+      "role": "optional symbolic regression",
+      "used": false,
+      "reason": "PySR needs Julia. The skip is inherited from v0.5 and is recorded here before scoring."
+    }
+  },
+  "positive_control": {
+    "lattice": "64x64",
+    "noise": 0.0,
+    "method": "wsindy_raw",
+    "min_seed_success_rate": 0.8,
+    "reading": "If exact_support_rate is below 0.8 on the full 64x64 field at noise 0, that is a method or implementation failure, not a sparsity finding."
+  },
+  "reported": {
+    "name": "min_lattice_at_bar",
+    "definition": "the smallest lattice name, in the frozen increasing order 8x8, 16x16, 32x32, 64x64, whose wsindy_raw exact_support_rate at noise 0.01 is >= 0.8; otherwise the string none",
+    "noise": 0.01,
+    "min_seed_success_rate": 0.8,
+    "method": "wsindy_raw",
+    "problems": ["burgers2d", "ns2d"],
+    "ns2d_family": "kolmogorov"
+  },
+  "reported_not_bars": [
+    "noise fractions 0.0, 0.02, 0.05 except the 64x64 noise-0 control",
+    "ns2d decaying-family support",
+    "instance-level exact rates",
+    "coefficient relative error"
+  ],
+  "compute": {
+    "target": "one CPU, free of charge",
+    "gpu": false,
+    "ci": "tiny smoke only: one manufactured library, one STLSQ recovery, one lattice mask. CI never trains or scores the study."
+  },
+  "outputs": {
+    "protocol": "docs/v051/protocol.json",
+    "manifest": "docs/v051/pilot_manifest.json",
+    "validation": "docs/v051/validation.json",
+    "scores": "docs/v051/scores.json",
+    "report": "docs/v051/report.md"
+  }
+}
