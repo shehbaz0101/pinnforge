@@ -1,6 +1,55 @@
+---
+title: PINNForge
+emoji: 🌊
+colorFrom: blue
+colorTo: indigo
+sdk: gradio
+sdk_version: "5.50.0"
+app_file: app.py
+pinned: false
+license: mit
+python_version: "3.12"
+suggested_hardware: "cpu-basic"
+short_description: CPU PINN demo and Burgers viscosity recovery
+---
+
 # PINNForge
 
 PINNForge is a CPU sandbox for a few classic physics-informed residuals, plus one operator inverse problem that is small enough to rerun. The equation side covers a harmonic oscillator, viscous Burgers in one dimension, and a Poisson toy. The inverse demo trains a small Fourier neural operator on periodic Burgers trajectories and recovers the viscosity from 32 sparse sensors, then compares that fit with the closed-form residual least squares estimator. Version 0.2.2 is the tree described here. The annotated tag is not created in this commit. v0.1.0 remains the previous sandbox freeze.
+
+## Live demo
+
+A Gradio page on a free Hugging Face CPU Space: pick harmonic, Burgers, or Poisson, run a small PINN, and read the Stage D viscosity result. No GPU and no API key. The live curve is trained on that click. The viscosity bars are read from [docs/v02/stage_d_scores.json](docs/v02/stage_d_scores.json) and the page labels them precomputed.
+
+**Live demo:** https://huggingface.co/spaces/PLACEHOLDER/pinnforge
+
+`PLACEHOLDER` is not a Space yet. Replace it with the Hugging Face username or organization after you create the Space. The repository root is the Space (`app.py`, `requirements.txt`, and the YAML block at the top of this file).
+
+1. Open https://huggingface.co/new-space.
+2. Owner: the account that should appear in the link above. Space name: `pinnforge`. License: MIT.
+3. SDK: Gradio. The YAML `sdk_version` is `5.50.0`.
+4. Hardware: CPU basic. That flavor is the free CPU tier. `suggested_hardware: cpu-basic` only suggests it; the hardware control on this form is what assigns the machine.
+5. Visibility: Public. Create the Space.
+6. The new Space has a template commit. From a clone of this repository, replace that template with `main`:
+
+```bash
+huggingface-cli login
+git remote add space https://huggingface.co/spaces/<user>/pinnforge
+git push --force-with-lease space main:main
+```
+
+The Space installs `requirements.txt` (a CPU torch wheel, then this package) and reads `python_version: "3.12"`. Gradio comes from the Space SDK. Leave the secrets table empty. The public page is `app.py`.
+
+Same page on a laptop:
+
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+pip install -e .
+pip install "gradio==5.50.0"
+python app.py
+```
+
+Open http://127.0.0.1:7860.
 
 ## Quickstart
 
