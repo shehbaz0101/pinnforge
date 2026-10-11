@@ -9,8 +9,8 @@ from pathlib import Path
 from pinnforge.claims.check import check
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="python -m pinnforge.claims")
+def main(argv: list[str] | None = None, prog: str = "python -m pinnforge.claims") -> int:
+    parser = argparse.ArgumentParser(prog=prog)
     subparsers = parser.add_subparsers(dest="command", required=True)
     check_parser = subparsers.add_parser(
         "check",

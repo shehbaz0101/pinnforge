@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pinnforge"
 version = "0.2.2"
-description = "Physics-informed neural network sandbox for classic ODE and PDE residuals."
+description = "CPU sandbox for physics-informed residuals and a sparse-sensor Burgers viscosity inverse study."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
