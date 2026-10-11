@@ -300,9 +300,7 @@ def case_worker(job: dict[str, Any]) -> dict[str, Any]:
     density = str(job["density"])
     mask = _mask(protocol, density)
     if job["kind"] == "train":
-        from pinnforge.v061.fno_inverse import train_fno
-
-        from pinnforge.v061.fno_inverse import pack_lattice
+        from pinnforge.v061.fno_inverse import pack_lattice, train_fno
 
         seed = int(job["seed"])
         xs = []

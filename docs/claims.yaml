@@ -142,6 +142,14 @@ leaf_documents:
     evidence:
       - docs/v061/protocol.json
       - docs/v061/identifiability.json
+  - file: docs/v061/report.md
+    evidence:
+      - docs/v061/scores.json
+      - docs/v061/protocol.json
+      - docs/v061/validation.json
+      - docs/v061/identifiability.json
+      - docs/v061/download_manifest.json
+      - docs/v061/pilot_manifest.json
 
 claims:
   - id: number-0_41pct
@@ -2652,3 +2660,98 @@ claims:
         right:
           evidence: docs/v06/scores.json
           path: by_noise/0.05/in_dist/wsindy/median_rel
+
+  - id: v061-overall-fail
+    class: comparison
+    locations:
+      - file: CHANGELOG.md
+        pattern: 'The Well shear_flow inverse fails the preregistered bars on the identifiable subset'
+      - file: docs/README.md
+        pattern: 'The inverse fails the preregistered bars on the identifiable subset'
+      - file: README.md
+        pattern: 'identifiable The Well shear_flow inverse; fails the preregistered bars on the identifiable subset'
+      - file: docs/v061/report.md
+        pattern: 'Result: FAIL'
+    comparisons:
+      - label: overall fail
+        op: "=="
+        left:
+          evidence: docs/v061/scores.json
+          path: bars/overall
+        right:
+          literal: false
+
+  - id: v061-error-bars-fail
+    class: comparison
+    locations:
+      - file: CHANGELOG.md
+        pattern: 'The in-distribution median-rel bar, the OOD median-rel bar, the gap bar, the coverage bar, the hybrid-below-baselines bar, and the constant-predictor bar fail'
+      - file: docs/README.md
+        pattern: 'The in-distribution median-rel bar, the OOD median-rel bar, the gap bar, the coverage bar, the hybrid-below-baselines bar, and the constant-predictor bar fail'
+    comparisons:
+      - label: in-dist fail
+        op: "=="
+        left:
+          evidence: docs/v061/scores.json
+          path: bars/pass/in_dist_median_rel
+        right:
+          literal: false
+      - label: ood fail
+        op: "=="
+        left:
+          evidence: docs/v061/scores.json
+          path: bars/pass/ood_median_rel
+        right:
+          literal: false
+      - label: gap fail
+        op: "=="
+        left:
+          evidence: docs/v061/scores.json
+          path: bars/pass/ood_over_in_dist
+        right:
+          literal: false
+      - label: coverage fail
+        op: "=="
+        left:
+          evidence: docs/v061/scores.json
+          path: bars/pass/interval_coverage
+        right:
+          literal: false
+      - label: hybrid below baselines fail
+        op: "=="
+        left:
+          evidence: docs/v061/scores.json
+          path: bars/pass/hybrid_beats_baselines_ood
+        right:
+          literal: false
+      - label: constant predictor fail
+        op: "=="
+        left:
+          evidence: docs/v061/scores.json
+          path: bars/pass/beats_constant_predictor
+        right:
+          literal: false
+
+  - id: v061-noise-and-oracle
+    class: comparison
+    locations:
+      - file: CHANGELOG.md
+        pattern: 'The noise-robustness bar passes. The full-field oracle on the chosen cell is below the identifiability gate'
+      - file: docs/README.md
+        pattern: 'The noise-robustness bar passes'
+    comparisons:
+      - label: noise robustness pass
+        op: "=="
+        left:
+          evidence: docs/v061/scores.json
+          path: bars/pass/noise_5pct_not_worse_than_wsindy
+        right:
+          literal: true
+      - label: oracle in-dist below gate
+        op: "<="
+        left:
+          evidence: docs/v061/scores.json
+          path: by_noise/0.01/in_dist/oracle/median_rel
+        right:
+          evidence: docs/v061/protocol.json
+          path: identifiability_gate
