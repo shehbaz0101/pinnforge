@@ -138,6 +138,10 @@ leaf_documents:
     evidence:
       - docs/v061/identifiability.json
       - docs/v061/download_valid_manifest.json
+  - file: docs/v061/protocol.md
+    evidence:
+      - docs/v061/protocol.json
+      - docs/v061/identifiability.json
 
 claims:
   - id: number-0_41pct
