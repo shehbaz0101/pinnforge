@@ -35,3 +35,6 @@ artifacts/burgers_pilot/
 
 # Harder v0.2 Burgers pilot arrays. The manifest is docs/stage_a/pilot_manifest.json.
 artifacts/burgers_hard_pilot/
+
+# v0.4 2D pilots and checkpoints. Manifests live in docs/v04/.
+artifacts/v04_pilot/

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### v0.4 2D viscosity inverse
+
+- **FAIL.** `python -m pinnforge.v04` generates periodic 2D Burgers and vorticity-form Navier-Stokes pilots, trains a 2D FNO, and scores the frozen inverse methods. The protocol [docs/v04/protocol.json](docs/v04/protocol.json) was committed before the test split was scored. The protocol, scores, and report were not edited after seeing the test numbers.
+- Both problems fail the preregistered bars. The time bar passes. The in-distribution error bar, the warm-versus-cold error bar, and the coverage bar fail. The note is [docs/v04/report.md](docs/v04/report.md). The scores are [docs/v04/scores.json](docs/v04/scores.json). This is a recorded negative result.
+
 ## 0.3.0 (2026-10-11)
 
 Release of the work on `main` after the `v0.2.2` tag. The package version is `0.3.0`. Tag `v0.3.0` is cut on the merge of this pull request. The measured scores below were not recomputed or edited for this release.

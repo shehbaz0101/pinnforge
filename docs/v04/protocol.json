@@ -1,0 +1,278 @@
+{
+  "format": "pinnforge.v04_2d_inverse_protocol.v1",
+  "frozen_before_test_evaluation": true,
+  "test_used_for_selection": false,
+  "hyperparameters_tuned_on_test": false,
+  "hyperparameters_chosen_on_validation": true,
+  "role": "Preregistered contract for the v0.4 2D viscosity inverse. It fixes the problems, the grid, the observation mask, the methods, the metrics, and the pass bars before the test split is scored. It holds no test number.",
+  "question": "Can a 2D FNO first guess plus a bounded solver-in-the-loop refinement recover a scalar viscosity on periodic 2D Burgers and 2D incompressible Navier-Stokes (vorticity form) from sparse noisy probes, with a frozen low-nu hard_ood slice, calibrated 90% intervals, and wall clock well below a cold solver search?",
+  "not_claimed": [
+    "a result on The Well shear_flow or Petrobras 3W",
+    "3D or time-dependent 3D+time",
+    "that the warm start is more accurate than the cold search; the bar is accuracy within a factor of the cold search",
+    "coverage conditional on viscosity, on noise level, or outside the training range",
+    "that the abstain flag detects every large error",
+    "a retuned hard_ood rule after seeing test scores",
+    "an architecture, width, mode count, or loss weight that is optimal outside this frozen set",
+    "speed-ups on other machines, GPUs, or other solvers"
+  ],
+  "device": "cpu",
+  "workers": 1,
+  "seeds": [0, 1, 2, 3, 4],
+  "aggregation": {
+    "unit": "one scalar per seed per slice",
+    "center": "arithmetic mean",
+    "spread": "sample standard deviation",
+    "ddof": 1
+  },
+  "domain": {
+    "shape": "periodic square",
+    "length": 6.283185307179586,
+    "n": 64,
+    "grid": "x_j = L * j / N, j = 0..N-1, last node identified with the first",
+    "wavenumber": "k_m = 2 * pi * m / L in numpy.fft order; Nyquist derivative multiplier is 0"
+  },
+  "time": {
+    "t_final": 0.2,
+    "dt": 0.0025,
+    "save_dt": 0.025,
+    "n_frames": 9
+  },
+  "viscosity": {
+    "distribution": "independent Uniform(nu_min, nu_max) per instance",
+    "nu_min": 0.012,
+    "nu_max": 0.072,
+    "draw_seed_offset": 17
+  },
+  "hard_ood": {
+    "name": "hard_ood",
+    "comparison": "nu <= threshold_nu",
+    "rule": "threshold_nu is the lower quartile of the training-split viscosities, computed once after generation and stored in the pilot manifest. It is not refit on validation or test.",
+    "refit": false
+  },
+  "slices": {
+    "full_test": "every test instance",
+    "hard_ood": "nu <= threshold_nu (true viscosity)",
+    "complement": "nu > threshold_nu (true viscosity)",
+    "in_distribution": "alias of complement"
+  },
+  "splits": {
+    "n_train": 24,
+    "n_val": 8,
+    "n_test": 16,
+    "assignment": "by instance id before any windowing",
+    "split_seed": 0
+  },
+  "problems": {
+    "burgers2d": {
+      "pde": "u_t + (u · ∇)u = nu Δu",
+      "field": "velocity (u, v)",
+      "n_components": 2,
+      "boundary": "periodic",
+      "forcing": "none",
+      "initial": {
+        "family": "bandlimited_velocity",
+        "max_mode": 3,
+        "amplitude": "Uniform(-1, 1) / sqrt(m_x^2 + m_y^2) for each retained mode of each component, then max-abs normalized to 1",
+        "mean": "removed"
+      }
+    },
+    "ns2d": {
+      "pde": "ω_t + u · ∇ω = nu Δω + f,  u = ∇^⊥ ψ,  −Δψ = ω",
+      "field": "vorticity ω",
+      "n_components": 1,
+      "boundary": "periodic",
+      "forcing": {
+        "kolmogorov": {
+          "wavenumber": 4,
+          "form": "f(x, y) = -k cos(k y) with k = 4, the curl of velocity forcing (sin(k y), 0)"
+        },
+        "decaying": {
+          "form": "f = 0",
+          "share_of_instances": 0.5,
+          "assignment": "instance_id even => kolmogorov, odd => decaying"
+        }
+      },
+      "initial": {
+        "family": "bandlimited_vorticity",
+        "max_mode": 4,
+        "spectrum": "amplitudes Uniform(-1, 1) / (1 + m_x^2 + m_y^2), then max-abs normalized to 1",
+        "mean": "removed (zero total circulation)"
+      }
+    }
+  },
+  "solver": {
+    "kind": "pseudo-spectral ETDRK4",
+    "dealiasing": "two_thirds",
+    "integrator": "etdrk4",
+    "precision": "float64",
+    "implementation": "pinnforge.reference.spectral2d",
+    "external_packages": "none; numpy FFT only",
+    "convergence": {
+      "test": "same initial field and nu, grids N in {32, 64, 128} with dt scaled as 1/N, space-time relative L2 of the N=64 field against a restriction of N=128",
+      "label_gate_relative_l2": 0.02,
+      "role": "solver validation, not an inverse pass bar"
+    }
+  },
+  "sensors": {
+    "name": "sensors64_lattice_bursts",
+    "n_sensors": 64,
+    "layout": "8 by 8 equispaced lattice, stride 8 on the 64 by 64 grid, identical for every instance",
+    "burst_starts": [0, 3, 6],
+    "burst_length": 3,
+    "frame_dt": 0.025,
+    "unchanged": true
+  },
+  "noise": {
+    "model": "additive iid Gaussian on observed field values, scaled by the clean-field standard deviation of that instance",
+    "fractions": [0.0, 0.01, 0.02, 0.05],
+    "noise_seed": 0,
+    "calibration": "clean validation only; nothing is refit for noise"
+  },
+  "methods": {
+    "closed_form_ls": {
+      "role": "classical baseline, where defined",
+      "estimator": "normal equation of the lifted discrete residual after a trigonometric interpolant from the 8x8 sensors onto the 64x64 grid",
+      "burgers": "stack both velocity components of u_t + (u · ∇)u = nu Δu",
+      "ns": "ω_t + u · ∇ω - f = nu Δω with u from the periodic Biot-Savart map on the lifted vorticity"
+    },
+    "weak_form": {
+      "role": "classical baseline",
+      "estimator": "WSINDy-style compact polynomial test functions on the sensor lattice, trapezoidal quadrature, no interpolation of the field"
+    },
+    "fno_forward_data": {
+      "role": "2D FNO trained with normalized data MSE",
+      "loss": "data"
+    },
+    "fno_forward_hybrid": {
+      "role": "2D FNO trained with data MSE plus a discrete PDE residual",
+      "loss": "hybrid",
+      "residual_weight": 0.01,
+      "residual_weight_frozen": true
+    },
+    "fno_inverse": {
+      "role": "FNO-conditioned inverse",
+      "objective": "sensor mean square of a rollout from the lifted opening burst, over a frozen viscosity grid",
+      "grid": "geometric",
+      "n_points": 21,
+      "nu_min": 0.012,
+      "nu_max": 0.072,
+      "tie_break": "smallest nu on the grid"
+    },
+    "solver_sensor_ic": {
+      "role": "cold solver-in-the-loop fit",
+      "initial_condition": "trigonometric lift of the opening-burst sensors",
+      "search": {
+        "nu_min": 0.012,
+        "nu_max": 0.072,
+        "n_coarse": 5,
+        "refine_width": 0.0008,
+        "max_refine": 6,
+        "optimizer": "coarse_grid_plus_golden_section",
+        "tie_break": "smallest evaluated nu",
+        "forward_model": "the same spectral solver that built the labels"
+      }
+    },
+    "solver_oracle_ic": {
+      "role": "ceiling",
+      "initial_condition": "true full field at the opening frame",
+      "search": "same as solver_sensor_ic"
+    },
+    "warm_start": {
+      "role": "primary method when paired with the hybrid FNO first guess",
+      "first_guess": "fno_inverse on the same arm",
+      "refine": {
+        "algorithm": "Gauss-Newton in s = log nu on the sensor residual of solver_sensor_ic, reused from pinnforge.operator.warmstart",
+        "probe_step": 0.02,
+        "trust_radius": 0.6931471805599453,
+        "step_tolerance": 0.001,
+        "nu_min": 0.012,
+        "nu_max": 0.072,
+        "return_mode": "prediction",
+        "max_evaluations_candidates": [2, 3],
+        "max_evaluations_selection": "smallest cap with validation hard_ood time_ratio <= 0.2 whose mean hard_ood relative error is within a factor 1.02 of the best such cap; if none, the fastest cap"
+      },
+      "intervals": {
+        "alpha": 0.1,
+        "nominal_coverage": 0.9,
+        "score": "|log(nu / nu_hat)| / scale",
+        "interval": "nu_hat * exp(+- scale * quantile)",
+        "quantile": "the ceil((n + 1)(1 - alpha))-th smallest validation score",
+        "groups": "predicted_hard_ood if nu_hat <= threshold_nu, else predicted_complement",
+        "min_group": 4,
+        "small_group": "a group with fewer than min_group validation rows uses the pooled quantile",
+        "scale": "gauss_newton",
+        "scale_frozen": true
+      },
+      "abstain": {
+        "rate": 0.1,
+        "statistic": "log_standard_error",
+        "statistic_frozen": true,
+        "threshold": "the ceil(n (1 - rate))-th smallest validation statistic; abstain when strictly above"
+      }
+    }
+  },
+  "fno": {
+    "architecture": "FNO2d",
+    "width": 12,
+    "modes": 6,
+    "layers": 2,
+    "input_frames": 2,
+    "output_frames": 2,
+    "stride": 2,
+    "epochs": 10,
+    "batch_size": 8,
+    "lr": 0.001,
+    "optimizer": "Adam",
+    "checkpoint": "lowest validation relative L2",
+    "normalization": "training-split field mean/std and viscosity mean/std only"
+  },
+  "failure_rule": "nu_hat <= 0 or rel_error > 0.5",
+  "failure_relative_error": 0.5,
+  "pass_bars": {
+    "primary_problem": "burgers2d",
+    "primary_method": "warm_start with fno_forward_hybrid first guess",
+    "aggregation": "arithmetic mean over the five seeds of the per-seed slice statistic",
+    "in_distribution_error": {
+      "statement": "complement (in-distribution) mean relative viscosity error <= 0.05",
+      "slice": "complement",
+      "limit": 0.05
+    },
+    "hard_ood_gap": {
+      "statement": "hard_ood mean relative error / complement mean relative error <= 3",
+      "limit_ratio": 3.0
+    },
+    "warm_vs_cold": {
+      "error_statement": "hard_ood mean relative error <= 1.5 x the cold solver_sensor_ic hard_ood mean relative error measured in the same run",
+      "error_factor": 1.5,
+      "time_statement": "hard_ood mean warm-start wall clock <= 0.25 x the hard_ood mean cold-search wall clock, both measured in this run",
+      "time_limit_ratio": 0.25
+    },
+    "coverage": {
+      "statement": "full_test empirical coverage of the nominal 0.9 interval in [0.85, 0.95]",
+      "slice": "full_test",
+      "range": [0.85, 0.95]
+    },
+    "overall": "pass only if all four bars pass on the primary problem and method. The same bars are scored on ns2d and published as pass or fail without retuning."
+  },
+  "reported_not_bars": [
+    "closed_form_ls, weak_form, fno_inverse, and solver_oracle_ic",
+    "noise fractions 0.01, 0.02, 0.05",
+    "coverage on hard_ood and complement",
+    "abstain rate and error on accepted instances",
+    "forward relative L2 of the 2D FNO"
+  ],
+  "compute": {
+    "target": "one CPU, free of charge",
+    "gpu": "optional notebook scripts/v04_colab.py; if used, commit hashes and a reproducibility note. CI never trains the study.",
+    "ci": "tiny smoke only: N=8, two time steps, one untrained FNO forward, one manufactured inverse residual"
+  },
+  "outputs": {
+    "protocol": "docs/v04/protocol.json",
+    "manifest": "docs/v04/pilot_manifest.json",
+    "validation": "docs/v04/validation.json",
+    "scores": "docs/v04/scores.json",
+    "report": "docs/v04/report.md",
+    "figures": "docs/v04/figures/"
+  }
+}

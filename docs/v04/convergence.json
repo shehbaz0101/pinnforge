@@ -1,0 +1,32 @@
+{
+  "records": [
+    {
+      "problem": "burgers2d",
+      "nu": 0.03,
+      "seed": 0,
+      "grids": [
+        32,
+        64,
+        128
+      ],
+      "t_final": 0.05,
+      "relative_l2_64_vs_128": 0.0011500917983501915,
+      "finite": true
+    },
+    {
+      "problem": "ns2d",
+      "nu": 0.03,
+      "seed": 1,
+      "grids": [
+        32,
+        64,
+        128
+      ],
+      "t_final": 0.05,
+      "relative_l2_64_vs_128": 0.0015559492289186363,
+      "finite": true
+    }
+  ],
+  "gate": 0.02,
+  "pass": true
+}
