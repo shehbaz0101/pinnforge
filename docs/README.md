@@ -22,6 +22,10 @@ All of these use the Stage A harder periodic Burgers pilot and its frozen `hard_
 
 [research/strong_baselines.md](research/strong_baselines.md) compares the Stage D FNO inverse with a weak-form identifier and two solver-in-the-loop fits on the Stage D mask, plus the Stage E noise and sparsity cells. Protocol: [strong_baselines_protocol.json](research/strong_baselines_protocol.json). Scores: [strong_baselines_scores.json](research/strong_baselines_scores.json). Every number in that note is a leaf of those two files.
 
+## v0.4 2D viscosity inverse
+
+[v04/protocol.md](v04/protocol.md) freezes the 2D Burgers and vorticity-form Navier-Stokes viscosity inverse, including the pass bars, before any test score. Protocol: [protocol.json](v04/protocol.json). The scored note will be [v04/report.md](v04/report.md).
+
 ## v0.3 warm-started solver fit
 
 [v03/warmstart.md](v03/warmstart.md) starts the sensor-lift solver fit from an FNO first guess, caps the refinement solves, and adds split-conformal intervals and an abstain flag calibrated on validation. On `hard_ood` the FNO hybrid warm start passes all three preregistered bars (error, wall clock against the cold search re-timed in the same run, and full-test coverage). Protocol, frozen before the test scores: [warmstart_protocol.json](v03/warmstart_protocol.json). Validation choices: [warmstart_validation.json](v03/warmstart_validation.json). Scores: [warmstart_scores.json](v03/warmstart_scores.json). Every number in that note is a leaf of those three files.

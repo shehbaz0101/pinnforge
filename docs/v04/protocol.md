@@ -4,7 +4,7 @@ This note is the human reading of [protocol.json](protocol.json). That JSON is t
 
 ## Question
 
-Can a 2D FNO first guess plus a bounded solver-in-the-loop refinement recover a scalar viscosity on periodic 2D Burgers and 2D incompressible Navier–Stokes (vorticity form) from sparse noisy probes, with a frozen low-`ν` `hard_ood` slice, calibrated 90% intervals, and wall clock well below a cold solver search?
+Can a 2D FNO first guess plus a bounded solver-in-the-loop refinement recover a scalar viscosity on periodic 2D Burgers and 2D incompressible Navier–Stokes (vorticity form) from sparse noisy probes, with a frozen low-`ν` `hard_ood` slice, calibrated nominal 0.9 intervals, and wall clock well below a cold solver search?
 
 ## Problems
 
@@ -24,7 +24,7 @@ An `8 × 8` lattice (64 points, stride 8) and three bursts of three frames at sa
 - 2D FNO forward, data loss and hybrid physics residual (weight `1e-2`, frozen).
 - FNO-conditioned inverse on a 21-point geometric `ν` grid.
 - Cold solver-in-the-loop fit from a sensor-lifted initial condition.
-- v0.3-style warm start: FNO first guess, then at most 2 or 3 Gauss–Newton solver evaluations (cap chosen on validation), split-conformal 90% intervals, abstain flag.
+- v0.3-style warm start: FNO first guess, then at most 2 or 3 Gauss–Newton solver evaluations (cap chosen on validation), split-conformal nominal 0.9 intervals, abstain flag.
 - Closed-form residual least squares after a trigonometric lift, where the residual is defined.
 - Weak-form identifier on the sensor lattice.
 - Oracle-IC solver fit (ceiling).

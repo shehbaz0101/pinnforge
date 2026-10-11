@@ -29,6 +29,7 @@ scan:
     - docs/research/strong_baselines.md
     - docs/v02/*.md
     - docs/v03/*.md
+    - docs/v04/*.md
     - STAGE1_REPORT.md
     - STAGE2_REPORT.md
     - STAGE3_REPORT.md
@@ -68,6 +69,9 @@ leaf_documents:
       - docs/v03/warmstart_scores.json
       - docs/v03/warmstart_protocol.json
       - docs/v03/warmstart_validation.json
+  - file: docs/v04/protocol.md
+    evidence:
+      - docs/v04/protocol.json
 
 claims:
   - id: number-0_41pct
