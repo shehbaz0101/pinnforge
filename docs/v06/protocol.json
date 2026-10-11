@@ -1,0 +1,243 @@
+{
+  "format": "pinnforge.v06_shear_flow_protocol.v1",
+  "study_version": 6.0,
+  "frozen_before_test_evaluation": true,
+  "test_used_for_selection": false,
+  "hyperparameters_tuned_on_test": false,
+  "hyperparameters_chosen_on_validation": true,
+  "role": "Preregistered contract for the v0.6 The Well shear_flow inverse. It recovers viscosity nu and tracer diffusivity kappa from sparse probes of a named public subset. It holds no v0.6 test number. It does not edit v0.5.2 or earlier artifacts.",
+  "parent_study": "v0.5.2",
+  "parent_protocol": "docs/v052/protocol.json",
+  "parent_protocol_sha256": "0c2f95cfa15f69fb38bd4b6028b294747b63438d6d752286a4b26ec5088c2cc8",
+  "question": "On a documented subset of The Well shear_flow, can a solver-free weak-form coefficient fit, a data-only FNO inverse, and an FNO-bracket hybrid with split-conformal intervals recover nu = 1/Re and kappa = 1/(Re Sc) from sparse noisy probes, against the frozen roadmap bars?",
+  "attribution": {
+    "dataset": "The Well shear_flow",
+    "huggingface": "polymathic-ai/shear_flow",
+    "license": "CC BY 4.0",
+    "dataset_url": "https://polymathic-ai.org/the_well/datasets/shear_flow/",
+    "paper": "https://arxiv.org/abs/2412.00568",
+    "generator": "Dedalus (Burns et al., Phys. Rev. Research 2, 023068, 2020)",
+    "access": "huggingface_hub anonymous; no token. If rate-limited, back off and record the failure. Do not request credentials."
+  },
+  "not_claimed": [
+    "a result on Petrobras 3W",
+    "3D or time-dependent 3D+time",
+    "the full 547 GB shear_flow ensemble",
+    "that a Dedalus or other PDE solver was run on these fields",
+    "that PySR was run",
+    "a retuned bar after seeing test scores",
+    "a change to any v0.5.2, v0.5.1, v0.5, v0.4.1, or v0.4 number, protocol, or score file"
+  ],
+  "device": "cpu",
+  "workers": 1,
+  "seeds": [0, 1, 2],
+  "aggregation": {
+    "unit": "one (nu, kappa) pair per instance per method per noise, then median relative error over the slice",
+    "relative_error": "|c_hat - c_true| / max(|c_true|, 1e-18)",
+    "center": "median over instances, then mean over seeds",
+    "coverage": "fraction of test instances whose true nu and true kappa both lie in their 0.9 split-conformal intervals"
+  },
+  "pde": {
+    "form": "u_t + u·∇u + ∇p = nu Δu;  s_t + u·∇s = kappa Δs;  periodic;  mean(p) = 0",
+    "nu": "1 / Reynolds",
+    "kappa": "1 / (Reynolds * Schmidt)",
+    "fields": ["ux", "uy", "pressure", "tracer"]
+  },
+  "source_grid": {
+    "nx": 256,
+    "ny": 512,
+    "length_x": 1.0,
+    "length_y": 2.0,
+    "x_range": [0.0, 1.0],
+    "y_range": [-1.0, 1.0],
+    "n_times_stored": 200,
+    "t_min": 0.0,
+    "t_max": 20.0,
+    "dt_stored": 0.1,
+    "note": "Official The Well page. Axis order is read from each HDF5 dimensions group."
+  },
+  "downsample": {
+    "method": "periodic Fourier truncation: keep the lowest nx_coarse/2 and ny_coarse/2 modes on each axis, scale by (n_coarse/n_fine), inverse FFT. That is the anti-aliasing. No spatial window.",
+    "nx": 32,
+    "ny": 64,
+    "length_x": 1.0,
+    "length_y": 2.0
+  },
+  "time_window": {
+    "frame_start": 80,
+    "n_frames": 9,
+    "t_start": 8.0,
+    "t_end": 8.8,
+    "dt": 0.1,
+    "burst_starts": [0, 3, 6],
+    "burst_length": 3,
+    "note": "Frames are indices into the 200 stored steps. The window is mid-run after the initial shear transient."
+  },
+  "sensors": {
+    "n_side_x": 8,
+    "n_side_y": 16,
+    "layout": "equispaced lattice, stride 4 on the 32 by 64 coarse grid",
+    "observables": ["ux", "uy", "pressure", "tracer"]
+  },
+  "noise": {
+    "model": "additive iid Gaussian on observed field values, scaled by the clean-field standard deviation of that instance",
+    "fractions": [0.0, 0.01, 0.05],
+    "noise_seed": 0,
+    "per_seed": "realization seed is noise_seed + 100 * seed"
+  },
+  "subset": {
+    "role": "Named public files. Raw HDF5 is never committed. Byte SHA-256 after fetch is stored in docs/v06/download_manifest.json, which is not a test score.",
+    "huggingface_sizes": {
+      "train": 13438550016,
+      "valid": 1694498816,
+      "test": 1694498816
+    },
+    "in_distribution": [
+      {"reynolds": 10000.0, "schmidt": 1.0, "nu": 0.0001, "kappa": 0.0001},
+      {"reynolds": 10000.0, "schmidt": 0.5, "nu": 0.0001, "kappa": 0.0002},
+      {"reynolds": 50000.0, "schmidt": 1.0, "nu": 0.00002, "kappa": 0.00002}
+    ],
+    "ood": [
+      {"reynolds": 100000.0, "schmidt": 1.0, "nu": 0.00001, "kappa": 0.00001, "reading": "held-out Reynolds"}
+    ],
+    "files": {
+      "train": [
+        "data/train/shear_flow_Reynolds_1e4_Schmidt_1e0.hdf5",
+        "data/train/shear_flow_Reynolds_1e4_Schmidt_5e-1.hdf5",
+        "data/train/shear_flow_Reynolds_5e4_Schmidt_1e0.hdf5"
+      ],
+      "valid": [
+        "data/valid/shear_flow_Reynolds_1e4_Schmidt_1e0.hdf5",
+        "data/valid/shear_flow_Reynolds_1e4_Schmidt_5e-1.hdf5",
+        "data/valid/shear_flow_Reynolds_5e4_Schmidt_1e0.hdf5"
+      ],
+      "test": [
+        "data/test/shear_flow_Reynolds_1e4_Schmidt_1e0.hdf5",
+        "data/test/shear_flow_Reynolds_1e4_Schmidt_5e-1.hdf5",
+        "data/test/shear_flow_Reynolds_5e4_Schmidt_1e0.hdf5"
+      ],
+      "ood_valid": [
+        "data/valid/shear_flow_Reynolds_1e5_Schmidt_1e0.hdf5"
+      ],
+      "ood_test": [
+        "data/test/shear_flow_Reynolds_1e5_Schmidt_1e0.hdf5"
+      ]
+    },
+    "trajectories_per_train_file": 32,
+    "trajectories_per_valid_or_test_file": 4
+  },
+  "splits": {
+    "from_train_files": {
+      "n_train": 24,
+      "n_cal": 64,
+      "assignment": "by (file order, trajectory index) before any windowing: first 8 trajectories of each of the three train files are train (24). The next trajectories fill calibration until 64. Leftovers are unused.",
+      "n_cal_min": 60
+    },
+    "from_valid_files": "all official valid trajectories of the three in-distribution files are the FNO validation split",
+    "from_test_files": "all official test trajectories of the three in-distribution files are the in-distribution test split",
+    "ood": "official valid and test trajectories of Reynolds 1e5, Schmidt 1.0. Those files are never used for training, calibration, or validation.",
+    "split_seed": 0
+  },
+  "methods": {
+    "wsindy": {
+      "role": "solver-free classical baseline: weak-form least-squares coefficient fit, not a support-discovery STLSQ",
+      "implementation": "pinnforge.v06.wsindy",
+      "test_function": {
+        "family": "(1 - xi^2)_+^degree",
+        "degree": 4,
+        "space_radius_fraction": 0.25,
+        "center_stride_fraction": 0.16666666666666666,
+        "center_stride_rationale": "Same 1/6 stride as the v0.5.2 fix. 4 * stride / n is not required here (no Kolmogorov k=4), but the stride is reused so the identifier is the repaired WSINDy, not the degenerate v0.5.1 grid."
+      },
+      "nu_equation": "stacked ux and uy: ∫ (u_t + u·∇u + ∇p) φ = nu ∫ u Δφ",
+      "kappa_equation": "tracer: ∫ (s_t + u·∇s) φ = kappa ∫ s Δφ",
+      "pressure": "treated as a known probed field, not a library term",
+      "column_normalize": true
+    },
+    "oracle": {
+      "role": "ceiling: the same weak-form fit on the clean full 32 by 64 field, no lattice, no noise",
+      "used": true,
+      "not_a_sparse_method": true
+    },
+    "fno_data": {
+      "role": "data-only FNO inverse: the reused FNO2d class maps the trigonometric lift of the noisy lattice to a spatially pooled (log nu, log kappa). It is not a viscosity-conditioned rollout and not a Dedalus search.",
+      "architecture": "FNO2d",
+      "width": 8,
+      "modes": 4,
+      "layers": 2,
+      "epochs": 8,
+      "batch_size": 4,
+      "lr": 0.001,
+      "optimizer": "Adam",
+      "loss": "mean squared error on (log nu, log kappa)",
+      "checkpoint": "lowest validation MSE on the official in-distribution valid split"
+    },
+    "hybrid": {
+      "role": "FNO-bracket + calibrated split-conformal intervals, adapted from v0.4.1 without a PDE solver. The data-only FNO locates a log-bracket. The WSINDy point is clipped into that bracket. Intervals are split-conformal on the calibration split of 64 instances.",
+      "n_cal": 64,
+      "alpha": 0.1,
+      "score": "absolute error in log nu and in log kappa, separately",
+      "coverage_definition": "an instance is covered when true nu and true kappa both lie in their intervals",
+      "no_dedalus_search": true
+    },
+    "pysr": {
+      "role": "optional symbolic regression",
+      "used": false,
+      "reason": "PySR needs Julia. The skip is recorded here before scoring."
+    }
+  },
+  "pass_bars": {
+    "source": "docs roadmap for the first external-dataset inverse; not retuned",
+    "nu_kappa_in_dist": {
+      "name": "in_dist_median_rel",
+      "statistic": "median relative error of the hybrid, mean of the nu median and the kappa median, mean over seeds, in-distribution test, noise 0.01",
+      "max": 0.05
+    },
+    "nu_kappa_ood": {
+      "name": "ood_median_rel",
+      "statistic": "same statistic on the OOD slice, noise 0.01",
+      "max": 0.1
+    },
+    "gap": {
+      "name": "ood_over_in_dist",
+      "statistic": "ood_median_rel / max(in_dist_median_rel, 1e-12) of the hybrid at noise 0.01",
+      "max": 3.0
+    },
+    "coverage": {
+      "name": "interval_coverage",
+      "statistic": "hybrid 0.9-interval coverage on in-distribution test at noise 0.01, mean over seeds",
+      "min": 0.88,
+      "max": 0.92
+    },
+    "hybrid_beats": {
+      "name": "hybrid_beats_baselines_ood",
+      "statistic": "hybrid ood_median_rel at noise 0.01 is strictly less than both wsindy and fno_data on that slice",
+      "comparison": "<"
+    },
+    "noise_robustness": {
+      "name": "noise_5pct_not_worse_than_wsindy",
+      "statistic": "hybrid in-distribution median rel error at noise 0.05 is <= the wsindy value on the same slice",
+      "comparison": "<="
+    },
+    "overall": "pass only if every bar above passes"
+  },
+  "reported_not_bars": [
+    "noise 0 except as a diagnostic",
+    "oracle ceiling",
+    "per-seed spread",
+    "wall clock"
+  ],
+  "compute": {
+    "target": "one CPU, free of charge",
+    "gpu": false,
+    "ci": "tiny synthetic fixture only. CI never downloads The Well and never trains the study."
+  },
+  "outputs": {
+    "protocol": "docs/v06/protocol.json",
+    "download_manifest": "docs/v06/download_manifest.json",
+    "manifest": "docs/v06/pilot_manifest.json",
+    "validation": "docs/v06/validation.json",
+    "scores": "docs/v06/scores.json",
+    "report": "docs/v06/report.md"
+  }
+}
