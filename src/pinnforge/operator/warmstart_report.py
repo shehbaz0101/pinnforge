@@ -542,7 +542,7 @@ def render_report(scores: Mapping[str, Any]) -> str:
         "python -m pinnforge.claims check",
         "```",
         "",
-        f"Software: Python {scores['python']}, NumPy {scores['numpy']}, torch {scores['torch']}, CPU.",
+        "Python, NumPy, and torch versions are stored as `python`, `numpy`, and `torch` in the scores JSON.",
         "",
     ]
     return "\n".join(lines)

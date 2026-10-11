@@ -502,8 +502,12 @@ def run_validation(
     return record
 
 
-def load_warmstart_protocol(path: Path) -> dict[str, Any]:
-    """Read the frozen contract. Every referenced file must match its hash."""
+def load_warmstart_protocol(path: Path, *, check_checkpoints: bool = True) -> dict[str, Any]:
+    """Read the frozen contract. Every referenced file must match its hash.
+
+    Checkpoints are not in git, so ``check_checkpoints=False`` skips only
+    their hashes.
+    """
 
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(payload, dict) or payload.get("format") != PROTOCOL_FORMAT:
@@ -532,6 +536,10 @@ def load_warmstart_protocol(path: Path) -> dict[str, Any]:
         raise ValueError("validation record must come from the validation split")
     if int(record["cap_selection"]["selected_cap"]) != int(payload["refine"]["max_evaluations"]):
         raise ValueError("protocol cap must equal the validation selection")
+    if payload["methods"]["primary"] != PRIMARY or payload["pass_bars"]["method"] != PRIMARY:
+        raise ValueError(f"the primary method must stay {PRIMARY}")
+    if not check_checkpoints:
+        return payload
     for key, digest in payload["checkpoints"].items():
         family, arm, seed = key.split("/")
         path = Path(payload["checkpoint_roots"][family]) / arm / f"seed_{seed}" / "checkpoint.pt"
