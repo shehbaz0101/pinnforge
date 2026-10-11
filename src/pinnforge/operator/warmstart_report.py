@@ -576,7 +576,40 @@ def _noise_section(scores: Mapping[str, Any]) -> list[str]:
             f"{_pm(data['mean_rel_error'])} | {_pm(block['arms']['hybrid_1e-2']['paired_with_cold']['hard_ood']['time_ratio_of_means'])} | "
             f"{_pm(hybrid['coverage'])} | {_pm(hybrid['abstain_rate'])} |"
         )
+    lines.extend(["", _noise_reading(scores)])
     return lines
+
+
+def _noise_reading(scores: Mapping[str, Any]) -> str:
+    low = scores["pass_bars"]["coverage"]["low"]
+    worse = []
+    undercovered = []
+    for block in scores["noise"].values():
+        hybrid = block["arms"]["hybrid_1e-2"]["slices"]["hard_ood"]
+        if hybrid["mean_rel_error"]["mean"] > block["cold"]["hard_ood"]["mean_rel_error"]:
+            worse.append(_fmt(block["noise_fraction"]))
+        if hybrid["coverage"]["mean"] < low:
+            undercovered.append(f"{_fmt(block['noise_fraction'])} (abstain rate {_fmt(hybrid['abstain_rate']['mean'])})")
+    sentences = []
+    if worse:
+        sentences.append(
+            "The FNO hybrid warm start has higher `hard_ood` mean relative error than the cold search on the same noisy fields "
+            f"at {_fractions(worse)}; the time ratio stays near its clean value because the solve count is capped."
+        )
+    else:
+        sentences.append("The FNO hybrid warm start does not have higher `hard_ood` mean relative error than the cold search at any noise fraction.")
+    if undercovered:
+        sentences.append(
+            f"Its interval coverage falls below {_fmt(low)} at {_fractions(undercovered)}."
+        )
+    return " ".join(sentences)
+
+
+def _fractions(items: Sequence[str]) -> str:
+    label = "noise fraction" if len(items) == 1 else "noise fractions"
+    if len(items) <= 1:
+        return f"{label} {''.join(items)}"
+    return f"{label} {', '.join(items[:-1])} and {items[-1]}"
 
 
 def _stage_f_section(scores: Mapping[str, Any]) -> list[str]:
@@ -613,8 +646,25 @@ def _stage_f_section(scores: Mapping[str, Any]) -> list[str]:
         "",
         f"Published Stage F restricted FNO grid inverse on the out-of-range slice: data loss {_fmt(reference['data_only'])}, hybrid loss {_fmt(reference['hybrid_1e-2'])}. "
         f"Cold search on the same `hard_ood` instances: {_fmt(block['cold']['hard_ood']['mean_rel_error'])}.",
+        "",
+        _stage_f_reading(scores),
     ]
     return lines
+
+
+def _stage_f_reading(scores: Mapping[str, Any]) -> str:
+    bars = scores["pass_bars"]
+    sentences = []
+    for arm in ARMS:
+        item = scores["stage_f"]["arms"][arm]["slices"]["hard_ood"]
+        error = "above" if item["mean_rel_error"]["mean"] > bars["error"]["limit"] else "at or below"
+        coverage = "below" if item["coverage"]["mean"] < bars["coverage"]["low"] else "not below"
+        sentences.append(
+            f"With the restricted {ARM_LABELS[arm]} first guess, the `hard_ood` warm-start error is {error} the error bar limit "
+            f"and its coverage is {coverage} {_fmt(bars['coverage']['low'])}."
+        )
+    sentences.append("These rows are secondary and were not held to the bars.")
+    return " ".join(sentences)
 
 
 def _validation_section(scores: Mapping[str, Any]) -> list[str]:
