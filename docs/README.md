@@ -4,6 +4,10 @@ The top-level [README](../README.md) has the headline results, the quickstart, a
 
 Every study stage froze a protocol file before its test scores were computed. The report explains the run. The score file is the record. `pinnforge claims check` ([Stage G](v02/stage_g_claims.md)) ties the README, the changelog, the status note, and the notes in `docs/v02/` to those score files through [claims.yaml](claims.yaml).
 
+## v06 The Well shear_flow inverse
+
+[v06/report.md](v06/report.md) scores a solver-free weak-form coefficient fit, a data-only FNO inverse, and an FNO-bracket hybrid with split-conformal intervals on a named subset of The Well `shear_flow`. The inverse fails the preregistered bars. The in-distribution median-rel bar and the OOD median-rel bar fail. The OOD-over-in-dist gap bar, the interval coverage bar, the hybrid-below-baselines bar, and the noise-robustness bar pass. Protocol, frozen before the test scores: [protocol.json](v06/protocol.json). Download provenance: [download_manifest.json](v06/download_manifest.json). Validation: [validation.json](v06/validation.json). Scores: [scores.json](v06/scores.json). Reproducibility: [reproducibility.md](v06/reproducibility.md). Raw HDF5 is not committed. The Well `shear_flow` is CC BY 4 (Ohana et al.). No v052 or earlier artifact was edited.
+
 ## v0.2 viscosity inverse study
 
 All of these use the Stage A harder periodic Burgers pilot and its frozen `hard_ood` slice.

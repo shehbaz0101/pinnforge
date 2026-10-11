@@ -97,6 +97,7 @@ Other plots: [relative error](docs/demo/relative_error.png), [first test field a
 | research | weak-form and solver-in-the-loop baselines | [docs/research/strong_baselines.md](docs/research/strong_baselines.md) | [docs/research/strong_baselines_scores.json](docs/research/strong_baselines_scores.json) |
 | v0.3 | FNO-warm-started solver fit with calibrated intervals and an abstain flag | [docs/v03/warmstart.md](docs/v03/warmstart.md) | [docs/v03/warmstart_scores.json](docs/v03/warmstart_scores.json) |
 | v0.4 | 2D Burgers and vorticity-form Navier-Stokes viscosity inverse; both problems fail the preregistered bars | [docs/v04/report.md](docs/v04/report.md) | [docs/v04/scores.json](docs/v04/scores.json) |
+| v06 | The Well shear_flow nu/kappa inverse; fails the preregistered bars | [docs/v06/report.md](docs/v06/report.md) | [docs/v06/scores.json](docs/v06/scores.json) |
 
 ## What is NOT claimed
 
@@ -124,3 +125,5 @@ pinnforge claims check
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+The v06 subset of The Well `shear_flow` (Ohana et al.) is used under CC BY 4. File names, byte sizes, and SHA-256 hashes are in [docs/v06/download_manifest.json](docs/v06/download_manifest.json). Raw HDF5 is not in this repository.

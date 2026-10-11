@@ -34,6 +34,7 @@ scan:
     - docs/v05/*.md
     - docs/v051/*.md
     - docs/v052/*.md
+    - docs/v06/*.md
     - STAGE1_REPORT.md
     - STAGE2_REPORT.md
     - STAGE3_REPORT.md
@@ -122,6 +123,16 @@ leaf_documents:
       - docs/v052/protocol.json
       - docs/v052/validation.json
       - docs/v051/scores.json
+  - file: docs/v06/protocol.md
+    evidence:
+      - docs/v06/protocol.json
+  - file: docs/v06/report.md
+    evidence:
+      - docs/v06/scores.json
+      - docs/v06/protocol.json
+      - docs/v06/validation.json
+      - docs/v06/download_manifest.json
+      - docs/v06/pilot_manifest.json
 
 claims:
   - id: number-0_41pct
@@ -2519,3 +2530,116 @@ claims:
           path: burgers2d/scored
         right:
           literal: false
+
+  - id: v06-overall-fail
+    class: comparison
+    locations:
+      - file: CHANGELOG.md
+        pattern: 'The Well shear_flow inverse fails the preregistered bars'
+      - file: docs/README.md
+        pattern: 'The inverse fails the preregistered bars'
+      - file: README.md
+        pattern: 'The Well shear_flow nu/kappa inverse; fails the preregistered bars'
+      - file: docs/v06/report.md
+        pattern: 'Result: FAIL'
+    comparisons:
+      - label: overall fail
+        op: "=="
+        left:
+          evidence: docs/v06/scores.json
+          path: bars/overall
+        right:
+          literal: false
+
+  - id: v06-error-bars-fail
+    class: comparison
+    locations:
+      - file: CHANGELOG.md
+        pattern: 'The in-distribution median-rel bar and the OOD median-rel bar fail'
+      - file: docs/README.md
+        pattern: 'The in-distribution median-rel bar and the OOD median-rel bar fail'
+      - file: docs/v06/report.md
+        pattern: 'in-dist median rel'
+    comparisons:
+      - label: in-dist median rel fail
+        op: "=="
+        left:
+          evidence: docs/v06/scores.json
+          path: bars/pass/in_dist_median_rel
+        right:
+          literal: false
+      - label: ood median rel fail
+        op: "=="
+        left:
+          evidence: docs/v06/scores.json
+          path: bars/pass/ood_median_rel
+        right:
+          literal: false
+
+  - id: v06-gap-coverage-pass
+    class: comparison
+    locations:
+      - file: CHANGELOG.md
+        pattern: 'The OOD-over-in-dist gap bar, the interval coverage bar, the hybrid-below-baselines bar, and the noise-robustness bar pass'
+      - file: docs/README.md
+        pattern: 'The OOD-over-in-dist gap bar, the interval coverage bar, the hybrid-below-baselines bar, and the noise-robustness bar pass'
+    comparisons:
+      - label: gap pass
+        op: "=="
+        left:
+          evidence: docs/v06/scores.json
+          path: bars/pass/ood_over_in_dist
+        right:
+          literal: true
+      - label: coverage pass
+        op: "=="
+        left:
+          evidence: docs/v06/scores.json
+          path: bars/pass/interval_coverage
+        right:
+          literal: true
+      - label: hybrid below baselines pass
+        op: "=="
+        left:
+          evidence: docs/v06/scores.json
+          path: bars/pass/hybrid_beats_baselines_ood
+        right:
+          literal: true
+      - label: noise robustness pass
+        op: "=="
+        left:
+          evidence: docs/v06/scores.json
+          path: bars/pass/noise_5pct_not_worse_than_wsindy
+        right:
+          literal: true
+
+  - id: v06-hybrid-below-baselines
+    class: comparison
+    locations:
+      - file: docs/v06/report.md
+        pattern: 'hybrid OOD below both baselines'
+    comparisons:
+      - label: hybrid ood < wsindy ood
+        op: "<"
+        left:
+          evidence: docs/v06/scores.json
+          path: by_noise/0.01/ood/hybrid/median_rel
+        right:
+          evidence: docs/v06/scores.json
+          path: by_noise/0.01/ood/wsindy/median_rel
+      - label: hybrid ood < fno_data ood
+        op: "<"
+        left:
+          evidence: docs/v06/scores.json
+          path: by_noise/0.01/ood/hybrid/median_rel
+        right:
+          evidence: docs/v06/scores.json
+          path: by_noise/0.01/ood/fno_data/median_rel
+      - label: hybrid noise 0.05 <= wsindy
+        op: "<="
+        left:
+          evidence: docs/v06/scores.json
+          path: by_noise/0.05/in_dist/hybrid/median_rel
+        right:
+          evidence: docs/v06/scores.json
+          path: by_noise/0.05/in_dist/wsindy/median_rel

@@ -396,6 +396,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="v0.5.2 NS WSINDy center-stride fix",
     )
     subparsers.add_parser(
+        "v06",
+        help="v0.6 The Well shear-flow inverse",
+    )
+    subparsers.add_parser(
         "claims",
         help="Check doc claims against committed score files",
     )
@@ -428,6 +432,10 @@ def main(argv: list[str] | None = None) -> int:
         from pinnforge.v052.__main__ import main as v052_main
 
         return v052_main(forwarded[1:])
+    if forwarded and forwarded[0] == "v06":
+        from pinnforge.v06.__main__ import main as v06_main
+
+        return v06_main(forwarded[1:])
     if forwarded and forwarded[0] == "claims":
         from pinnforge.claims.__main__ import main as claims_main
 

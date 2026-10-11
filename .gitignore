@@ -54,3 +54,9 @@ docs/v051/score_cases.jsonl
 # v0.5.2 NS WSINDy-fix pilots and library-matrix JSONL. Manifests live in docs/v052/.
 artifacts/v052_pilot/
 docs/v052/score_cases.jsonl
+
+# v0.6 The Well shear_flow raw HDF5 and packed arrays. Manifests live in docs/v06/.
+artifacts/v06_raw/
+artifacts/v06_pilot/
+docs/v06/score_cases.jsonl
+*.hdf5
