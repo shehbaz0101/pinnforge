@@ -21,8 +21,12 @@ PROTOCOL_PATH = Path("docs/v04/protocol.json")
 def load_protocol(path: Path | None = None) -> dict[str, Any]:
     target = PROTOCOL_PATH if path is None else path
     document = json.loads(target.read_text(encoding="utf-8"))
-    if document.get("format") != "pinnforge.v04_2d_inverse_protocol.v1":
-        raise ValueError("v0.4 protocol format is not recognized")
+    fmt = document.get("format")
+    if fmt not in {
+        "pinnforge.v04_2d_inverse_protocol.v1",
+        "pinnforge.v041_2d_inverse_protocol.v1",
+    }:
+        raise ValueError("2D inverse protocol format is not recognized")
     return document
 
 
@@ -62,6 +66,7 @@ def generate_problem(
     t_final: float | None = None,
     dt: float | None = None,
     save_dt: float | None = None,
+    protocol_path: Path | None = None,
 ) -> dict[str, Any]:
     if problem not in {"burgers2d", "ns2d"}:
         raise ValueError("problem must be burgers2d or ns2d")
@@ -115,8 +120,8 @@ def generate_problem(
     manifest = {
         "format": "pinnforge.v04_pilot.v1",
         "problem": problem,
-        "protocol": str(PROTOCOL_PATH),
-        "protocol_sha256": protocol_sha256(),
+        "protocol": str(protocol_path or PROTOCOL_PATH),
+        "protocol_sha256": protocol_sha256(protocol_path),
         "n": n_grid,
         "length": grid.length,
         "t_final": t_end,

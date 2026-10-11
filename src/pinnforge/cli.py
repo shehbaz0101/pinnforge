@@ -28,7 +28,8 @@ preregistered sparse sensors of those trajectories. It does not change
 ``train`` or the Burgers reference hook. ``claims check`` is
 ``python -m pinnforge.claims check``. It compares README and docs claims
 with the committed score files and does not import torch. ``v04`` is the
-2D Burgers and Navier-Stokes viscosity inverse.
+2D Burgers and Navier-Stokes viscosity inverse. ``v041`` is the follow-up
+with a larger calibration split and an FNO-bracket local search.
 """
 
 from __future__ import annotations
@@ -379,6 +380,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="2D Burgers and NS viscosity inverse",
     )
     subparsers.add_parser(
+        "v041",
+        help="v0.4.1 2D inverse, larger calibration split",
+    )
+    subparsers.add_parser(
         "claims",
         help="Check doc claims against committed score files",
     )
@@ -395,6 +400,10 @@ def main(argv: list[str] | None = None) -> int:
         from pinnforge.v04.__main__ import main as v04_main
 
         return v04_main(forwarded[1:])
+    if forwarded and forwarded[0] == "v041":
+        from pinnforge.v041.__main__ import main as v041_main
+
+        return v041_main(forwarded[1:])
     if forwarded and forwarded[0] == "claims":
         from pinnforge.claims.__main__ import main as claims_main
 

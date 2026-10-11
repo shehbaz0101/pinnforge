@@ -38,3 +38,6 @@ artifacts/burgers_hard_pilot/
 
 # v0.4 2D pilots and checkpoints. Manifests live in docs/v04/.
 artifacts/v04_pilot/
+
+# v0.4.1 pilots and checkpoints. Manifests live in docs/v041/.
+artifacts/v041_pilot/
