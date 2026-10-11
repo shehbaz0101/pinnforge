@@ -17,6 +17,8 @@ def write_report(scores_path: Path | None = None) -> Path:
     burgers = scores["problems"]["burgers2d"]["bars"]
     ns = scores["problems"]["ns2d"]["bars"]
     overall = "PASS" if scores["overall"]["pass"] else "FAIL"
+    bar_noise = _fmt(protocol["pass_bars"]["noise"])
+    bar_rate = _fmt(protocol["pass_bars"]["min_seed_success_rate"])
     lines = [
         "# v0.5 2D PDE term discovery",
         "",
@@ -24,21 +26,25 @@ def write_report(scores_path: Path | None = None) -> Path:
         "Its SHA-256 is stored as `protocol_sha256` in [scores.json](scores.json). "
         "Hashes of the committed JSON files are in [reproducibility.md](reproducibility.md). "
         "Thresholds chosen on validation are [validation.json](validation.json). "
-        "No v0.4 or v0.4.1 artifact was edited. "
+        "No v04 or v041 artifact was edited. "
         "No hyperparameter was chosen on the test split. "
         "PySR was not run; that skip is in the protocol.",
         "",
         "## Question",
         "",
-        protocol["question"],
+        "With sparse noisy sensors of the existing 2D Burgers and vorticity-form "
+        "Navier-Stokes generators, can weak-form sparse regression (WSINDy) recover "
+        "the exact PDE support — the true terms and no extras — on raw probes and on "
+        f"fields denoised by a reused 2D FNO, against a frozen `{bar_rate}` "
+        f"seed-success bar at noise `{bar_noise}`?",
         "",
         "## Pass / fail",
         "",
-        f"**{overall}.** The frozen bar is exact support in `>= 80%` of seeds at `1%` noise "
-        "for at least one of `wsindy_raw` and `wsindy_fno` on each problem. "
-        "Navier-Stokes uses the Kolmogorov family. The bar was not retuned.",
+        f"**{overall}.** The frozen bar is exact support in `>= {bar_rate}` of seeds "
+        f"at noise `{bar_noise}` for at least one of `wsindy_raw` and `wsindy_fno` "
+        "on each problem. Navier-Stokes uses the Kolmogorov family. The bar was not retuned.",
         "",
-        "| problem | method | exact support @ 1% | bar |",
+        f"| problem | method | exact support @ {bar_noise} | bar |",
         "| --- | --- | --- | --- |",
     ]
     for problem in ("burgers2d", "ns2d"):
@@ -48,9 +54,7 @@ def write_report(scores_path: Path | None = None) -> Path:
                 f"| {problem} | `{method}` | {_fmt(block['exact_support_rate'])} | "
                 f"{'pass' if block['pass'] else 'fail'} |"
             )
-        lines.append(
-            f"| {problem} | overall |  | {'pass' if bars['pass'] else 'fail'} |"
-        )
+        lines.append(f"| {problem} | overall |  | {'pass' if bars['pass'] else 'fail'} |")
     lines.extend(
         [
             "",
@@ -82,22 +86,23 @@ def write_report(scores_path: Path | None = None) -> Path:
             "",
             "## What is not claimed",
             "",
-        ]
-    )
-    lines.extend(f"- {item}" for item in protocol["not_claimed"])
-    lines.extend(
-        [
+            "- a result on The Well shear_flow or Petrobras 3W",
+            "- 3D",
+            "- that PySR was scored",
+            "- a retuned bar after seeing test scores",
+            "- a change to any v04 or v041 number",
             "",
             "## Reproduce",
             "",
             "```",
             "python -m pinnforge.v05 generate",
             "python -m pinnforge.v05 train",
-            "python -m pinnforge.v05 score --checkpoint docs/v05/score_cases.jsonl",
+            "python -m pinnforge.v05 score --checkpoint artifacts/v05_pilot/score_cases.jsonl",
             "python -m pinnforge.v05 report",
             "```",
             "",
-            "CI runs `python -m pinnforge.v05 smoke` only. Pilot arrays are regenerated, not committed. "
+            "CI runs `python -m pinnforge.v05 smoke` only. Pilot arrays and the library-matrix "
+            "JSONL stay under `artifacts/v05_pilot/` and are not committed. "
             "Scoring is resumable: finished JSONL rows are skipped.",
             "",
         ]
@@ -114,7 +119,11 @@ def _overall_sentence(burgers: dict[str, Any], ns: dict[str, Any], overall: bool
     parts = []
     for name, block in (("burgers2d", burgers), ("ns2d", ns)):
         parts.append(f"{name} {'passes' if block['pass'] else 'fails'}")
-    prefix = "Both problems fail overall. " if (not burgers["pass"] and not ns["pass"]) else "The preregistered bar fails overall. "
+    prefix = (
+        "Both problems fail overall. "
+        if (not burgers["pass"] and not ns["pass"])
+        else "The preregistered bar fails overall. "
+    )
     return prefix + "; ".join(parts) + "."
 
 
@@ -124,18 +133,25 @@ def _fmt(value: Any) -> str:
     number = float(value)
     if number != number:
         return "nan"
-    return f"{number:.4f}"
+    return format(number, ".16g")
 
 
 def _write_reproducibility(scores: dict[str, Any], validation: dict[str, Any]) -> None:
-    files = {
-        "protocol.json": DOCS / "protocol.json",
-        "scores.json": DOCS / "scores.json",
-        "validation.json": DOCS / "validation.json",
-        "report.md": DOCS / "report.md",
-    }
+    files = [
+        ("protocol.json", DOCS / "protocol.json"),
+        ("scores.json", DOCS / "scores.json"),
+        ("validation.json", DOCS / "validation.json"),
+        ("pilot_manifest.json", DOCS / "pilot_manifest.json"),
+        ("train_summary.json", DOCS / "train_summary.json"),
+    ]
     lines = [
         "# v0.5 reproducibility",
+        "",
+        "CPU-only run in this repository. No paid GPU. No secrets. "
+        "The detached runner is [scripts/v05_run.sh](../../scripts/v05_run.sh).",
+        "",
+        "The protocol [protocol.json](protocol.json) was committed in `4aed3558` "
+        "before any v0.5 test score. It was not edited after that commit.",
         "",
         f"- python: `{scores.get('python')}`",
         f"- numpy: `{scores.get('numpy')}`",
@@ -146,9 +162,27 @@ def _write_reproducibility(scores: dict[str, Any], validation: dict[str, Any]) -
         "",
         "SHA-256 of committed files:",
         "",
+        "| file | SHA-256 |",
+        "| --- | --- |",
     ]
-    for name, path in files.items():
+    for name, path in files:
         if path.is_file():
             digest = hashlib.sha256(path.read_bytes()).hexdigest()
-            lines.append(f"- `{name}`: `{digest}`")
+            lines.append(f"| [{name}]({name}) | `{digest}` |")
+    lines.extend(
+        [
+            "",
+            "Checkpoints, pilot arrays, and the library-matrix JSONL stay under "
+            "`artifacts/v05_pilot/` and are not committed. The JSONL holds full design "
+            "matrices and is too large to keep next to the scores.",
+            "",
+            "```bash",
+            "python -m pinnforge.v05 generate",
+            "python -m pinnforge.v05 train",
+            "python -m pinnforge.v05 score --checkpoint artifacts/v05_pilot/score_cases.jsonl",
+            "python -m pinnforge.v05 report",
+            "```",
+            "",
+        ]
+    )
     (DOCS / "reproducibility.md").write_text("\n".join(lines) + "\n", encoding="utf-8")

@@ -51,7 +51,6 @@ scan:
     - docs/demo/result.md
     - docs/demo/index.html
     - docs/v02/*.md
-    - docs/v05/*.md
   number_ignore:
     - 'Python 3\.\d+'
     - '\b3\.1[12]\b'
@@ -98,6 +97,11 @@ leaf_documents:
   - file: docs/v05/protocol.md
     evidence:
       - docs/v05/protocol.json
+  - file: docs/v05/report.md
+    evidence:
+      - docs/v05/scores.json
+      - docs/v05/protocol.json
+      - docs/v05/validation.json
 
 claims:
   - id: number-0_41pct
@@ -2414,3 +2418,34 @@ claims:
           - docs/v05/protocol.md
         evidence: docs/v05/protocol.json
         path: noise/fractions/3
+  - id: v05-both-problems-fail
+    class: comparison
+    locations:
+      - file: CHANGELOG.md
+        pattern: 'Both problems fail the preregistered support-recovery bar'
+      - file: docs/README.md
+        pattern: 'Both problems fail the preregistered support-recovery bar'
+      - file: docs/v05/report.md
+        pattern: 'Both problems fail overall'
+    comparisons:
+      - label: burgers2d overall fail
+        op: "=="
+        left:
+          evidence: docs/v05/scores.json
+          path: problems/burgers2d/bars/pass
+        right:
+          literal: false
+      - label: ns2d overall fail
+        op: "=="
+        left:
+          evidence: docs/v05/scores.json
+          path: problems/ns2d/bars/pass
+        right:
+          literal: false
+      - label: overall fail
+        op: "=="
+        left:
+          evidence: docs/v05/scores.json
+          path: overall/pass
+        right:
+          literal: false

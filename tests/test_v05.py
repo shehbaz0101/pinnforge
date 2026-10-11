@@ -68,6 +68,18 @@ def test_stlsq_recovers_manufactured_support() -> None:
     assert exact_support(support_of(coef, names), ("u_qx", "v_qy", "q_xx", "q_yy"))
 
 
+def test_committed_scores_match_frozen_protocol() -> None:
+    scores_path = ROOT / "docs" / "v05" / "scores.json"
+    scores = json.loads(scores_path.read_text(encoding="utf-8"))
+    assert scores["protocol_sha256"] == protocol_sha256(PROTOCOL)
+    assert scores["overall"]["pass"] is False
+    assert scores["problems"]["burgers2d"]["bars"]["pass"] is False
+    assert scores["problems"]["ns2d"]["bars"]["pass"] is False
+    assert scores["pysr"]["used"] is False
+    report = (ROOT / "docs" / "v05" / "report.md").read_text(encoding="utf-8")
+    assert "FAIL" in report
+
+
 @pytest.mark.ml
 def test_v05_smoke() -> None:
     assert v05_main(["smoke"]) == 0

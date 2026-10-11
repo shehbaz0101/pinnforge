@@ -138,7 +138,7 @@ def run_score(
     use_seeds = protocol["seeds"] if seeds is None else seeds
     n_workers = default_workers() if workers is None else max(1, int(workers))
     digest = protocol_sha256(PROTOCOL)
-    log = CaseLog(checkpoint or (MANIFEST_DIR / "score_cases.jsonl"), digest)
+    log = CaseLog(checkpoint or (ARTIFACT / "score_cases.jsonl"), digest)
     jobs = _feature_jobs(root, protocol, use_seeds)
     print(f"extracting {len(jobs)} library cases", flush=True)
     payloads = run_cases(jobs, log=log, workers=n_workers, worker=case_worker)

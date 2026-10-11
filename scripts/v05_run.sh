@@ -23,5 +23,5 @@ python3 -u -m pinnforge.v05 generate
 stamp "generate done"
 python3 -u -m pinnforge.v05 train --workers "${PINNFORGE_V05_WORKERS}"
 stamp "train done"
-python3 -u -m pinnforge.v05 score --workers "${PINNFORGE_V05_WORKERS}" --checkpoint docs/v05/score_cases.jsonl
+python3 -u -m pinnforge.v05 score --workers "${PINNFORGE_V05_WORKERS}" --checkpoint artifacts/v05_pilot/score_cases.jsonl
 stamp "score done"

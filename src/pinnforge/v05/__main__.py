@@ -37,7 +37,7 @@ def build_parser() -> argparse.ArgumentParser:
     score.add_argument(
         "--checkpoint",
         default=None,
-        help="JSONL case log used to skip completed cases (default: docs/v05/score_cases.jsonl)",
+        help="JSONL case log used to skip completed cases (default: artifacts/v05_pilot/score_cases.jsonl)",
     )
     sub.add_parser("report", help="Write docs/v05/report.md")
     sub.add_parser("smoke", help="Tiny CPU smoke that does not score the study")

@@ -1,0 +1,1354 @@
+{
+  "format": "pinnforge.v05_scores.v1",
+  "protocol_sha256": "f4d7f8584cf003bc3b28f5d554e645ff3f5f5160f646538d854cbdae0362e902",
+  "python": "3.12.3",
+  "numpy": "2.5.4",
+  "pysr": {
+    "role": "optional symbolic regression",
+    "used": false,
+    "reason": "PySR 2.x requires a Julia runtime and a SymbolicRegression.jl compile. That is outside this CPU-only free budget, is not a package extra, and is not available in CI. The study does not install it and does not score it."
+  },
+  "problems": {
+    "burgers2d": {
+      "bars": {
+        "pass": false,
+        "noise": 0.01,
+        "min_seed_success_rate": 0.8,
+        "methods": {
+          "wsindy_raw": {
+            "exact_support_rate": 0.0,
+            "pass": false
+          },
+          "wsindy_fno": {
+            "exact_support_rate": 0.0,
+            "pass": false
+          }
+        }
+      },
+      "by_noise": {
+        "0.00": {
+          "wsindy_raw": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.3333333333333333,
+            "coeff_rel_error": 0.1722130637663681,
+            "thresholds": {
+              "0": 0.12,
+              "1": 0.12,
+              "2": 0.12,
+              "3": 0.12,
+              "4": 0.12
+            },
+            "supports": {
+              "0": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q",
+                "q_xxxx"
+              ],
+              "1": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q",
+                "q_xxxx"
+              ],
+              "2": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q",
+                "q_xxxx"
+              ],
+              "3": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q",
+                "q_xxxx"
+              ],
+              "4": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q",
+                "q_xxxx"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "fno_rel_l2": null
+          },
+          "wsindy_fno": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.0,
+            "coeff_rel_error": 5.157108860954214,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_qx",
+                "v_qy",
+                "q_yy",
+                "q2",
+                "uv",
+                "q",
+                "q_xy",
+                "q_yyy",
+                "q_xxxx",
+                "u_qy",
+                "const",
+                "force_y"
+              ],
+              "1": [
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q2",
+                "uv",
+                "q",
+                "q_xy",
+                "q_xxx",
+                "q_yyy",
+                "q_xxxx",
+                "v_qx",
+                "u_qy",
+                "const",
+                "force_y"
+              ],
+              "2": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q2",
+                "uv",
+                "q",
+                "q_xxx",
+                "q_xxxx",
+                "u_qy",
+                "const",
+                "force_y"
+              ],
+              "3": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q2",
+                "uv",
+                "q",
+                "q_xy",
+                "q_xxxx",
+                "v_qx",
+                "u_qy",
+                "const",
+                "force_y"
+              ],
+              "4": [
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q2",
+                "q",
+                "u_qy",
+                "const",
+                "force_y"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "fno_rel_l2": 0.14524859541236573
+          }
+        },
+        "0.01": {
+          "wsindy_raw": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.09999999999999999,
+            "coeff_rel_error": 0.41276691005273636,
+            "thresholds": {
+              "0": 0.12,
+              "1": 0.25,
+              "2": 0.12,
+              "3": 0.25,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q_xxxx"
+              ],
+              "1": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q_xxxx"
+              ],
+              "2": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q_yyy",
+                "q_xxxx"
+              ],
+              "3": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q_xxxx"
+              ],
+              "4": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q_xxxx"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "fno_rel_l2": null
+          },
+          "wsindy_fno": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.0,
+            "coeff_rel_error": 5.185687385591988,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q2",
+                "uv",
+                "q",
+                "q_xy",
+                "q_yyy",
+                "q_xxxx",
+                "u_qy",
+                "const",
+                "force_y"
+              ],
+              "1": [
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q2",
+                "uv",
+                "q",
+                "q_xy",
+                "q_xxx",
+                "q_yyy",
+                "q_xxxx",
+                "v_qx",
+                "u_qy",
+                "const",
+                "force_y"
+              ],
+              "2": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q2",
+                "uv",
+                "q",
+                "q_xxx",
+                "q_xxxx",
+                "u_qy",
+                "const",
+                "force_y"
+              ],
+              "3": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q2",
+                "uv",
+                "q",
+                "q_xy",
+                "q_xxxx",
+                "v_qx",
+                "u_qy",
+                "const",
+                "force_y"
+              ],
+              "4": [
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q2",
+                "q",
+                "u_qy",
+                "const",
+                "force_y"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "fno_rel_l2": 0.1453612504954881
+          }
+        },
+        "0.02": {
+          "wsindy_raw": {
+            "exact_support_rate": 0.2,
+            "instance_exact_rate": 0.016666666666666666,
+            "coeff_rel_error": 0.5597734290381388,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.25,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q_xxxx"
+              ],
+              "1": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q_xxxx"
+              ],
+              "2": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q_xxxx"
+              ],
+              "3": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q",
+                "q_xy",
+                "q_xxxx"
+              ],
+              "4": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": true
+            },
+            "fno_rel_l2": null
+          },
+          "wsindy_fno": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.0,
+            "coeff_rel_error": 5.185495887234345,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q2",
+                "uv",
+                "q",
+                "q_xy",
+                "q_yyy",
+                "q_xxxx",
+                "u_qy",
+                "const",
+                "force_y"
+              ],
+              "1": [
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q2",
+                "uv",
+                "q",
+                "q_xy",
+                "q_xxx",
+                "q_yyy",
+                "v_qx",
+                "u_qy",
+                "const",
+                "force_y"
+              ],
+              "2": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q2",
+                "uv",
+                "q",
+                "q_xxx",
+                "q_xxxx",
+                "u_qy",
+                "const",
+                "force_y"
+              ],
+              "3": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q2",
+                "uv",
+                "q",
+                "q_xy",
+                "q_xxxx",
+                "v_qx",
+                "u_qy",
+                "const",
+                "force_y"
+              ],
+              "4": [
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q2",
+                "q",
+                "u_qy",
+                "const",
+                "force_y"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "fno_rel_l2": 0.1455646243679156
+          }
+        },
+        "0.05": {
+          "wsindy_raw": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.0,
+            "coeff_rel_error": 0.8466240661070547,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q2",
+                "q",
+                "q_xxxx"
+              ],
+              "1": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q2",
+                "q_xy",
+                "q_xxx",
+                "q_yyy",
+                "q_xxxx",
+                "u_qy"
+              ],
+              "2": [
+                "u_qx",
+                "v_qy",
+                "q_yy",
+                "q2",
+                "q_yyy",
+                "q_xxxx",
+                "const",
+                "force_y"
+              ],
+              "3": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q_xy",
+                "v_qx"
+              ],
+              "4": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q",
+                "q_xxxx",
+                "v_qx",
+                "const",
+                "force_y"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "fno_rel_l2": null
+          },
+          "wsindy_fno": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.0,
+            "coeff_rel_error": 5.197625408098108,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q2",
+                "uv",
+                "q",
+                "q_xy",
+                "q_yyy",
+                "q_xxxx",
+                "u_qy",
+                "const",
+                "force_y"
+              ],
+              "1": [
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q2",
+                "uv",
+                "q",
+                "q_xy",
+                "q_xxx",
+                "q_yyy",
+                "v_qx",
+                "u_qy",
+                "const",
+                "force_y"
+              ],
+              "2": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q2",
+                "uv",
+                "q",
+                "q_xxx",
+                "q_xxxx",
+                "u_qy",
+                "const",
+                "force_y"
+              ],
+              "3": [
+                "u_qx",
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q2",
+                "uv",
+                "q",
+                "q_xy",
+                "q_xxxx",
+                "v_qx",
+                "u_qy",
+                "const",
+                "force_y"
+              ],
+              "4": [
+                "v_qy",
+                "q_xx",
+                "q_yy",
+                "q2",
+                "q",
+                "u_qy",
+                "const",
+                "force_y"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "fno_rel_l2": 0.14671406654311892
+          }
+        }
+      }
+    },
+    "ns2d": {
+      "bars": {
+        "pass": false,
+        "noise": 0.01,
+        "min_seed_success_rate": 0.8,
+        "methods": {
+          "wsindy_raw": {
+            "exact_support_rate": 0.0,
+            "pass": false
+          },
+          "wsindy_fno": {
+            "exact_support_rate": 0.0,
+            "pass": false
+          }
+        }
+      },
+      "by_noise": {
+        "0.00": {
+          "wsindy_raw": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.0,
+            "coeff_rel_error": 0.5434178428069232,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_yy",
+                "force_y",
+                "const",
+                "force_x"
+              ],
+              "1": [
+                "u_wx",
+                "v_wy",
+                "w_yy",
+                "force_y",
+                "const",
+                "force_x"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_yy",
+                "force_y",
+                "const",
+                "force_x"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_yy",
+                "force_y",
+                "const",
+                "force_x"
+              ],
+              "4": [
+                "u_wx",
+                "v_wy",
+                "w_yy",
+                "force_y",
+                "const",
+                "force_x"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "fno_rel_l2": null,
+            "decaying_instance_exact_rate": 0.0
+          },
+          "wsindy_fno": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.0,
+            "coeff_rel_error": 17.23019991295643,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xy",
+                "w_yyy",
+                "w_xxxx",
+                "uv",
+                "const",
+                "force_x",
+                "u_wy"
+              ],
+              "1": [
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xy",
+                "w_yyy",
+                "w_xxxx",
+                "uv",
+                "const",
+                "force_x",
+                "u_wy"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w_xy",
+                "w_xxx",
+                "w_xxxx",
+                "const",
+                "force_x",
+                "u_wy"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xy",
+                "w_xxxx",
+                "uv",
+                "const",
+                "force_x",
+                "u_wy"
+              ],
+              "4": [
+                "u_wx",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xxx",
+                "uv",
+                "const",
+                "force_x",
+                "u_wy"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "fno_rel_l2": 0.15569451818801355,
+            "decaying_instance_exact_rate": 0.0
+          }
+        },
+        "0.01": {
+          "wsindy_raw": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.0,
+            "coeff_rel_error": 0.746914782392211,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_yy",
+                "force_y",
+                "const",
+                "force_x"
+              ],
+              "1": [
+                "u_wx",
+                "v_wy",
+                "w_yy",
+                "force_y",
+                "const",
+                "force_x"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_yy",
+                "force_y",
+                "w2",
+                "const",
+                "force_x"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "const",
+                "force_x"
+              ],
+              "4": [
+                "u_wx",
+                "v_wy",
+                "w_yy",
+                "force_y",
+                "w_xxxx",
+                "const",
+                "force_x"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "fno_rel_l2": null,
+            "decaying_instance_exact_rate": 0.0
+          },
+          "wsindy_fno": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.0,
+            "coeff_rel_error": 17.211179131810283,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xy",
+                "w_yyy",
+                "w_xxxx",
+                "uv",
+                "const",
+                "force_x",
+                "u_wy"
+              ],
+              "1": [
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xy",
+                "w_yyy",
+                "w_xxxx",
+                "uv",
+                "const",
+                "force_x",
+                "u_wy"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w_xy",
+                "w_xxx",
+                "w_xxxx",
+                "const",
+                "force_x",
+                "u_wy"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xy",
+                "w_xxxx",
+                "uv",
+                "const",
+                "force_x",
+                "u_wy"
+              ],
+              "4": [
+                "u_wx",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xxx",
+                "uv",
+                "const",
+                "force_x",
+                "u_wy"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "fno_rel_l2": 0.15571761103071466,
+            "decaying_instance_exact_rate": 0.0
+          }
+        },
+        "0.02": {
+          "wsindy_raw": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.0,
+            "coeff_rel_error": 1.0910225891722212,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w_xxxx",
+                "uv",
+                "const",
+                "force_x"
+              ],
+              "1": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "const",
+                "force_x"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w_xy",
+                "const",
+                "force_x"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "uv",
+                "const",
+                "force_x"
+              ],
+              "4": [
+                "u_wx",
+                "v_wy",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w_xxxx",
+                "const",
+                "force_x"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "fno_rel_l2": null,
+            "decaying_instance_exact_rate": 0.0
+          },
+          "wsindy_fno": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.0,
+            "coeff_rel_error": 17.150934956300073,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xy",
+                "w_yyy",
+                "w_xxxx",
+                "uv",
+                "const",
+                "force_x",
+                "u_wy"
+              ],
+              "1": [
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xy",
+                "w_yyy",
+                "w_xxxx",
+                "uv",
+                "const",
+                "force_x",
+                "u_wy"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w_xy",
+                "w_xxx",
+                "w_xxxx",
+                "const",
+                "force_x",
+                "u_wy"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xy",
+                "w_xxxx",
+                "uv",
+                "const",
+                "force_x",
+                "u_wy"
+              ],
+              "4": [
+                "u_wx",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xxx",
+                "uv",
+                "const",
+                "force_x",
+                "u_wy"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "fno_rel_l2": 0.15581558981247037,
+            "decaying_instance_exact_rate": 0.0
+          }
+        },
+        "0.05": {
+          "wsindy_raw": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.0,
+            "coeff_rel_error": 2.224955722565634,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w_xxx",
+                "w_xxxx",
+                "uv",
+                "const",
+                "force_x"
+              ],
+              "1": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "force_y",
+                "w2",
+                "w_xxxx",
+                "uv",
+                "const",
+                "force_x"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w_xy",
+                "w_yyy",
+                "uv",
+                "const",
+                "force_x"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xxx",
+                "w_xxxx",
+                "uv",
+                "const",
+                "force_x",
+                "u_wy"
+              ],
+              "4": [
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xxx",
+                "w_xxxx",
+                "uv",
+                "const",
+                "force_x",
+                "u_wy"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "fno_rel_l2": null,
+            "decaying_instance_exact_rate": 0.0
+          },
+          "wsindy_fno": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.0,
+            "coeff_rel_error": 17.157952907330298,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xy",
+                "w_yyy",
+                "w_xxxx",
+                "uv",
+                "const",
+                "force_x",
+                "u_wy"
+              ],
+              "1": [
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xy",
+                "w_yyy",
+                "w_xxxx",
+                "uv",
+                "const",
+                "force_x",
+                "u_wy"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w_xy",
+                "w_xxx",
+                "w_xxxx",
+                "const",
+                "force_x",
+                "u_wy"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xy",
+                "w_xxxx",
+                "uv",
+                "const",
+                "force_x",
+                "u_wy"
+              ],
+              "4": [
+                "u_wx",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xxx",
+                "uv",
+                "const",
+                "force_x",
+                "u_wy"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "fno_rel_l2": 0.15655681493380236,
+            "decaying_instance_exact_rate": 0.0
+          }
+        }
+      }
+    }
+  },
+  "overall": {
+    "pass": false
+  },
+  "torch": "2.14.1+cpu"
+}
