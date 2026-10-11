@@ -46,3 +46,7 @@ artifacts/v041_pilot/
 # Manifests and scores live in docs/v05/.
 artifacts/v05_pilot/
 docs/v05/score_cases.jsonl
+
+# v0.5.1 sensor-density pilots and library-matrix JSONL. Manifests live in docs/v051/.
+artifacts/v051_pilot/
+docs/v051/score_cases.jsonl

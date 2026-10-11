@@ -388,6 +388,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="v0.5 2D PDE term discovery, WSINDy",
     )
     subparsers.add_parser(
+        "v051",
+        help="v0.5.1 sensor-density WSINDy study",
+    )
+    subparsers.add_parser(
         "claims",
         help="Check doc claims against committed score files",
     )
@@ -412,6 +416,10 @@ def main(argv: list[str] | None = None) -> int:
         from pinnforge.v05.__main__ import main as v05_main
 
         return v05_main(forwarded[1:])
+    if forwarded and forwarded[0] == "v051":
+        from pinnforge.v051.__main__ import main as v051_main
+
+        return v051_main(forwarded[1:])
     if forwarded and forwarded[0] == "claims":
         from pinnforge.claims.__main__ import main as claims_main
 

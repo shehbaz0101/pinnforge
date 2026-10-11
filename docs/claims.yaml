@@ -32,6 +32,7 @@ scan:
     - docs/v04/*.md
     - docs/v041/*.md
     - docs/v05/*.md
+    - docs/v051/*.md
     - STAGE1_REPORT.md
     - STAGE2_REPORT.md
     - STAGE3_REPORT.md
@@ -102,6 +103,14 @@ leaf_documents:
       - docs/v05/scores.json
       - docs/v05/protocol.json
       - docs/v05/validation.json
+  - file: docs/v051/protocol.md
+    evidence:
+      - docs/v051/protocol.json
+  - file: docs/v051/report.md
+    evidence:
+      - docs/v051/scores.json
+      - docs/v051/protocol.json
+      - docs/v051/validation.json
 
 claims:
   - id: number-0_41pct
@@ -2447,5 +2456,30 @@ claims:
         left:
           evidence: docs/v05/scores.json
           path: overall/pass
+        right:
+          literal: false
+
+  - id: v051-control
+    class: comparison
+    locations:
+      - file: CHANGELOG.md
+        pattern: 'noise-0 control passes on Burgers and fails on Navier-Stokes'
+      - file: docs/README.md
+        pattern: 'noise-0 control passes on Burgers and fails on Navier-Stokes'
+      - file: docs/v051/report.md
+        pattern: 'method/implementation failure'
+    comparisons:
+      - label: burgers control pass
+        op: "=="
+        left:
+          evidence: docs/v051/scores.json
+          path: problems/burgers2d/positive_control/pass
+        right:
+          literal: true
+      - label: ns control fail
+        op: "=="
+        left:
+          evidence: docs/v051/scores.json
+          path: problems/ns2d/positive_control/pass
         right:
           literal: false
