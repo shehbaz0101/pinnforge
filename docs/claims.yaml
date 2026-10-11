@@ -31,6 +31,7 @@ scan:
     - docs/v03/*.md
     - docs/v04/*.md
     - docs/v041/*.md
+    - docs/v05/*.md
     - STAGE1_REPORT.md
     - STAGE2_REPORT.md
     - STAGE3_REPORT.md
@@ -93,6 +94,14 @@ leaf_documents:
       - docs/v041/validation.json
       - docs/v04/scores.json
       - docs/v04/protocol.json
+  - file: docs/v05/protocol.md
+    evidence:
+      - docs/v05/protocol.json
+  - file: docs/v05/report.md
+    evidence:
+      - docs/v05/scores.json
+      - docs/v05/protocol.json
+      - docs/v05/validation.json
 
 claims:
   - id: number-0_41pct
@@ -2374,5 +2383,69 @@ claims:
         left:
           evidence: docs/v041/scores.json
           path: problems/ns2d/bars/checks/warm_vs_cold_time/pass
+        right:
+          literal: false
+
+  - id: number-v05-bar-rate
+    class: numeric
+    numbers:
+      - token: "0.8"
+        files:
+          - docs/v05/protocol.md
+        evidence: docs/v05/protocol.json
+        path: pass_bars/min_seed_success_rate
+  - id: number-v05-bar-noise
+    class: numeric
+    numbers:
+      - token: "0.01"
+        files:
+          - docs/v05/protocol.md
+        evidence: docs/v05/protocol.json
+        path: pass_bars/noise
+  - id: number-v05-noise-0_02
+    class: numeric
+    numbers:
+      - token: "0.02"
+        files:
+          - docs/v05/protocol.md
+        evidence: docs/v05/protocol.json
+        path: noise/fractions/2
+  - id: number-v05-noise-0_05
+    class: numeric
+    numbers:
+      - token: "0.05"
+        files:
+          - docs/v05/protocol.md
+        evidence: docs/v05/protocol.json
+        path: noise/fractions/3
+  - id: v05-both-problems-fail
+    class: comparison
+    locations:
+      - file: CHANGELOG.md
+        pattern: 'Both problems fail the preregistered support-recovery bar'
+      - file: docs/README.md
+        pattern: 'Both problems fail the preregistered support-recovery bar'
+      - file: docs/v05/report.md
+        pattern: 'Both problems fail overall'
+    comparisons:
+      - label: burgers2d overall fail
+        op: "=="
+        left:
+          evidence: docs/v05/scores.json
+          path: problems/burgers2d/bars/pass
+        right:
+          literal: false
+      - label: ns2d overall fail
+        op: "=="
+        left:
+          evidence: docs/v05/scores.json
+          path: problems/ns2d/bars/pass
+        right:
+          literal: false
+      - label: overall fail
+        op: "=="
+        left:
+          evidence: docs/v05/scores.json
+          path: overall/pass
         right:
           literal: false
