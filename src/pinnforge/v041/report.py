@@ -170,12 +170,13 @@ def write_report(scores_path: Path | None = None) -> Path:
             "```bash",
             "python -m pinnforge.v041 generate",
             "python -m pinnforge.v041 train",
-            "python -m pinnforge.v041 score",
+            "python -m pinnforge.v041 score --checkpoint docs/v041/score_cases.jsonl",
             "python -m pinnforge.v041 report",
             "python -m pinnforge.claims check",
             "```",
             "",
-            "CI runs `python -m pinnforge.v041 smoke` only. Pilot arrays are regenerated, not committed.",
+            "CI runs `python -m pinnforge.v041 smoke` only. Pilot arrays are regenerated, not committed. "
+            "Finished cases are in [score_cases.jsonl](score_cases.jsonl).",
             "",
         ]
     )

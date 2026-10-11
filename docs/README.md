@@ -22,6 +22,10 @@ All of these use the Stage A harder periodic Burgers pilot and its frozen `hard_
 
 [research/strong_baselines.md](research/strong_baselines.md) compares the Stage D FNO inverse with a weak-form identifier and two solver-in-the-loop fits on the Stage D mask, plus the Stage E noise and sparsity cells. Protocol: [strong_baselines_protocol.json](research/strong_baselines_protocol.json). Scores: [strong_baselines_scores.json](research/strong_baselines_scores.json). Every number in that note is a leaf of those two files.
 
+## v0.4.1 2D viscosity inverse
+
+[v041/report.md](v041/report.md) is the follow-up with a 64-instance calibration split and an FNO-located conformal bracket plus a short local solver search. Both problems fail the preregistered bars. The hard_ood gap bar and the coverage bar pass. The in-distribution error bar, the warm-versus-cold error bar, and the time bar fail. Protocol, frozen before the test scores: [protocol.json](v041/protocol.json). Validation choices: [validation.json](v041/validation.json). Scores: [scores.json](v041/scores.json). Reproducibility: [reproducibility.md](v041/reproducibility.md). Every number in the scored note is a leaf of those JSON files. No v0.4 artifact was edited.
+
 ## v0.4 2D viscosity inverse
 
 [v04/report.md](v04/report.md) scores the 2D Burgers and vorticity-form Navier-Stokes viscosity inverse. Both problems fail the preregistered bars. The time bar passes. The in-distribution error bar, the warm-versus-cold error bar, and the coverage bar fail. Protocol, frozen before the test scores: [protocol.json](v04/protocol.json). Validation choices: [validation.json](v04/validation.json). Scores: [scores.json](v04/scores.json). Reproducibility: [reproducibility.md](v04/reproducibility.md). Every number in the scored note is a leaf of those JSON files.

@@ -86,6 +86,13 @@ leaf_documents:
       - docs/v041/protocol.json
       - docs/v04/protocol.json
       - docs/v04/scores.json
+  - file: docs/v041/report.md
+    evidence:
+      - docs/v041/scores.json
+      - docs/v041/protocol.json
+      - docs/v041/validation.json
+      - docs/v04/scores.json
+      - docs/v04/protocol.json
 
 claims:
   - id: number-0_41pct
@@ -2244,5 +2251,128 @@ claims:
         left:
           evidence: docs/v04/scores.json
           path: problems/ns2d/bars/checks/coverage/pass
+        right:
+          literal: false
+
+  - id: number-v041-n_cal
+    class: numeric
+    numbers:
+      - token: "64"
+        files:
+          - CHANGELOG.md
+          - docs/README.md
+        evidence: docs/v041/protocol.json
+        path: splits/n_cal
+
+  - id: v041-both-problems-fail
+    class: comparison
+    locations:
+      - file: CHANGELOG.md
+        pattern: 'Both problems fail the preregistered bars'
+      - file: docs/README.md
+        pattern: 'Both problems fail the preregistered bars'
+      - file: docs/v041/report.md
+        pattern: 'Both problems fail overall'
+    comparisons:
+      - label: burgers2d overall fail
+        op: "=="
+        left:
+          evidence: docs/v041/scores.json
+          path: problems/burgers2d/bars/pass
+        right:
+          literal: false
+      - label: ns2d overall fail
+        op: "=="
+        left:
+          evidence: docs/v041/scores.json
+          path: problems/ns2d/bars/pass
+        right:
+          literal: false
+
+  - id: v041-coverage-and-gap-pass
+    class: comparison
+    locations:
+      - file: CHANGELOG.md
+        pattern: 'The hard_ood gap bar and the coverage bar pass'
+      - file: docs/README.md
+        pattern: 'The hard_ood gap bar and the coverage bar pass'
+    comparisons:
+      - label: burgers2d hard_ood gap pass
+        op: "=="
+        left:
+          evidence: docs/v041/scores.json
+          path: problems/burgers2d/bars/checks/hard_ood_gap/pass
+        right:
+          literal: true
+      - label: ns2d hard_ood gap pass
+        op: "=="
+        left:
+          evidence: docs/v041/scores.json
+          path: problems/ns2d/bars/checks/hard_ood_gap/pass
+        right:
+          literal: true
+      - label: burgers2d coverage pass
+        op: "=="
+        left:
+          evidence: docs/v041/scores.json
+          path: problems/burgers2d/bars/checks/coverage/pass
+        right:
+          literal: true
+      - label: ns2d coverage pass
+        op: "=="
+        left:
+          evidence: docs/v041/scores.json
+          path: problems/ns2d/bars/checks/coverage/pass
+        right:
+          literal: true
+
+  - id: v041-error-and-time-fail
+    class: comparison
+    locations:
+      - file: CHANGELOG.md
+        pattern: 'The in-distribution error bar, the warm-versus-cold error bar, and the time bar fail'
+      - file: docs/README.md
+        pattern: 'The in-distribution error bar, the warm-versus-cold error bar, and the time bar fail'
+    comparisons:
+      - label: burgers2d in-distribution fail
+        op: "=="
+        left:
+          evidence: docs/v041/scores.json
+          path: problems/burgers2d/bars/checks/in_distribution_error/pass
+        right:
+          literal: false
+      - label: burgers2d warm vs cold error fail
+        op: "=="
+        left:
+          evidence: docs/v041/scores.json
+          path: problems/burgers2d/bars/checks/warm_vs_cold_error/pass
+        right:
+          literal: false
+      - label: burgers2d time fail
+        op: "=="
+        left:
+          evidence: docs/v041/scores.json
+          path: problems/burgers2d/bars/checks/warm_vs_cold_time/pass
+        right:
+          literal: false
+      - label: ns2d in-distribution fail
+        op: "=="
+        left:
+          evidence: docs/v041/scores.json
+          path: problems/ns2d/bars/checks/in_distribution_error/pass
+        right:
+          literal: false
+      - label: ns2d warm vs cold error fail
+        op: "=="
+        left:
+          evidence: docs/v041/scores.json
+          path: problems/ns2d/bars/checks/warm_vs_cold_error/pass
+        right:
+          literal: false
+      - label: ns2d time fail
+        op: "=="
+        left:
+          evidence: docs/v041/scores.json
+          path: problems/ns2d/bars/checks/warm_vs_cold_time/pass
         right:
           literal: false
