@@ -72,6 +72,14 @@ leaf_documents:
   - file: docs/v04/protocol.md
     evidence:
       - docs/v04/protocol.json
+  - file: docs/v04/report.md
+    evidence:
+      - docs/v04/scores.json
+      - docs/v04/protocol.json
+      - docs/v04/validation.json
+      - docs/v04/convergence.json
+      - docs/v04/train_summary.json
+      - docs/v04/pilot_manifest.json
 
 claims:
   - id: number-0_41pct
@@ -2133,3 +2141,102 @@ claims:
         evidence: docs/v03/warmstart_scores.json
         path: noise/noise0p05/noise_fraction
         scale: 100
+
+  - id: v04-both-problems-fail
+    class: comparison
+    locations:
+      - file: README.md
+        pattern: 'both problems fail the preregistered bars'
+      - file: CHANGELOG.md
+        pattern: 'Both problems fail the preregistered bars'
+      - file: docs/README.md
+        pattern: 'Both problems fail the preregistered bars'
+    comparisons:
+      - label: burgers2d overall fail
+        op: "=="
+        left:
+          evidence: docs/v04/scores.json
+          path: problems/burgers2d/bars/pass
+        right:
+          literal: false
+      - label: ns2d overall fail
+        op: "=="
+        left:
+          evidence: docs/v04/scores.json
+          path: problems/ns2d/bars/pass
+        right:
+          literal: false
+
+  - id: v04-time-bar-passes
+    class: comparison
+    locations:
+      - file: CHANGELOG.md
+        pattern: 'The time bar passes'
+      - file: docs/README.md
+        pattern: 'The time bar passes'
+    comparisons:
+      - label: burgers2d time bar pass
+        op: "=="
+        left:
+          evidence: docs/v04/scores.json
+          path: problems/burgers2d/bars/checks/warm_vs_cold_time/pass
+        right:
+          literal: true
+      - label: ns2d time bar pass
+        op: "=="
+        left:
+          evidence: docs/v04/scores.json
+          path: problems/ns2d/bars/checks/warm_vs_cold_time/pass
+        right:
+          literal: true
+
+  - id: v04-error-and-coverage-bars-fail
+    class: comparison
+    locations:
+      - file: CHANGELOG.md
+        pattern: 'The in-distribution error bar, the warm-versus-cold error bar, and the coverage bar fail'
+      - file: docs/README.md
+        pattern: 'The in-distribution error bar, the warm-versus-cold error bar, and the coverage bar fail'
+    comparisons:
+      - label: burgers2d in-distribution fail
+        op: "=="
+        left:
+          evidence: docs/v04/scores.json
+          path: problems/burgers2d/bars/checks/in_distribution_error/pass
+        right:
+          literal: false
+      - label: burgers2d warm vs cold error fail
+        op: "=="
+        left:
+          evidence: docs/v04/scores.json
+          path: problems/burgers2d/bars/checks/warm_vs_cold_error/pass
+        right:
+          literal: false
+      - label: burgers2d coverage fail
+        op: "=="
+        left:
+          evidence: docs/v04/scores.json
+          path: problems/burgers2d/bars/checks/coverage/pass
+        right:
+          literal: false
+      - label: ns2d in-distribution fail
+        op: "=="
+        left:
+          evidence: docs/v04/scores.json
+          path: problems/ns2d/bars/checks/in_distribution_error/pass
+        right:
+          literal: false
+      - label: ns2d warm vs cold error fail
+        op: "=="
+        left:
+          evidence: docs/v04/scores.json
+          path: problems/ns2d/bars/checks/warm_vs_cold_error/pass
+        right:
+          literal: false
+      - label: ns2d coverage fail
+        op: "=="
+        left:
+          evidence: docs/v04/scores.json
+          path: problems/ns2d/bars/checks/coverage/pass
+        right:
+          literal: false

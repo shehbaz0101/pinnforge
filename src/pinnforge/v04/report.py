@@ -12,8 +12,6 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from pinnforge.reference.spectral2d.dataset import protocol_sha256
-
 DOCS = Path("docs/v04")
 
 
@@ -25,18 +23,19 @@ def write_report(scores_path: Path | None = None) -> Path:
         "# v0.4 2D viscosity inverse",
         "",
         "Research note. The contract is [protocol.json](protocol.json). "
-        f"Its SHA-256 is `{protocol_sha256()}`, stored as `protocol_sha256` in [scores.json](scores.json). "
+        "Its SHA-256 is stored as `protocol_sha256` in [scores.json](scores.json). "
+        "Hashes of the committed JSON files are in [reproducibility.md](reproducibility.md). "
         "Calibration is [validation.json](validation.json). No hyperparameter was chosen on the test split.",
         "",
         "## Question",
         "",
-        protocol["question"],
+        protocol["question"].replace("90%", "nominal 0.9"),
         "",
         "## Pass / fail",
         "",
         "Bars were frozen before scoring. They are not retuned.",
         "",
-        "| problem | in-dist `ν` error `<= 0.05` | hard_ood / complement `<= 3` | warm error `<= 1.5×` cold | warm time `<= 0.25×` cold | 90% coverage in `[0.85, 0.95]` | overall |",
+        "| problem | in-dist `ν` error `<= 0.05` | hard_ood / complement `<= 3` | warm error `<= 1.5×` cold | warm time `<= 0.25×` cold | coverage in `[0.85, 0.95]` | overall |",
         "| --- | --- | --- | --- | --- | --- | --- |",
     ]
     for problem in ("burgers2d", "ns2d"):
@@ -54,7 +53,12 @@ def write_report(scores_path: Path | None = None) -> Path:
     lines.extend(
         [
             "",
-            "Primary method: hybrid-FNO warm start, five-seed mean. Primary problem: `burgers2d`.",
+            "Primary method: hybrid-FNO warm start, five-seed mean. Primary problem: `burgers2d`. "
+            "Both problems fail overall. The time bar passes. The in-distribution error bar, "
+            "the warm-versus-cold error bar, and the coverage bar fail. Coverage is 1 because "
+            "the validation split has 8 instances, so the split-conformal rank "
+            "`ceil((n + 1)(1 - alpha))` is 9 and the quantile is infinite. That is a fail of "
+            "the frozen coverage bar, not a retune.",
             "",
             "## Headline tables (clean sensors)",
             "",
@@ -162,7 +166,7 @@ def _fmt(value: Any) -> str:
     number = float(value)
     if not np.isfinite(number):
         return "inf"
-    return f"{number:.6g}"
+    return format(number, ".16g")
 
 
 def _figures(scores: dict[str, Any]) -> dict[str, str]:
@@ -203,23 +207,34 @@ def _figures(scores: dict[str, Any]) -> dict[str, str]:
     )
     ax.set_xlabel("true ν")
     ax.set_ylabel("ν")
-    ax.set_title("90% intervals, Burgers warm start")
+    ax.set_title("nominal 0.9 intervals, Burgers warm start")
     fig.tight_layout()
     coverage_path = dest / "coverage.png"
     fig.savefig(coverage_path, dpi=120)
     plt.close(fig)
 
-    fig, ax = plt.subplots(figsize=(5, 3.4))
-    n = 64
-    x = np.linspace(0, 2 * np.pi, n, endpoint=False)
-    xx, yy = np.meshgrid(x, x, indexing="ij")
-    field = np.sin(xx) * np.cos(yy)
-    ax.imshow(field, cmap="RdBu_r", origin="lower")
-    ax.set_title("Reference field snapshot (illustration)")
-    ax.set_xticks([])
-    ax.set_yticks([])
-    fig.tight_layout()
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.2))
     field_path = dest / "prediction_vs_reference.png"
+    artifact = Path("artifacts/v04_pilot/burgers2d_fields.npy")
+    if artifact.is_file():
+        from pinnforge.v04.sensors import lift_sensors, mask_from_protocol, read_sensors
+
+        protocol = json.loads((DOCS / "protocol.json").read_text(encoding="utf-8"))
+        fields = np.load(artifact)
+        truth = fields[32, -1, 0]
+        mask = mask_from_protocol(protocol, n=truth.shape[0])
+        lifted = lift_sensors(read_sensors(fields[32], mask), mask)[-1, 0]
+        axes[0].imshow(truth, cmap="RdBu_r", origin="lower")
+        axes[0].set_title("reference u, last frame")
+        axes[1].imshow(lifted, cmap="RdBu_r", origin="lower")
+        axes[1].set_title("sensor-lifted u")
+        for ax in axes:
+            ax.set_xticks([])
+            ax.set_yticks([])
+    else:
+        axes[0].text(0.5, 0.5, "pilot arrays not in git", ha="center")
+        axes[1].axis("off")
+    fig.tight_layout()
     fig.savefig(field_path, dpi=120)
     plt.close(fig)
     return {

@@ -96,7 +96,7 @@ Other plots: [relative error](docs/demo/relative_error.png), [first test field a
 | G | claim-to-evidence checker | [docs/v02/stage_g_claims.md](docs/v02/stage_g_claims.md) | [docs/claims.yaml](docs/claims.yaml) |
 | research | weak-form and solver-in-the-loop baselines | [docs/research/strong_baselines.md](docs/research/strong_baselines.md) | [docs/research/strong_baselines_scores.json](docs/research/strong_baselines_scores.json) |
 | v0.3 | FNO-warm-started solver fit with calibrated intervals and an abstain flag | [docs/v03/warmstart.md](docs/v03/warmstart.md) | [docs/v03/warmstart_scores.json](docs/v03/warmstart_scores.json) |
-| v0.4 | 2D Burgers and vorticity-form Navier-Stokes viscosity inverse | [docs/v04/protocol.md](docs/v04/protocol.md) | [docs/v04/protocol.json](docs/v04/protocol.json) |
+| v0.4 | 2D Burgers and vorticity-form Navier-Stokes viscosity inverse; both problems fail the preregistered bars | [docs/v04/report.md](docs/v04/report.md) | [docs/v04/scores.json](docs/v04/scores.json) |
 
 ## What is NOT claimed
 

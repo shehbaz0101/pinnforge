@@ -24,7 +24,7 @@ All of these use the Stage A harder periodic Burgers pilot and its frozen `hard_
 
 ## v0.4 2D viscosity inverse
 
-[v04/protocol.md](v04/protocol.md) freezes the 2D Burgers and vorticity-form Navier-Stokes viscosity inverse, including the pass bars, before any test score. Protocol: [protocol.json](v04/protocol.json). The scored note will be [v04/report.md](v04/report.md).
+[v04/report.md](v04/report.md) scores the 2D Burgers and vorticity-form Navier-Stokes viscosity inverse. Both problems fail the preregistered bars. The time bar passes. The in-distribution error bar, the warm-versus-cold error bar, and the coverage bar fail. Protocol, frozen before the test scores: [protocol.json](v04/protocol.json). Validation choices: [validation.json](v04/validation.json). Scores: [scores.json](v04/scores.json). Reproducibility: [reproducibility.md](v04/reproducibility.md). Every number in the scored note is a leaf of those JSON files.
 
 ## v0.3 warm-started solver fit
 

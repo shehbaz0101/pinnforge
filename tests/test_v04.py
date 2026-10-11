@@ -33,6 +33,13 @@ def test_protocol_hash_command(capsys: pytest.CaptureFixture[str]) -> None:
     assert capsys.readouterr().out.strip() == protocol_sha256()
 
 
+def test_committed_scores_match_frozen_protocol() -> None:
+    scores = json.loads((ROOT / "docs" / "v04" / "scores.json").read_text(encoding="utf-8"))
+    assert scores["protocol_sha256"] == protocol_sha256()
+    assert scores["problems"]["burgers2d"]["bars"]["pass"] is False
+    assert scores["problems"]["ns2d"]["bars"]["pass"] is False
+
+
 @pytest.mark.ml
 def test_v04_smoke() -> None:
     assert v04_main(["smoke"]) == 0
