@@ -5,7 +5,7 @@ ODE and PDE residuals. It trains a small network on the residual, scores a
 checkpoint against an analytical or manufactured field, and serves that path
 on localhost. An offline demo trains a checked-in sample on CPU.
 
-**Status:** The package version in this tree is 0.2.2. The annotated tag is not created here. v0.1.0 remains the last tag, and it is the sandbox freeze (Days 1–10). The stage reports below were written while the version string was still 0.1.0. Their score tables were not edited for 0.2.0. The new command is `pinnforge demo burgers-inverse`. See [README.md](README.md), [CHANGELOG.md](CHANGELOG.md), [STAGE1_REPORT.md](STAGE1_REPORT.md), [STAGE2_REPORT.md](STAGE2_REPORT.md), [STAGE3_REPORT.md](STAGE3_REPORT.md), [STAGE4_REPORT.md](STAGE4_REPORT.md), [STAGE5_REPORT.md](STAGE5_REPORT.md), [STAGE_A_REPORT.md](STAGE_A_REPORT.md), [STAGE_B_REPORT.md](STAGE_B_REPORT.md), [STAGE_C_REPORT.md](STAGE_C_REPORT.md), [STAGE_D_REPORT.md](STAGE_D_REPORT.md), [STAGE_E_REPORT.md](STAGE_E_REPORT.md), and [STAGE_F_REPORT.md](STAGE_F_REPORT.md).
+**Status:** The package version in this tree is 0.2.2. The v0.2 releases are tagged `v0.2.0`, `v0.2.1`, and `v0.2.2`, on the merge commits of PRs #22, #23, and #25. `main` also carries the unreleased strong baselines, Stage G, and Stage H listed in [CHANGELOG.md](CHANGELOG.md). v0.1.0 is the sandbox freeze (Days 1–10). The stage reports below were written while the version string was still 0.1.0. Their score tables were not edited for 0.2.0. [docs/README.md](docs/README.md) maps every report and score file. See [README.md](README.md), [CHANGELOG.md](CHANGELOG.md), [STAGE1_REPORT.md](STAGE1_REPORT.md), [STAGE2_REPORT.md](STAGE2_REPORT.md), [STAGE3_REPORT.md](STAGE3_REPORT.md), [STAGE4_REPORT.md](STAGE4_REPORT.md), [STAGE5_REPORT.md](STAGE5_REPORT.md), [STAGE_A_REPORT.md](STAGE_A_REPORT.md), [STAGE_B_REPORT.md](STAGE_B_REPORT.md), [STAGE_C_REPORT.md](STAGE_C_REPORT.md), [STAGE_D_REPORT.md](STAGE_D_REPORT.md), [STAGE_E_REPORT.md](STAGE_E_REPORT.md), and [STAGE_F_REPORT.md](STAGE_F_REPORT.md).
 
 ## Days 1–10
 
@@ -149,6 +149,21 @@ Noise and sparsity stress for the Stage D viscosity inverse. [STAGE_E_REPORT.md]
 
 - [docs/v02/stage_e_stress_protocol.json](docs/v02/stage_e_stress_protocol.json) was frozen before the test scores. Noise is additive Gaussian at `0`, `0.1%`, `0.5%`, `1%`, `2%`, and `5%` of the clean-field standard deviation. Sensors are `32`, `16`, and `8`. Bursts are `4`, `2`, and `1`. `hard_ood` stays `ν <= 0.027028120493367818`. `λ` stays `0`. The failure rule stays `ν̂ <= 0` or relative error `> 0.5`.
 - On `hard_ood`, closed-form residual least squares is already at `0.3494591802034973` with `9` failures on the clean Stage D mask. Data-only and hybrid `1e-2` stay under `10%` mean relative error with `0` failures through `1%` noise. Both cross `10%` and record their first failures at `2%` noise and at `16` clean sensors. At `5%` noise the closed form has the lower mean and fewer failures. Two bursts do not move the operator. One burst has no operator target. The summary is [docs/v02/stage_e_scores.json](docs/v02/stage_e_scores.json).
+
+## Stage F
+
+Out-of-distribution viscosity. [STAGE_F_REPORT.md](STAGE_F_REPORT.md) has the protocol and the tables. The version string stays `0.1.0`.
+
+- [docs/v02/stage_f_ood_protocol.json](docs/v02/stage_f_ood_protocol.json) was frozen before the test scores. Both arms train only on `ν` above the `hard_ood` cut. The hybrid weight stays `1e-2` and `λ` stays `0`.
+- In-range forecasts barely move. On the out-of-distribution slice the one-step error is about 11 times the in-range error for data-only and about 12 times for hybrid. The hybrid loss does not extrapolate better than data-only. The summary is [docs/v02/stage_f_scores.json](docs/v02/stage_f_scores.json).
+
+## Strong baselines
+
+[docs/research/strong_baselines.md](docs/research/strong_baselines.md) scores a weak-form identifier and two solver-in-the-loop fits on the Stage D mask. On `hard_ood` the sensor-lift solver has lower mean relative error than both FNO arms. The oracle initial-condition solver is a ceiling. No Stage D or Stage E number was edited.
+
+## Stages G and H
+
+Stage G adds `python -m pinnforge.claims check` and [docs/claims.yaml](docs/claims.yaml) ([docs/v02/stage_g_claims.md](docs/v02/stage_g_claims.md)). Stage H rewrites the README around the `hard_ood` results, adds the docs map, gives every CLI subcommand a one-line help, and adds `pinnforge claims check`. Neither stage bumps the version or creates a tag.
 
 ## Known limits
 

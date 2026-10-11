@@ -1809,3 +1809,102 @@ claims:
     locations:
       - file: README.md
         pattern: 'No width, mode count, depth, or loss weight is claimed optimal outside the set frozen before the run that measured it'
+
+  - id: changelog-stage-f-ood
+    class: comparison
+    locations:
+      - file: CHANGELOG.md
+        pattern: 'On the out-of-distribution slice the one-step error is about 11 times the in-range error for data-only and about 12 times for hybrid\.'
+      - file: CHANGELOG.md
+        pattern: 'an unclipped 191-point viscosity grid'
+      - file: CHANGELOG.md
+        pattern: 'The hybrid loss does not extrapolate better than data-only\.'
+      - file: PROJECT_STATUS.md
+        pattern: 'On the out-of-distribution slice the one-step error is about 11 times the in-range error for data-only and about 12 times for hybrid\. The hybrid loss does not extrapolate better than data-only\.'
+    numbers:
+      - token: "11"
+        files: [CHANGELOG.md, PROJECT_STATUS.md]
+        evidence: docs/v02/stage_f_scores.json
+        path: forward/data_only/ood_gap/one_step/ratio_of_means
+      - token: "12"
+        files: [CHANGELOG.md, PROJECT_STATUS.md]
+        evidence: docs/v02/stage_f_scores.json
+        path: forward/hybrid_1e-2/ood_gap/one_step/ratio_of_means
+      - token: "191"
+        files: [CHANGELOG.md]
+        evidence: docs/v02/stage_f_ood_protocol.json
+        path: nu_search/n_grid
+      - token: "0.23310978476634858"
+        files: [CHANGELOG.md]
+        evidence: docs/v02/stage_f_scores.json
+        path: inverse/arms/data_only/slices/ood/mean_rel_error/mean
+      - token: "0.21277812472713906"
+        files: [CHANGELOG.md]
+        evidence: docs/v02/stage_f_scores.json
+        path: inverse/arms/hybrid_1e-2/slices/ood/mean_rel_error/mean
+    comparisons:
+      - label: restricted data-only OOD inverse > Stage D data-only
+        op: ">"
+        left:
+          evidence: docs/v02/stage_f_scores.json
+          path: inverse/arms/data_only/slices/ood/mean_rel_error/mean
+        right:
+          evidence: docs/v02/stage_d_scores.json
+          path: arms/data_only/objectives/0.0/slices/hard_ood/mean_rel_error/mean
+      - label: restricted hybrid OOD inverse > Stage D hybrid
+        op: ">"
+        left:
+          evidence: docs/v02/stage_f_scores.json
+          path: inverse/arms/hybrid_1e-2/slices/ood/mean_rel_error/mean
+        right:
+          evidence: docs/v02/stage_d_scores.json
+          path: arms/hybrid_1e-2/objectives/0.0/slices/hard_ood/mean_rel_error/mean
+      - label: hybrid OOD one-step gap > data-only gap
+        op: ">"
+        left:
+          evidence: docs/v02/stage_f_scores.json
+          path: forward/hybrid_1e-2/ood_gap/one_step/ratio_of_means
+        right:
+          evidence: docs/v02/stage_f_scores.json
+          path: forward/data_only/ood_gap/one_step/ratio_of_means
+
+  - id: changelog-strong-baselines-order
+    class: comparison
+    locations:
+      - file: CHANGELOG.md
+        pattern: 'On `hard_ood` the sensor-lift solver has lower mean relative error than both FNO arms, and the weak form has higher error than both\.'
+      - file: PROJECT_STATUS.md
+        pattern: 'On `hard_ood` the sensor-lift solver has lower mean relative error than both FNO arms\.'
+    comparisons:
+      - label: sensor-lift solver < hybrid FNO
+        op: "<"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/solver_sensor_ic/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/hybrid_1e-2/slices/hard_ood/mean_rel_error
+      - label: sensor-lift solver < data-only FNO
+        op: "<"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/solver_sensor_ic/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/data_only/slices/hard_ood/mean_rel_error
+      - label: weak form > hybrid FNO
+        op: ">"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/weak_form/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/hybrid_1e-2/slices/hard_ood/mean_rel_error
+      - label: weak form > data-only FNO
+        op: ">"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/weak_form/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/data_only/slices/hard_ood/mean_rel_error
