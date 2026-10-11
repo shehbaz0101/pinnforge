@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### v06 The Well shear_flow inverse
+
+- **FAIL.** `python -m pinnforge.v06` recovers `nu` and `kappa` from sparse probes of a named subset of The Well `shear_flow`. The protocol [docs/v06/protocol.json](docs/v06/protocol.json) was committed before the test split was scored. Raw HDF5 is not committed. PySR is skipped. CI runs smoke only and never downloads The Well. The subset is CC BY 4 (Ohana et al.).
+- The Well shear_flow inverse fails the preregistered bars. The in-distribution median-rel bar and the OOD median-rel bar fail. The OOD-over-in-dist gap bar, the interval coverage bar, the hybrid-below-baselines bar, and the noise-robustness bar pass. The note is [docs/v06/report.md](docs/v06/report.md). The scores are [docs/v06/scores.json](docs/v06/scores.json). This is a recorded negative result.
+
 ### v0.5.2 Navier-Stokes WSINDy fix
 
 - `python -m pinnforge.v052` rescores the v0.5.1 density grid for Navier-Stokes only, after the bump-center stride diagnosed in [docs/v052/diagnosis.md](docs/v052/diagnosis.md). The protocol [docs/v052/protocol.json](docs/v052/protocol.json) was committed before the test split was scored. Burgers was not rescored. No v0.5.1 or v0.5 artifact was edited. The FNO-denoise arm is skipped. CI runs smoke only.

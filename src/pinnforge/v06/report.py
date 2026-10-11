@@ -70,8 +70,8 @@ def write_report(scores_path: Path | None = None) -> Path:
             "",
             "## Attribution",
             "",
-            "The Well `shear_flow` is CC BY 4. Ohana et al., arXiv:2412.00568. "
-            "The generator is Dedalus (Burns et al., Phys. Rev. Research 2, 023068, 2020). "
+            "The Well `shear_flow` is CC BY 4 (Ohana et al.). "
+            "The generator is Dedalus (Burns et al.). "
             "[dataset page](https://polymathic-ai.org/the_well/datasets/shear_flow/).",
             "",
             "## Reproduce",
