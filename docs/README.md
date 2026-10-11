@@ -22,6 +22,10 @@ All of these use the Stage A harder periodic Burgers pilot and its frozen `hard_
 
 [research/strong_baselines.md](research/strong_baselines.md) compares the Stage D FNO inverse with a weak-form identifier and two solver-in-the-loop fits on the Stage D mask, plus the Stage E noise and sparsity cells. Protocol: [strong_baselines_protocol.json](research/strong_baselines_protocol.json). Scores: [strong_baselines_scores.json](research/strong_baselines_scores.json). Every number in that note is a leaf of those two files.
 
+## v0.5.2 Navier-Stokes WSINDy fix
+
+[v052/report.md](v052/report.md) rescores the v0.5.1 density grid for Navier-Stokes only, after breaking the Kolmogorov-period lock on WSINDy bump centers. Navier-Stokes first reaches the frozen bar at `32x32`. The `64x64` noise-0 control passes. Burgers is not rescored; it remains `64x64` from v0.5.1. Protocol, frozen before the test scores: [protocol.json](v052/protocol.json). Diagnosis: [diagnosis.md](v052/diagnosis.md). Validation: [validation.json](v052/validation.json). Scores: [scores.json](v052/scores.json). Reproducibility: [reproducibility.md](v052/reproducibility.md). No v051 or v05 artifact was edited.
+
 ## v0.5.1 sensor-density study
 
 [v051/report.md](v051/report.md) sweeps WSINDy over `8x8`, `16x16`, `32x32`, and full-field `64x64` probes. Burgers first reaches the frozen bar at `64x64`. Navier-Stokes reaches it at none. The `64x64` noise-0 control passes on Burgers and fails on Navier-Stokes (method or implementation failure, not a sparsity finding). Protocol, frozen before the test scores: [protocol.json](v051/protocol.json). Validation: [validation.json](v051/validation.json). Scores: [scores.json](v051/scores.json). Reproducibility: [reproducibility.md](v051/reproducibility.md). No v05 artifact was edited.

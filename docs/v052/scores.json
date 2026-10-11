@@ -1,0 +1,1097 @@
+{
+  "format": "pinnforge.v052_scores.v1",
+  "protocol_sha256": "0c2f95cfa15f69fb38bd4b6028b294747b63438d6d752286a4b26ec5088c2cc8",
+  "python": "3.12.3",
+  "numpy": "2.5.4",
+  "pysr": {
+    "role": "optional symbolic regression",
+    "used": false,
+    "reason": "PySR needs Julia. The skip is inherited from v0.5 and v0.5.1 and is recorded here before scoring."
+  },
+  "wsindy_fno": {
+    "role": "optional FNO-denoise arm",
+    "used": false,
+    "reason": "This study isolates the diagnosed center-stride bug. The v0.5 FNO-denoise arm is not trained and not scored."
+  },
+  "burgers2d": {
+    "scored": false,
+    "reason": "This study rescores ns2d only. Burgers v0.5.1 scores remain the record.",
+    "parent_scores": "docs/v051/scores.json",
+    "parent_min_lattice_at_bar": "64x64"
+  },
+  "problems": {
+    "ns2d": {
+      "min_lattice_at_bar": "32x32",
+      "positive_control": {
+        "lattice": "64x64",
+        "noise": 0.0,
+        "exact_support_rate": 1.0,
+        "pass": true,
+        "reading": "control passed"
+      },
+      "by_lattice": {
+        "8x8": {
+          "0.00": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.5,
+            "coeff_rel_error": 0.09854547557600983,
+            "thresholds": {
+              "0": 0.18,
+              "1": 0.18,
+              "2": 0.18,
+              "3": 0.18,
+              "4": 0.18
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w",
+                "w_xxxx"
+              ],
+              "1": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w",
+                "w_xxxx"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w",
+                "w_xxxx"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w",
+                "w_xxxx"
+              ],
+              "4": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w",
+                "w_xxxx"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "decaying_instance_exact_rate": 0.3333333333333333
+          },
+          "0.01": {
+            "exact_support_rate": 0.2,
+            "instance_exact_rate": 0.06666666666666667,
+            "coeff_rel_error": 0.3004155333496733,
+            "thresholds": {
+              "0": 0.25,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w_xxxx"
+              ],
+              "1": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "uv",
+                "const"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w",
+                "w_xxxx",
+                "uv"
+              ],
+              "4": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w_xxxx"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": true,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "decaying_instance_exact_rate": 0.03333333333333333
+          },
+          "0.02": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.0,
+            "coeff_rel_error": 0.4092125681997053,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_yy",
+                "force_y",
+                "w_xxx",
+                "w_xxxx"
+              ],
+              "1": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "uv"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "uv",
+                "const"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "uv",
+                "const"
+              ],
+              "4": [
+                "u_wx",
+                "v_wy",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w_xxx",
+                "w_xxxx",
+                "const",
+                "u_wy"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "decaying_instance_exact_rate": 0.0
+          },
+          "0.05": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.0,
+            "coeff_rel_error": 0.8460045349053036,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xxx",
+                "w_xxxx",
+                "uv"
+              ],
+              "1": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w_yyy",
+                "w_xxxx",
+                "uv",
+                "force_x"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "uv",
+                "const"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_yyy",
+                "uv",
+                "const"
+              ],
+              "4": [
+                "u_wx",
+                "v_wy",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xxx",
+                "w_xxxx",
+                "uv",
+                "const",
+                "u_wy"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "decaying_instance_exact_rate": 0.0
+          }
+        },
+        "16x16": {
+          "0.00": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.0,
+            "coeff_rel_error": 0.25979138701164595,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w",
+                "w_xxxx"
+              ],
+              "1": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w",
+                "w_xxxx"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w",
+                "w_xxxx"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w",
+                "w_xxxx"
+              ],
+              "4": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w",
+                "w_xxxx"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "decaying_instance_exact_rate": 0.0
+          },
+          "0.01": {
+            "exact_support_rate": 0.2,
+            "instance_exact_rate": 0.0,
+            "coeff_rel_error": 3.598851228028859,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w",
+                "w_xxxx"
+              ],
+              "1": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w",
+                "w_xxxx"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_yy",
+                "force_y",
+                "w_xxxx"
+              ],
+              "4": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w",
+                "w_xxxx"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": true,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "decaying_instance_exact_rate": 0.0
+          },
+          "0.02": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.0,
+            "coeff_rel_error": 7.51598897780787,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w",
+                "w_xxxx",
+                "uv"
+              ],
+              "1": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w",
+                "w_xxxx",
+                "const",
+                "u_wy"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w",
+                "w_xxxx",
+                "uv"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xxxx",
+                "u_wy"
+              ],
+              "4": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xxxx",
+                "uv",
+                "const"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "decaying_instance_exact_rate": 0.0
+          },
+          "0.05": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.0,
+            "coeff_rel_error": 20.58529198537747,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xxxx",
+                "uv",
+                "const",
+                "force_x"
+              ],
+              "1": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xxxx",
+                "uv",
+                "const",
+                "u_wy"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xxxx",
+                "uv",
+                "const",
+                "u_wy"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xxx",
+                "w_xxxx",
+                "uv",
+                "force_x",
+                "u_wy"
+              ],
+              "4": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xy",
+                "w_xxxx",
+                "uv",
+                "const",
+                "force_x"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "decaying_instance_exact_rate": 0.0
+          }
+        },
+        "32x32": {
+          "0.00": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 1.0,
+            "coeff_rel_error": 0.00026881540487163247,
+            "thresholds": {
+              "0": 0.05,
+              "1": 0.05,
+              "2": 0.05,
+              "3": 0.05,
+              "4": 0.05
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w_xxxx"
+              ],
+              "1": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w_xxxx"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w_xxxx"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w_xxxx"
+              ],
+              "4": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w_xxxx"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "decaying_instance_exact_rate": 1.0
+          },
+          "0.01": {
+            "exact_support_rate": 1.0,
+            "instance_exact_rate": 0.5,
+            "coeff_rel_error": 0.15708638157010898,
+            "thresholds": {
+              "0": 0.18,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.18
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "1": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "4": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ]
+            },
+            "seed_success": {
+              "0": true,
+              "1": true,
+              "2": true,
+              "3": true,
+              "4": true
+            },
+            "decaying_instance_exact_rate": 0.5
+          },
+          "0.02": {
+            "exact_support_rate": 0.8,
+            "instance_exact_rate": 0.2,
+            "coeff_rel_error": 0.24862812239168636,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "1": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "u_wy"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "4": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ]
+            },
+            "seed_success": {
+              "0": true,
+              "1": false,
+              "2": true,
+              "3": true,
+              "4": true
+            },
+            "decaying_instance_exact_rate": 0.26666666666666666
+          },
+          "0.05": {
+            "exact_support_rate": 0.0,
+            "instance_exact_rate": 0.0,
+            "coeff_rel_error": 0.4805877024704722,
+            "thresholds": {
+              "0": 0.35,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.35
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "uv"
+              ],
+              "1": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "const",
+                "u_wy"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "u_wy"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "uv",
+                "const",
+                "u_wy"
+              ],
+              "4": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w2",
+                "w",
+                "w_xxxx",
+                "uv",
+                "u_wy"
+              ]
+            },
+            "seed_success": {
+              "0": false,
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "decaying_instance_exact_rate": 0.06666666666666667
+          }
+        },
+        "64x64": {
+          "0.00": {
+            "exact_support_rate": 1.0,
+            "instance_exact_rate": 1.0,
+            "coeff_rel_error": 0.00015568122613038914,
+            "thresholds": {
+              "0": 0.05,
+              "1": 0.05,
+              "2": 0.05,
+              "3": 0.05,
+              "4": 0.05
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "1": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "4": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ]
+            },
+            "seed_success": {
+              "0": true,
+              "1": true,
+              "2": true,
+              "3": true,
+              "4": true
+            },
+            "decaying_instance_exact_rate": 1.0
+          },
+          "0.01": {
+            "exact_support_rate": 1.0,
+            "instance_exact_rate": 1.0,
+            "coeff_rel_error": 0.022612830647607367,
+            "thresholds": {
+              "0": 0.12,
+              "1": 0.12,
+              "2": 0.08,
+              "3": 0.08,
+              "4": 0.08
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "1": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "4": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ]
+            },
+            "seed_success": {
+              "0": true,
+              "1": true,
+              "2": true,
+              "3": true,
+              "4": true
+            },
+            "decaying_instance_exact_rate": 1.0
+          },
+          "0.02": {
+            "exact_support_rate": 0.8,
+            "instance_exact_rate": 0.5666666666666667,
+            "coeff_rel_error": 0.10606663718427554,
+            "thresholds": {
+              "0": 0.12,
+              "1": 0.12,
+              "2": 0.25,
+              "3": 0.12,
+              "4": 0.25
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "1": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y",
+                "w"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "4": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ]
+            },
+            "seed_success": {
+              "0": true,
+              "1": false,
+              "2": true,
+              "3": true,
+              "4": true
+            },
+            "decaying_instance_exact_rate": 0.7333333333333333
+          },
+          "0.05": {
+            "exact_support_rate": 1.0,
+            "instance_exact_rate": 0.03333333333333333,
+            "coeff_rel_error": 0.29958240761708,
+            "thresholds": {
+              "0": 0.25,
+              "1": 0.35,
+              "2": 0.35,
+              "3": 0.35,
+              "4": 0.25
+            },
+            "supports": {
+              "0": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "1": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "2": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "3": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ],
+              "4": [
+                "u_wx",
+                "v_wy",
+                "w_xx",
+                "w_yy",
+                "force_y"
+              ]
+            },
+            "seed_success": {
+              "0": true,
+              "1": true,
+              "2": true,
+              "3": true,
+              "4": true
+            },
+            "decaying_instance_exact_rate": 0.13333333333333333
+          }
+        }
+      }
+    }
+  },
+  "torch": "2.14.1+cpu"
+}

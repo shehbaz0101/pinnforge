@@ -75,11 +75,14 @@ def test_v052_smoke() -> None:
 
 def test_committed_scores_match_frozen_protocol() -> None:
     scores_path = ROOT / "docs" / "v052" / "scores.json"
-    if not scores_path.is_file():
-        pytest.skip("v052 scores are written after the protocol freeze")
     scores = json.loads(scores_path.read_text(encoding="utf-8"))
     assert scores["protocol_sha256"] == protocol_sha256(PROTOCOL)
+    assert scores["protocol_sha256"] == FROZEN_PROTOCOL_SHA256
     assert scores["burgers2d"]["scored"] is False
     assert "burgers2d" not in scores["problems"]
+    assert scores["problems"]["ns2d"]["min_lattice_at_bar"] == "32x32"
+    assert scores["problems"]["ns2d"]["positive_control"]["pass"] is True
+    assert scores["wsindy_fno"]["used"] is False
     report = (ROOT / "docs" / "v052" / "report.md").read_text(encoding="utf-8")
     assert "not rescored" in report
+    assert "32x32" in report
