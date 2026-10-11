@@ -25,7 +25,9 @@ non-loopback TCP connects. ``fno`` trains or scores a 1D Fourier neural operator
 is normalized data MSE. ``--loss residual`` and ``--loss hybrid`` add the
 discrete Burgers residual. ``fno inverse`` recovers scalar viscosity from
 preregistered sparse sensors of those trajectories. It does not change
-``train`` or the Burgers reference hook.
+``train`` or the Burgers reference hook. ``claims check`` is
+``python -m pinnforge.claims check``. It compares README and docs claims
+with the committed score files and does not import torch.
 """
 
 from __future__ import annotations
@@ -66,7 +68,10 @@ _API_MODULES = frozenset({"fastapi", "uvicorn", "starlette", "httpx"})
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="pinnforge",
-        description="PINNForge physics-informed neural network sandbox.",
+        description=(
+            "PINNForge: physics-informed residual sandbox and Burgers viscosity inverse study. "
+            "Run pinnforge <command> --help for the flags of one command."
+        ),
     )
     parser.add_argument("--version", action="version", version=f"pinnforge {__version__}")
     path_flags = argparse.ArgumentParser(add_help=False)
@@ -85,7 +90,7 @@ def build_parser() -> argparse.ArgumentParser:
     sample = subparsers.add_parser(
         "sample",
         parents=[path_flags],
-        help="Draw a seeded collocation batch and print counts and bounds",
+        help="Draw a seeded collocation batch and print a summary",
     )
     sample.add_argument(
         "--equation",
@@ -128,7 +133,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     residual = subparsers.add_parser(
         "residual",
-        help="Print residual MSE of a tiny untrained MLP (needs the ml extra)",
+        help="Residual MSE of a tiny untrained MLP (ml extra)",
     )
     residual.add_argument(
         "--equation",
@@ -145,7 +150,7 @@ def build_parser() -> argparse.ArgumentParser:
     train = subparsers.add_parser(
         "train",
         parents=[path_flags],
-        help="Train a small MLP with Adam and write metrics and a checkpoint",
+        help="Train a small MLP, write metrics and a checkpoint",
     )
     train.add_argument(
         "--equation",
@@ -228,7 +233,7 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate = subparsers.add_parser(
         "eval",
         parents=[path_flags],
-        help="Score a checkpoint against a reference and the residual (needs the ml extra)",
+        help="Score a checkpoint against a reference (ml extra)",
     )
     evaluate.add_argument(
         "--checkpoint",
@@ -266,7 +271,7 @@ def build_parser() -> argparse.ArgumentParser:
     run = subparsers.add_parser(
         "run",
         parents=[path_flags],
-        help="Train then evaluate from a YAML or JSON experiment config",
+        help="Train then evaluate a YAML or JSON experiment",
     )
     run.add_argument(
         "--config",
@@ -281,7 +286,7 @@ def build_parser() -> argparse.ArgumentParser:
     demo = subparsers.add_parser(
         "demo",
         parents=[path_flags],
-        help="Train a short CPU sample and print the reference error (needs the ml extra)",
+        help="Train a CPU sample or run burgers-inverse (ml extra)",
     )
     demo.add_argument(
         "--equation",
@@ -326,7 +331,7 @@ def build_parser() -> argparse.ArgumentParser:
     serve = subparsers.add_parser(
         "serve",
         parents=[path_flags],
-        help="Serve the localhost HTTP API (needs the api extra)",
+        help="Serve the localhost HTTP API (api extra)",
     )
     serve.add_argument(
         "--host",
@@ -366,19 +371,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers.add_parser(
         "fno",
-        help=(
-            "Train or score a 1D FNO on Burgers pilot windows, or recover viscosity. "
-            "Same commands as python -m pinnforge.operator. "
-            "Default loss is data MSE; residual and hybrid add the Burgers residual. "
-            "--pilot and --manifest accept the Stage 2 pilot or the Stage A harder pilot. "
-            "slices scores that harder test split on full, hard_ood, and complement. "
-            "A Stage C protocol adds residual and hybrid losses and selects the hybrid "
-            "weight on validation. inverse recovers scalar viscosity from preregistered "
-            "sparse sensors. operator-inverse fits that viscosity with a trained FNO. "
-            "Training, slices, operator-inverse, and stage-e-stress need the ml extra. "
-            "inverse, aggregate, select-hybrid, stage-c-scores, select-objective, and "
-            "stage-d-scores do not."
-        ),
+        help="Burgers FNO train, score, and inverse stage commands",
+    )
+    subparsers.add_parser(
+        "claims",
+        help="Check doc claims against committed score files",
     )
     return parser
 
@@ -389,6 +386,10 @@ def main(argv: list[str] | None = None) -> int:
         from pinnforge.operator.__main__ import main as operator_main
 
         return operator_main(forwarded[1:])
+    if forwarded and forwarded[0] == "claims":
+        from pinnforge.claims.__main__ import main as claims_main
+
+        return claims_main(forwarded[1:], prog="pinnforge claims")
     parser = build_parser()
     args = parser.parse_args(argv)
     if args.command == "version":
