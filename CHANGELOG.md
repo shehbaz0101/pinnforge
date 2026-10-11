@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### v0.4.1 2D viscosity inverse
+
+- **FAIL.** `python -m pinnforge.v041` uses a 64-instance calibration split and an FNO-bracket local search on the same 2D Burgers and Navier-Stokes problems. The protocol [docs/v041/protocol.json](docs/v041/protocol.json) was committed before the test split was scored. The v0.4 artifacts were not edited. The v0.4 pass bars were not retuned.
+- Both problems fail the preregistered bars. The hard_ood gap bar and the coverage bar pass. The in-distribution error bar, the warm-versus-cold error bar, and the time bar fail. The note is [docs/v041/report.md](docs/v041/report.md). The scores are [docs/v041/scores.json](docs/v041/scores.json). This is a recorded negative result.
+
 ### v0.4 2D viscosity inverse
 
 - **FAIL.** `python -m pinnforge.v04` generates periodic 2D Burgers and vorticity-form Navier-Stokes pilots, trains a 2D FNO, and scores the frozen inverse methods. The protocol [docs/v04/protocol.json](docs/v04/protocol.json) was committed before the test split was scored. The protocol, scores, and report were not edited after seeing the test numbers.
