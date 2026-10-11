@@ -37,7 +37,7 @@ def write_report(scores_path: Path | None = None) -> Path:
         f"| OOD median rel | {_fmt(bars['ood_median_rel'])} | {_yn(bars['pass']['ood_median_rel'])} |",
         f"| OOD / in-dist | {_fmt(bars['ood_over_in_dist'])} | {_yn(bars['pass']['ood_over_in_dist'])} |",
         f"| interval coverage | {_fmt(bars['interval_coverage'])} | {_yn(bars['pass']['interval_coverage'])} |",
-        f"| hybrid beats OOD baselines | {_yn(bars['hybrid_beats_baselines_ood'])} | {_yn(bars['pass']['hybrid_beats_baselines_ood'])} |",
+        f"| hybrid OOD below both baselines | {_yn(bars['hybrid_beats_baselines_ood'])} | {_yn(bars['pass']['hybrid_beats_baselines_ood'])} |",
         f"| noise 0.05 not worse than WSINDy | {_yn(bars['noise_5pct_not_worse_than_wsindy'])} | {_yn(bars['pass']['noise_5pct_not_worse_than_wsindy'])} |",
         "",
         "## Methods by noise",

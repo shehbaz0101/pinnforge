@@ -185,15 +185,39 @@ def _jobs(manifest: dict[str, Any], protocol: dict[str, Any], seeds: list[int]) 
     return jobs
 
 
-def case_worker(job: dict[str, Any]) -> dict[str, Any]:
+_WORKER: dict[str, Any] = {}
+
+
+def _worker_state() -> dict[str, Any]:
+    """Load the packed fields once per process. The 75 MB array is not re-read per case."""
+
+    if _WORKER:
+        return _WORKER
     from pinnforge.v041.checkpoint import single_thread
 
     single_thread()
     protocol = load_protocol(PROTOCOL)
     root = ARTIFACT
     manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
-    fields = np.load(root / manifest["files"]["fields"])
-    mask = mask_from_protocol(protocol)
+    _WORKER.update(
+        {
+            "protocol": protocol,
+            "root": root,
+            "manifest": manifest,
+            "fields": np.load(root / manifest["files"]["fields"]),
+            "mask": mask_from_protocol(protocol),
+        }
+    )
+    return _WORKER
+
+
+def case_worker(job: dict[str, Any]) -> dict[str, Any]:
+    state = _worker_state()
+    protocol = state["protocol"]
+    root = state["root"]
+    manifest = state["manifest"]
+    fields = state["fields"]
+    mask = state["mask"]
     if job["kind"] == "train":
         from pinnforge.v06.fno_inverse import train_fno
 

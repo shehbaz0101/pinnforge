@@ -79,21 +79,28 @@ def train_fno(
     return {"best_val_mse": best, "history": history, "checkpoint": str(checkpoint)}
 
 
+_MODEL_CACHE: dict[str, Any] = {}
+
+
 def predict_logs(field: np.ndarray, *, mask: ShearMask, checkpoint: Path) -> tuple[float, float]:
     torch = _torch()
-    try:
-        payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
-    except TypeError:
-        payload = torch.load(checkpoint, map_location="cpu")
-    model = FNO2d(
-        int(payload["in_channels"]),
-        2,
-        width=int(payload["config"]["width"]),
-        modes=int(payload["config"]["modes"]),
-        n_layers=int(payload["config"]["layers"]),
-    )
-    model.load_state_dict(payload["state"])
-    model.eval()
+    key = str(checkpoint.resolve())
+    model = _MODEL_CACHE.get(key)
+    if model is None:
+        try:
+            payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
+        except TypeError:
+            payload = torch.load(checkpoint, map_location="cpu")
+        model = FNO2d(
+            int(payload["in_channels"]),
+            2,
+            width=int(payload["config"]["width"]),
+            modes=int(payload["config"]["modes"]),
+            n_layers=int(payload["config"]["layers"]),
+        )
+        model.load_state_dict(payload["state"])
+        model.eval()
+        _MODEL_CACHE[key] = model
     packed = pack_lift(field, mask)[None]
     with torch.no_grad():
         logs = _forward(model, torch.tensor(packed, dtype=torch.float32)).numpy()[0]
