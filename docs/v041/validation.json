@@ -1,0 +1,150 @@
+{
+  "protocol_sha256": "0fd6749a4cfd43154d661d385475f5b019c12e8ff1524c90d2334968360c840a",
+  "problems": {
+    "burgers2d": {
+      "threshold_nu": 0.022532607528991493,
+      "n_local": 3,
+      "fno_bracket_quantiles": {
+        "data": 0.8842499721180923,
+        "hybrid": 0.7766999803117558
+      },
+      "calibration": {
+        "groups": {
+          "alpha": 0.1,
+          "pooled": {
+            "n": 64,
+            "quantile": 0.541278176537779
+          },
+          "groups": {
+            "predicted_hard_ood": {
+              "n": 2,
+              "quantile": 0.541278176537779,
+              "pooled_fallback": true
+            },
+            "predicted_complement": {
+              "n": 62,
+              "quantile": 0.541278176537779,
+              "pooled_fallback": false
+            }
+          }
+        },
+        "abstain_threshold": 0.6093607457252979,
+        "scale": 1.0
+      },
+      "calibration_preview": {
+        "warm_hybrid": {
+          "full_test": {
+            "n": 64,
+            "mean_rel_error": 0.23770245778942495,
+            "n_failures": 5.2,
+            "mean_seconds": 1.4903114944687517,
+            "time_ratio": 0.26098666772764345,
+            "cold_mean_rel_error": 0.005956948472577506
+          },
+          "hard_ood": {
+            "n": 9,
+            "mean_rel_error": 0.4206838765660366,
+            "n_failures": 2.2,
+            "mean_seconds": 1.497366976488883,
+            "time_ratio": 0.2605608354535073,
+            "cold_mean_rel_error": 0.007785030631480134
+          },
+          "complement": {
+            "n": 55,
+            "mean_rel_error": 0.2077600438077976,
+            "n_failures": 3.0,
+            "mean_seconds": 1.4891569610472757,
+            "time_ratio": 0.2610563493725021,
+            "cold_mean_rel_error": 0.005657807755666168
+          }
+        },
+        "warm_data": {
+          "full_test": {
+            "n": 64,
+            "mean_rel_error": 0.2098823732824551,
+            "n_failures": 4.0,
+            "mean_seconds": 1.4913232059500006,
+            "time_ratio": 0.26116145463293194,
+            "cold_mean_rel_error": 0.005956948472577506
+          },
+          "hard_ood": {
+            "n": 9,
+            "mean_rel_error": 0.24475416051674712,
+            "n_failures": 1.4000000000000001,
+            "mean_seconds": 1.4898707724222326,
+            "time_ratio": 0.2592332627158477,
+            "cold_mean_rel_error": 0.007785030631480134
+          },
+          "complement": {
+            "n": 55,
+            "mean_rel_error": 0.20417608082593455,
+            "n_failures": 2.6,
+            "mean_seconds": 1.4915608768909083,
+            "time_ratio": 0.2614769769466367,
+            "cold_mean_rel_error": 0.005657807755666168
+          }
+        },
+        "solver_sensor_ic": {
+          "full_test": {
+            "n": 64,
+            "mean_rel_error": 0.005956948472577506,
+            "n_failures": 0.0,
+            "mean_seconds": 5.711824975593762
+          },
+          "hard_ood": {
+            "n": 9,
+            "mean_rel_error": 0.007785030631480134,
+            "n_failures": 0.0,
+            "mean_seconds": 5.748672895888881
+          },
+          "complement": {
+            "n": 55,
+            "mean_rel_error": 0.005657807755666168,
+            "n_failures": 0.0,
+            "mean_seconds": 5.705795315909106
+          }
+        },
+        "fno_hybrid": {
+          "full_test": {
+            "n": 64,
+            "mean_rel_error": 0.6894811397567446,
+            "n_failures": 34.8,
+            "mean_seconds": 0.07227014105625215
+          },
+          "hard_ood": {
+            "n": 9,
+            "mean_rel_error": 1.4922281223138103,
+            "n_failures": 5.4,
+            "mean_seconds": 0.07281366564444246
+          },
+          "complement": {
+            "n": 55,
+            "mean_rel_error": 0.5581225426110429,
+            "n_failures": 29.4,
+            "mean_seconds": 0.07218120066909374
+          }
+        },
+        "fno_data": {
+          "full_test": {
+            "n": 64,
+            "mean_rel_error": 0.5702795118843289,
+            "n_failures": 30.0,
+            "mean_seconds": 0.07243677480000237
+          },
+          "hard_ood": {
+            "n": 9,
+            "mean_rel_error": 1.256873611202604,
+            "n_failures": 5.8,
+            "mean_seconds": 0.07265248173335093
+          },
+          "complement": {
+            "n": 55,
+            "mean_rel_error": 0.457927750177702,
+            "n_failures": 24.2,
+            "mean_seconds": 0.07240147730181806
+          }
+        }
+      }
+    }
+  }
+}
