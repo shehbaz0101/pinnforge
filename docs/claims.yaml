@@ -34,6 +34,7 @@ scan:
     - docs/v05/*.md
     - docs/v051/*.md
     - docs/v052/*.md
+    - docs/v06/*.md
     - STAGE1_REPORT.md
     - STAGE2_REPORT.md
     - STAGE3_REPORT.md
@@ -122,6 +123,9 @@ leaf_documents:
       - docs/v052/protocol.json
       - docs/v052/validation.json
       - docs/v051/scores.json
+  - file: docs/v06/protocol.md
+    evidence:
+      - docs/v06/protocol.json
 
 claims:
   - id: number-0_41pct
