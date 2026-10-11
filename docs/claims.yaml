@@ -33,6 +33,7 @@ scan:
     - docs/v041/*.md
     - docs/v05/*.md
     - docs/v051/*.md
+    - docs/v052/*.md
     - STAGE1_REPORT.md
     - STAGE2_REPORT.md
     - STAGE3_REPORT.md
@@ -111,6 +112,16 @@ leaf_documents:
       - docs/v051/scores.json
       - docs/v051/protocol.json
       - docs/v051/validation.json
+  - file: docs/v052/protocol.md
+    evidence:
+      - docs/v052/protocol.json
+      - docs/v052/diagnosis_evidence.json
+  - file: docs/v052/report.md
+    evidence:
+      - docs/v052/scores.json
+      - docs/v052/protocol.json
+      - docs/v052/validation.json
+      - docs/v051/scores.json
 
 claims:
   - id: number-0_41pct
@@ -2481,5 +2492,30 @@ claims:
         left:
           evidence: docs/v051/scores.json
           path: problems/ns2d/positive_control/pass
+        right:
+          literal: false
+
+  - id: v052-control
+    class: comparison
+    locations:
+      - file: CHANGELOG.md
+        pattern: 'After the registered stride, the NS control passes'
+      - file: docs/README.md
+        pattern: 'The `64x64` noise-0 control passes'
+      - file: docs/v052/report.md
+        pattern: 'control passed'
+    comparisons:
+      - label: ns control pass
+        op: "=="
+        left:
+          evidence: docs/v052/scores.json
+          path: problems/ns2d/positive_control/pass
+        right:
+          literal: true
+      - label: burgers still not scored
+        op: "=="
+        left:
+          evidence: docs/v052/scores.json
+          path: burgers2d/scored
         right:
           literal: false

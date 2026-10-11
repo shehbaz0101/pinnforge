@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### v0.5.2 Navier-Stokes WSINDy fix
+
+- `python -m pinnforge.v052` rescores the v0.5.1 density grid for Navier-Stokes only, after the bump-center stride diagnosed in [docs/v052/diagnosis.md](docs/v052/diagnosis.md). The protocol [docs/v052/protocol.json](docs/v052/protocol.json) was committed before the test split was scored. Burgers was not rescored. No v0.5.1 or v0.5 artifact was edited. The FNO-denoise arm is skipped. CI runs smoke only.
+- The v0.5.1 NS `64x64` noise-0 miss was a rank-one `force_y`/`const`/`force_x` lock: centers sat one Kolmogorov period apart. The generator PDE already matched the library true support. After the registered stride, the NS control passes and the frozen bar is first met at `32x32`. Burgers remains `64x64` from v0.5.1. The note is [docs/v052/report.md](docs/v052/report.md). The scores are [docs/v052/scores.json](docs/v052/scores.json).
+
 ### v0.5.1 sensor-density study
 
 - `python -m pinnforge.v051` sweeps WSINDy on `8x8`, `16x16`, `32x32`, and full-field `64x64` probes of the existing 2D Burgers and Navier-Stokes generators. The protocol [docs/v051/protocol.json](docs/v051/protocol.json) was committed before the test split was scored. The v0.5 artifacts were not edited. The FNO-denoise arm is skipped. CI runs smoke only.

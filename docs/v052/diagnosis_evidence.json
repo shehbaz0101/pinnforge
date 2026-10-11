@@ -1,0 +1,2772 @@
+{
+  "pde": "omega_t + u.grad(omega) = nu Delta omega + f, u = grad^perp psi, -Delta psi = omega",
+  "forcing": "f = -k cos(k y), k=4",
+  "library_true": [
+    "u_wx",
+    "v_wy",
+    "w_xx",
+    "w_yy",
+    "force_y"
+  ],
+  "library_true_coeffs": {
+    "u_wx": -1.0,
+    "v_wy": -1.0,
+    "w_xx": 0.04,
+    "w_yy": 0.04,
+    "force_y": 1.0
+  },
+  "nu": 0.04,
+  "n": 64,
+  "strong_form_rel_resid_mean": 0.00011765244258239698,
+  "strong_form_rel_resid_per_mid": [
+    0.00012018870343064859,
+    0.00011759968972650006,
+    0.00011516893459004226
+  ],
+  "weak_true_coeff_rel_resid": 5.7000669718654757e-05,
+  "weak_true_ls_rel_resid": 4.958000701728834e-05,
+  "weak_true_ls_coef": {
+    "u_wx": -0.9999594188878751,
+    "v_wy": -0.999682198683844,
+    "w_xx": 0.04000763751096851,
+    "w_yy": 0.039994563046648605,
+    "force_y": 1.0000000873073192
+  },
+  "cond_true_support": 45.17492999732106,
+  "cond_full": 2.2550529502528172e+16,
+  "cond_full_normalized": 1.2301233485088872e+16,
+  "rank_true": 5,
+  "rank_force_const_force_x": 1,
+  "corr_force_const_force_x": {
+    "force_y__force_y": 1.0,
+    "force_y__const": -0.9999999999999999,
+    "force_y__force_x": 1.0000000000000002,
+    "const__force_y": -0.9999999999999999,
+    "const__const": 0.9999999999999999,
+    "const__force_x": -1.0000000000000002,
+    "force_x__force_y": 1.0000000000000002,
+    "force_x__const": -1.0000000000000002,
+    "force_x__force_x": 1.0000000000000002
+  },
+  "col_stats_selected": {
+    "u_wx": {
+      "norm": 0.509030202769217,
+      "std": 0.07334856551183672,
+      "mean": 0.0042602042310894055,
+      "n_unique": 48
+    },
+    "v_wy": {
+      "norm": 0.3784072099515961,
+      "std": 0.05459797359373312,
+      "mean": -0.0014927460526964042,
+      "n_unique": 48
+    },
+    "w_xx": {
+      "norm": 5.751316392651602,
+      "std": 0.8236440013843432,
+      "mean": 0.10357636872489066,
+      "n_unique": 48
+    },
+    "w_yy": {
+      "norm": 11.091996469845684,
+      "std": 1.158721892583156,
+      "mean": 1.1047797416057417,
+      "n_unique": 48
+    },
+    "force_y": {
+      "norm": 5.091512345621344,
+      "std": 5.647424180903416e-16,
+      "mean": -0.7348965058316965,
+      "n_unique": 1
+    },
+    "const": {
+      "norm": 11.290656943498936,
+      "std": 1.9229626863835638e-16,
+      "mean": 1.6296659564142069,
+      "n_unique": 1
+    },
+    "force_x": {
+      "norm": 5.091512345621343,
+      "std": 5.4672143489065705e-16,
+      "mean": -0.7348965058316964,
+      "n_unique": 1
+    },
+    "w": {
+      "norm": 3.294620339596205,
+      "std": 0.46957389795124965,
+      "mean": -0.07507498910793899,
+      "n_unique": 48
+    },
+    "w2": {
+      "norm": 3.08938312508414,
+      "std": 0.21381804748776703,
+      "mean": 0.3913070122690206,
+      "n_unique": 48
+    }
+  },
+  "center_stride": 16,
+  "centers": [
+    0.0,
+    1.5707963267948966,
+    3.141592653589793,
+    4.71238898038469
+  ],
+  "center_indices": [
+    0,
+    16,
+    32,
+    48
+  ],
+  "cos_k_y_at_centers": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+  ],
+  "phase_k_y_mod_2pi": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "period_in_grid_points": 16.0,
+  "stlsq_v051": [
+    {
+      "lambda": 0.02,
+      "support": [
+        "u_wx",
+        "v_wy",
+        "w_xx",
+        "w_yy",
+        "force_y",
+        "const",
+        "force_x"
+      ],
+      "exact": false,
+      "coefs": {
+        "u_wx": -0.9999594188878781,
+        "v_wy": -0.9996821986838406,
+        "w_xx": 0.040007637510968176,
+        "w_yy": 0.03999456304664877,
+        "force_y": 0.33333336243577294,
+        "const": -0.15031640218476636,
+        "force_x": 0.33333336243577316
+      }
+    },
+    {
+      "lambda": 0.05,
+      "support": [
+        "u_wx",
+        "v_wy",
+        "w_xx",
+        "w_yy",
+        "force_y",
+        "const",
+        "force_x"
+      ],
+      "exact": false,
+      "coefs": {
+        "u_wx": -0.9999594188878781,
+        "v_wy": -0.9996821986838406,
+        "w_xx": 0.040007637510968176,
+        "w_yy": 0.03999456304664877,
+        "force_y": 0.33333336243577294,
+        "const": -0.15031640218476636,
+        "force_x": 0.33333336243577316
+      }
+    },
+    {
+      "lambda": 0.08,
+      "support": [
+        "u_wx",
+        "v_wy",
+        "w_xx",
+        "w_yy",
+        "force_y",
+        "const",
+        "force_x"
+      ],
+      "exact": false,
+      "coefs": {
+        "u_wx": -0.9999594188878781,
+        "v_wy": -0.9996821986838406,
+        "w_xx": 0.040007637510968176,
+        "w_yy": 0.03999456304664877,
+        "force_y": 0.33333336243577294,
+        "const": -0.15031640218476636,
+        "force_x": 0.33333336243577316
+      }
+    },
+    {
+      "lambda": 0.12,
+      "support": [
+        "u_wx",
+        "v_wy",
+        "w_xx",
+        "w_yy",
+        "force_y",
+        "const",
+        "force_x"
+      ],
+      "exact": false,
+      "coefs": {
+        "u_wx": -0.9999594188878781,
+        "v_wy": -0.9996821986838406,
+        "w_xx": 0.040007637510968176,
+        "w_yy": 0.03999456304664877,
+        "force_y": 0.33333336243577294,
+        "const": -0.15031640218476636,
+        "force_x": 0.33333336243577316
+      }
+    },
+    {
+      "lambda": 0.18,
+      "support": [
+        "u_wx",
+        "v_wy",
+        "w_xx",
+        "w_yy",
+        "force_y",
+        "const",
+        "force_x"
+      ],
+      "exact": false,
+      "coefs": {
+        "u_wx": -0.9999594188878781,
+        "v_wy": -0.9996821986838406,
+        "w_xx": 0.040007637510968176,
+        "w_yy": 0.03999456304664877,
+        "force_y": 0.33333336243577294,
+        "const": -0.15031640218476636,
+        "force_x": 0.33333336243577316
+      }
+    },
+    {
+      "lambda": 0.25,
+      "support": [
+        "u_wx",
+        "v_wy",
+        "w_yy",
+        "force_y",
+        "const",
+        "force_x"
+      ],
+      "exact": false,
+      "coefs": {
+        "u_wx": -1.160122245058786,
+        "v_wy": -0.9685412776170064,
+        "w_yy": 0.050521481588277906,
+        "force_y": 0.3363983149569066,
+        "const": -0.15169853997162722,
+        "force_x": 0.336398314956905
+      }
+    },
+    {
+      "lambda": 0.35,
+      "support": [
+        "u_wx",
+        "v_wy",
+        "w_yy",
+        "force_y",
+        "const",
+        "force_x"
+      ],
+      "exact": false,
+      "coefs": {
+        "u_wx": -1.160122245058786,
+        "v_wy": -0.9685412776170064,
+        "w_yy": 0.050521481588277906,
+        "force_y": 0.3363983149569066,
+        "const": -0.15169853997162722,
+        "force_x": 0.336398314956905
+      }
+    }
+  ],
+  "ibp_vs_strong": {
+    "w_xx_ibp": 0.14167261603381465,
+    "w_xx_strong": 0.1416408799723476,
+    "w_xx_rel_diff": 0.00022406004165784551,
+    "w_yy_ibp": 0.09053168079927931,
+    "w_yy_strong": 0.09047798167177312,
+    "w_yy_rel_diff": 0.0005935049225677326,
+    "eta_t_trapezoid_3pt": 0.0
+  },
+  "alt_stride_64": [
+    {
+      "frac": 0.25,
+      "stride": 16,
+      "n_centers": 4,
+      "phase_increment_cycles": 1.0,
+      "unique_force_phases": 1,
+      "true_ls_rel_resid": 4.958000701728834e-05,
+      "true_ls_coef": {
+        "u_wx": -0.9999594188878751,
+        "v_wy": -0.999682198683844,
+        "w_xx": 0.04000763751096851,
+        "w_yy": 0.039994563046648605,
+        "force_y": 1.0000000873073192
+      },
+      "cond_true": 45.17492999732106,
+      "corr": {
+        "force_y__const": -0.9999999999999999,
+        "force_y__force_x": 1.0000000000000002,
+        "const__force_x": -1.0000000000000002
+      },
+      "stlsq": [
+        {
+          "lambda": 0.02,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y",
+            "const",
+            "force_x"
+          ],
+          "exact": false
+        },
+        {
+          "lambda": 0.05,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y",
+            "const",
+            "force_x"
+          ],
+          "exact": false
+        },
+        {
+          "lambda": 0.08,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y",
+            "const",
+            "force_x"
+          ],
+          "exact": false
+        },
+        {
+          "lambda": 0.12,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y",
+            "const",
+            "force_x"
+          ],
+          "exact": false
+        },
+        {
+          "lambda": 0.18,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y",
+            "const",
+            "force_x"
+          ],
+          "exact": false
+        },
+        {
+          "lambda": 0.25,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_yy",
+            "force_y",
+            "const",
+            "force_x"
+          ],
+          "exact": false
+        },
+        {
+          "lambda": 0.35,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_yy",
+            "force_y",
+            "const",
+            "force_x"
+          ],
+          "exact": false
+        }
+      ],
+      "known_force_stlsq": [
+        {
+          "lambda": 0.02,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.05,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.08,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.12,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.18,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.25,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_yy"
+          ],
+          "exact": false
+        },
+        {
+          "lambda": 0.35,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_yy"
+          ],
+          "exact": false
+        }
+      ],
+      "any_exact": false,
+      "any_known_exact": true,
+      "exact_lambdas": [],
+      "known_exact_lambdas": [
+        0.02,
+        0.05,
+        0.08,
+        0.12,
+        0.18
+      ]
+    },
+    {
+      "frac": 0.2,
+      "stride": 13,
+      "n_centers": 5,
+      "phase_increment_cycles": 0.8125,
+      "unique_force_phases": 5,
+      "true_ls_rel_resid": 0.00010023210086997824,
+      "true_ls_coef": {
+        "u_wx": -0.9992549062925914,
+        "v_wy": -0.9994698105175225,
+        "w_xx": 0.03998176827002735,
+        "w_yy": 0.04001098704312276,
+        "force_y": 1.0000279266113288
+      },
+      "cond_true": 29.033760882648405,
+      "corr": {
+        "force_y__const": 0.07023066047141817,
+        "force_y__force_x": 0.004932345670251599,
+        "const__force_x": 0.07023066047141818
+      },
+      "stlsq": [
+        {
+          "lambda": 0.02,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.05,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.08,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.12,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.18,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.25,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.35,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": false
+        }
+      ],
+      "known_force_stlsq": [
+        {
+          "lambda": 0.02,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.05,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.08,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.12,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.18,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.25,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.35,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_yy"
+          ],
+          "exact": false
+        }
+      ],
+      "any_exact": true,
+      "any_known_exact": true,
+      "exact_lambdas": [
+        0.02,
+        0.05,
+        0.08,
+        0.12,
+        0.18,
+        0.25
+      ],
+      "known_exact_lambdas": [
+        0.02,
+        0.05,
+        0.08,
+        0.12,
+        0.18,
+        0.25
+      ]
+    },
+    {
+      "frac": 0.16666666666666666,
+      "stride": 11,
+      "n_centers": 6,
+      "phase_increment_cycles": 0.6875,
+      "unique_force_phases": 6,
+      "true_ls_rel_resid": 0.00011765765005071545,
+      "true_ls_coef": {
+        "u_wx": -0.9996678130595554,
+        "v_wy": -0.9996012889288486,
+        "w_xx": 0.039998372939465565,
+        "w_yy": 0.04000087523022745,
+        "force_y": 1.000023247857138
+      },
+      "cond_true": 26.773157961829458,
+      "corr": {
+        "force_y__const": 0.02001708193192954,
+        "force_y__force_x": 0.0004006835690696407,
+        "const__force_x": 0.020017081931929585
+      },
+      "stlsq": [
+        {
+          "lambda": 0.02,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.05,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.08,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.12,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.18,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.25,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.35,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": false
+        }
+      ],
+      "known_force_stlsq": [
+        {
+          "lambda": 0.02,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.05,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.08,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.12,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.18,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.25,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.35,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_yy"
+          ],
+          "exact": false
+        }
+      ],
+      "any_exact": true,
+      "any_known_exact": true,
+      "exact_lambdas": [
+        0.02,
+        0.05,
+        0.08,
+        0.12,
+        0.18,
+        0.25
+      ],
+      "known_exact_lambdas": [
+        0.02,
+        0.05,
+        0.08,
+        0.12,
+        0.18,
+        0.25
+      ]
+    },
+    {
+      "frac": 0.1875,
+      "stride": 12,
+      "n_centers": 6,
+      "phase_increment_cycles": 0.75,
+      "unique_force_phases": 4,
+      "true_ls_rel_resid": 0.00010320021851920645,
+      "true_ls_coef": {
+        "u_wx": -0.9994690643402416,
+        "v_wy": -0.9995126350473001,
+        "w_xx": 0.039994058743836165,
+        "w_yy": 0.04001461105382296,
+        "force_y": 1.000050363075395
+      },
+      "cond_true": 29.052067462499636,
+      "corr": {
+        "force_y__const": -0.2357022603955143,
+        "force_y__force_x": 0.055555555555554824,
+        "const__force_x": -0.23570226039551434
+      },
+      "stlsq": [
+        {
+          "lambda": 0.02,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.05,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.08,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.12,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.18,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.25,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.35,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": false
+        }
+      ],
+      "known_force_stlsq": [
+        {
+          "lambda": 0.02,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.05,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.08,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.12,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.18,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.25,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.35,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_yy"
+          ],
+          "exact": false
+        }
+      ],
+      "any_exact": true,
+      "any_known_exact": true,
+      "exact_lambdas": [
+        0.02,
+        0.05,
+        0.08,
+        0.12,
+        0.18,
+        0.25
+      ],
+      "known_exact_lambdas": [
+        0.02,
+        0.05,
+        0.08,
+        0.12,
+        0.18,
+        0.25
+      ]
+    },
+    {
+      "frac": 0.15,
+      "stride": 10,
+      "n_centers": 7,
+      "phase_increment_cycles": 0.625,
+      "unique_force_phases": 7,
+      "true_ls_rel_resid": 0.00013020774906884292,
+      "true_ls_coef": {
+        "u_wx": -0.9997316754381529,
+        "v_wy": -0.999563936224836,
+        "w_xx": 0.03999391806132048,
+        "w_yy": 0.0399937171418928,
+        "force_y": 1.0000061890018102
+      },
+      "cond_true": 27.177439799093236,
+      "corr": {
+        "force_y__const": -0.14285714285714105,
+        "force_y__force_x": 0.02040816326530565,
+        "const__force_x": -0.14285714285714093
+      },
+      "stlsq": [
+        {
+          "lambda": 0.02,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.05,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.08,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.12,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.18,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.25,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.35,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        }
+      ],
+      "known_force_stlsq": [
+        {
+          "lambda": 0.02,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.05,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.08,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.12,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.18,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.25,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.35,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        }
+      ],
+      "any_exact": true,
+      "any_known_exact": true,
+      "exact_lambdas": [
+        0.02,
+        0.05,
+        0.08,
+        0.12,
+        0.18,
+        0.25,
+        0.35
+      ],
+      "known_exact_lambdas": [
+        0.02,
+        0.05,
+        0.08,
+        0.12,
+        0.18,
+        0.25,
+        0.35
+      ]
+    },
+    {
+      "frac": 0.14285714285714285,
+      "stride": 9,
+      "n_centers": 8,
+      "phase_increment_cycles": 0.5625,
+      "unique_force_phases": 8,
+      "true_ls_rel_resid": 0.00011316614009404827,
+      "true_ls_coef": {
+        "u_wx": -0.9997390207459608,
+        "v_wy": -0.9995211867008664,
+        "w_xx": 0.03999103421086499,
+        "w_yy": 0.0399988760657407,
+        "force_y": 1.0000141133305545
+      },
+      "cond_true": 28.25339469074036,
+      "corr": {
+        "force_y__const": -0.17677669529663562,
+        "force_y__force_x": 0.031249999999999566,
+        "const__force_x": -0.17677669529663562
+      },
+      "stlsq": [
+        {
+          "lambda": 0.02,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.05,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.08,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.12,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.18,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.25,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.35,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        }
+      ],
+      "known_force_stlsq": [
+        {
+          "lambda": 0.02,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.05,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.08,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.12,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.18,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.25,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.35,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        }
+      ],
+      "any_exact": true,
+      "any_known_exact": true,
+      "exact_lambdas": [
+        0.02,
+        0.05,
+        0.08,
+        0.12,
+        0.18,
+        0.25,
+        0.35
+      ],
+      "known_exact_lambdas": [
+        0.02,
+        0.05,
+        0.08,
+        0.12,
+        0.18,
+        0.25,
+        0.35
+      ]
+    },
+    {
+      "frac": 0.125,
+      "stride": 8,
+      "n_centers": 8,
+      "phase_increment_cycles": 0.5,
+      "unique_force_phases": 2,
+      "true_ls_rel_resid": 6.892926778830529e-05,
+      "true_ls_coef": {
+        "u_wx": -0.9998595820477183,
+        "v_wy": -0.9997825654892668,
+        "w_xx": 0.03999214754275037,
+        "w_yy": 0.039995741819235514,
+        "force_y": 0.9999987137652674
+      },
+      "cond_true": 35.417662278902604,
+      "corr": {
+        "force_y__const": 4.3260569764704947e-16,
+        "force_y__force_x": -2.7837484237796717e-17,
+        "const__force_x": 9.946068495010289e-16
+      },
+      "stlsq": [
+        {
+          "lambda": 0.02,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.05,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.08,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.12,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.18,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.25,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.35,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy",
+            "force_y"
+          ],
+          "exact": true
+        }
+      ],
+      "known_force_stlsq": [
+        {
+          "lambda": 0.02,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.05,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.08,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.12,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.18,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.25,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        },
+        {
+          "lambda": 0.35,
+          "support": [
+            "u_wx",
+            "v_wy",
+            "w_xx",
+            "w_yy"
+          ],
+          "exact": true
+        }
+      ],
+      "any_exact": true,
+      "any_known_exact": true,
+      "exact_lambdas": [
+        0.02,
+        0.05,
+        0.08,
+        0.12,
+        0.18,
+        0.25,
+        0.35
+      ],
+      "known_exact_lambdas": [
+        0.02,
+        0.05,
+        0.08,
+        0.12,
+        0.18,
+        0.25,
+        0.35
+      ]
+    }
+  ],
+  "lattice_frac_grid": [
+    {
+      "n_side": 8,
+      "frac": 0.25,
+      "stride": 2,
+      "unique_force_phases": 1,
+      "true_ls_rel_resid": 0.01809883196527369,
+      "true_ls_coef": {
+        "u_wx": -1.034866830003316,
+        "v_wy": -1.2566768232776113,
+        "w_xx": 0.05077644429696394,
+        "w_yy": 0.04489504851228028,
+        "force_y": 1.012861001277108
+      },
+      "corr": {
+        "force_y__const": -1.0000000000000002,
+        "force_y__force_x": 0.9999999999999999,
+        "const__force_x": -1.0000000000000002
+      },
+      "any_exact": false,
+      "exact_lambdas": [],
+      "best_support": [
+        "u_wx",
+        "v_wy",
+        "w_xx",
+        "w_yy",
+        "force_y",
+        "w",
+        "w_xy",
+        "w_yyy",
+        "w_xxxx",
+        "uv",
+        "const",
+        "force_x",
+        "u_wy"
+      ],
+      "supports": {
+        "0.02": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "w",
+          "w_xy",
+          "w_yyy",
+          "w_xxxx",
+          "uv",
+          "const",
+          "force_x",
+          "u_wy"
+        ],
+        "0.05": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "w",
+          "w_xy",
+          "w_yyy",
+          "w_xxxx",
+          "uv",
+          "const",
+          "force_x",
+          "u_wy"
+        ],
+        "0.08": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "w",
+          "w_xxxx",
+          "uv",
+          "const",
+          "force_x",
+          "u_wy"
+        ],
+        "0.12": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "uv",
+          "const",
+          "force_x",
+          "u_wy"
+        ],
+        "0.18": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y",
+          "w",
+          "const",
+          "force_x"
+        ],
+        "0.25": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ],
+        "0.35": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ]
+      }
+    },
+    {
+      "n_side": 8,
+      "frac": 0.16666666666666666,
+      "stride": 1,
+      "unique_force_phases": 2,
+      "true_ls_rel_resid": 0.01919235231586487,
+      "true_ls_coef": {
+        "u_wx": -0.9392181220356574,
+        "v_wy": -1.0411660808329193,
+        "w_xx": 0.04859295597176939,
+        "w_yy": 0.04219249529186902,
+        "force_y": 1.0057949404059299
+      },
+      "corr": {
+        "force_y__const": -1.8253824329513878e-16,
+        "force_y__force_x": -2.1138349317754872e-18,
+        "const__force_x": -2.7570880497703263e-16
+      },
+      "any_exact": true,
+      "exact_lambdas": [
+        0.18,
+        0.25
+      ],
+      "best_support": [
+        "u_wx",
+        "v_wy",
+        "w_xx",
+        "w_yy",
+        "force_y",
+        "w2",
+        "w",
+        "w_xxx",
+        "w_yyy",
+        "w_xxxx",
+        "uv",
+        "const",
+        "force_x",
+        "u_wy"
+      ],
+      "supports": {
+        "0.02": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "w2",
+          "w",
+          "w_xxx",
+          "w_yyy",
+          "w_xxxx",
+          "uv",
+          "const",
+          "force_x",
+          "u_wy"
+        ],
+        "0.05": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "w",
+          "w_xxx",
+          "w_yyy",
+          "w_xxxx",
+          "uv",
+          "force_x"
+        ],
+        "0.08": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "w",
+          "w_xxxx",
+          "uv"
+        ],
+        "0.12": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "w",
+          "w_xxxx",
+          "uv"
+        ],
+        "0.18": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.25": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.35": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y"
+        ]
+      }
+    },
+    {
+      "n_side": 8,
+      "frac": 0.2,
+      "stride": 2,
+      "unique_force_phases": 1,
+      "true_ls_rel_resid": 0.01809883196527369,
+      "true_ls_coef": {
+        "u_wx": -1.034866830003316,
+        "v_wy": -1.2566768232776113,
+        "w_xx": 0.05077644429696394,
+        "w_yy": 0.04489504851228028,
+        "force_y": 1.012861001277108
+      },
+      "corr": {
+        "force_y__const": -1.0000000000000002,
+        "force_y__force_x": 0.9999999999999999,
+        "const__force_x": -1.0000000000000002
+      },
+      "any_exact": false,
+      "exact_lambdas": [],
+      "best_support": [
+        "u_wx",
+        "v_wy",
+        "w_xx",
+        "w_yy",
+        "force_y",
+        "w",
+        "w_xy",
+        "w_yyy",
+        "w_xxxx",
+        "uv",
+        "const",
+        "force_x",
+        "u_wy"
+      ],
+      "supports": {
+        "0.02": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "w",
+          "w_xy",
+          "w_yyy",
+          "w_xxxx",
+          "uv",
+          "const",
+          "force_x",
+          "u_wy"
+        ],
+        "0.05": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "w",
+          "w_xy",
+          "w_yyy",
+          "w_xxxx",
+          "uv",
+          "const",
+          "force_x",
+          "u_wy"
+        ],
+        "0.08": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "w",
+          "w_xxxx",
+          "uv",
+          "const",
+          "force_x",
+          "u_wy"
+        ],
+        "0.12": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "uv",
+          "const",
+          "force_x",
+          "u_wy"
+        ],
+        "0.18": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y",
+          "w",
+          "const",
+          "force_x"
+        ],
+        "0.25": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ],
+        "0.35": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ]
+      }
+    },
+    {
+      "n_side": 16,
+      "frac": 0.25,
+      "stride": 4,
+      "unique_force_phases": 1,
+      "true_ls_rel_resid": 0.0008924280323330136,
+      "true_ls_coef": {
+        "u_wx": -0.9973025930024821,
+        "v_wy": -1.0005404756232332,
+        "w_xx": 0.040042441829948996,
+        "w_yy": 0.03977341661560627,
+        "force_y": 1.0009121266123844
+      },
+      "corr": {
+        "force_y__const": -1.0,
+        "force_y__force_x": 1.0,
+        "const__force_x": -1.0
+      },
+      "any_exact": false,
+      "exact_lambdas": [],
+      "best_support": [
+        "u_wx",
+        "v_wy",
+        "w_xx",
+        "w_yy",
+        "force_y",
+        "w",
+        "w_xxxx",
+        "const",
+        "force_x"
+      ],
+      "supports": {
+        "0.02": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "w",
+          "w_xxxx",
+          "const",
+          "force_x"
+        ],
+        "0.05": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "w",
+          "w_xxxx",
+          "const",
+          "force_x"
+        ],
+        "0.08": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ],
+        "0.12": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ],
+        "0.18": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ],
+        "0.25": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ],
+        "0.35": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ]
+      }
+    },
+    {
+      "n_side": 16,
+      "frac": 0.16666666666666666,
+      "stride": 3,
+      "unique_force_phases": 4,
+      "true_ls_rel_resid": 0.0012046409136384742,
+      "true_ls_coef": {
+        "u_wx": -0.9984602755255247,
+        "v_wy": -0.998273836406022,
+        "w_xx": 0.04007441336955639,
+        "w_yy": 0.03989431038397823,
+        "force_y": 1.001141501857901
+      },
+      "corr": {
+        "force_y__const": -0.2357022603955118,
+        "force_y__force_x": 0.055555555555553554,
+        "const__force_x": -0.2357022603955118
+      },
+      "any_exact": true,
+      "exact_lambdas": [
+        0.12
+      ],
+      "best_support": [
+        "u_wx",
+        "v_wy",
+        "w_xx",
+        "w_yy",
+        "force_y",
+        "w",
+        "w_xxxx"
+      ],
+      "supports": {
+        "0.02": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "w",
+          "w_xxxx"
+        ],
+        "0.05": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "w",
+          "w_xxxx"
+        ],
+        "0.08": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "w",
+          "w_xxxx"
+        ],
+        "0.12": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.18": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y"
+        ],
+        "0.25": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y"
+        ],
+        "0.35": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y"
+        ]
+      }
+    },
+    {
+      "n_side": 16,
+      "frac": 0.2,
+      "stride": 3,
+      "unique_force_phases": 4,
+      "true_ls_rel_resid": 0.0012046409136384742,
+      "true_ls_coef": {
+        "u_wx": -0.9984602755255247,
+        "v_wy": -0.998273836406022,
+        "w_xx": 0.04007441336955639,
+        "w_yy": 0.03989431038397823,
+        "force_y": 1.001141501857901
+      },
+      "corr": {
+        "force_y__const": -0.2357022603955118,
+        "force_y__force_x": 0.055555555555553554,
+        "const__force_x": -0.2357022603955118
+      },
+      "any_exact": true,
+      "exact_lambdas": [
+        0.12
+      ],
+      "best_support": [
+        "u_wx",
+        "v_wy",
+        "w_xx",
+        "w_yy",
+        "force_y",
+        "w",
+        "w_xxxx"
+      ],
+      "supports": {
+        "0.02": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "w",
+          "w_xxxx"
+        ],
+        "0.05": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "w",
+          "w_xxxx"
+        ],
+        "0.08": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "w",
+          "w_xxxx"
+        ],
+        "0.12": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.18": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y"
+        ],
+        "0.25": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y"
+        ],
+        "0.35": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y"
+        ]
+      }
+    },
+    {
+      "n_side": 32,
+      "frac": 0.25,
+      "stride": 8,
+      "unique_force_phases": 1,
+      "true_ls_rel_resid": 7.894940994725661e-05,
+      "true_ls_coef": {
+        "u_wx": -0.9998091264267388,
+        "v_wy": -0.9997452465533663,
+        "w_xx": 0.04000755121345737,
+        "w_yy": 0.0399854136441837,
+        "force_y": 1.0000426776796847
+      },
+      "corr": {
+        "force_y__const": -1.0000000000000002,
+        "force_y__force_x": 1.0,
+        "const__force_x": -1.0000000000000002
+      },
+      "any_exact": false,
+      "exact_lambdas": [],
+      "best_support": [
+        "u_wx",
+        "v_wy",
+        "w_xx",
+        "w_yy",
+        "force_y",
+        "const",
+        "force_x"
+      ],
+      "supports": {
+        "0.02": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ],
+        "0.05": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ],
+        "0.08": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ],
+        "0.12": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ],
+        "0.18": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ],
+        "0.25": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ],
+        "0.35": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ]
+      }
+    },
+    {
+      "n_side": 32,
+      "frac": 0.16666666666666666,
+      "stride": 5,
+      "unique_force_phases": 7,
+      "true_ls_rel_resid": 0.00014411930038630557,
+      "true_ls_coef": {
+        "u_wx": -0.9997321873763012,
+        "v_wy": -0.999630139952658,
+        "w_xx": 0.03999285828091753,
+        "w_yy": 0.03999358207613702,
+        "force_y": 1.0000675595111084
+      },
+      "corr": {
+        "force_y__const": -0.1428571428571402,
+        "force_y__force_x": 0.020408163265305375,
+        "const__force_x": -0.14285714285714016
+      },
+      "any_exact": true,
+      "exact_lambdas": [
+        0.02,
+        0.05,
+        0.08,
+        0.12,
+        0.18,
+        0.25,
+        0.35
+      ],
+      "best_support": [
+        "u_wx",
+        "v_wy",
+        "w_xx",
+        "w_yy",
+        "force_y"
+      ],
+      "supports": {
+        "0.02": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.05": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.08": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.12": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.18": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.25": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.35": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ]
+      }
+    },
+    {
+      "n_side": 32,
+      "frac": 0.2,
+      "stride": 6,
+      "unique_force_phases": 4,
+      "true_ls_rel_resid": 0.00013015537676053118,
+      "true_ls_coef": {
+        "u_wx": -0.9994047557381948,
+        "v_wy": -0.9994350338931324,
+        "w_xx": 0.03999686794496499,
+        "w_yy": 0.04001105388167419,
+        "force_y": 1.0001061789743586
+      },
+      "corr": {
+        "force_y__const": -0.2357022603955133,
+        "force_y__force_x": 0.05555555555555435,
+        "const__force_x": -0.23570226039551315
+      },
+      "any_exact": true,
+      "exact_lambdas": [
+        0.02,
+        0.05,
+        0.08,
+        0.12,
+        0.18,
+        0.25
+      ],
+      "best_support": [
+        "u_wx",
+        "v_wy",
+        "w_xx",
+        "w_yy",
+        "force_y"
+      ],
+      "supports": {
+        "0.02": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.05": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.08": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.12": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.18": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.25": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.35": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y"
+        ]
+      }
+    },
+    {
+      "n_side": 64,
+      "frac": 0.25,
+      "stride": 16,
+      "unique_force_phases": 1,
+      "true_ls_rel_resid": 4.958000701728834e-05,
+      "true_ls_coef": {
+        "u_wx": -0.9999594188878751,
+        "v_wy": -0.999682198683844,
+        "w_xx": 0.04000763751096851,
+        "w_yy": 0.039994563046648605,
+        "force_y": 1.0000000873073192
+      },
+      "corr": {
+        "force_y__const": -0.9999999999999999,
+        "force_y__force_x": 1.0000000000000002,
+        "const__force_x": -1.0000000000000002
+      },
+      "any_exact": false,
+      "exact_lambdas": [],
+      "best_support": [
+        "u_wx",
+        "v_wy",
+        "w_xx",
+        "w_yy",
+        "force_y",
+        "const",
+        "force_x"
+      ],
+      "supports": {
+        "0.02": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ],
+        "0.05": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ],
+        "0.08": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ],
+        "0.12": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ],
+        "0.18": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ],
+        "0.25": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ],
+        "0.35": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y",
+          "const",
+          "force_x"
+        ]
+      }
+    },
+    {
+      "n_side": 64,
+      "frac": 0.16666666666666666,
+      "stride": 11,
+      "unique_force_phases": 6,
+      "true_ls_rel_resid": 0.00011765765005071545,
+      "true_ls_coef": {
+        "u_wx": -0.9996678130595554,
+        "v_wy": -0.9996012889288486,
+        "w_xx": 0.039998372939465565,
+        "w_yy": 0.04000087523022745,
+        "force_y": 1.000023247857138
+      },
+      "corr": {
+        "force_y__const": 0.02001708193192954,
+        "force_y__force_x": 0.0004006835690696407,
+        "const__force_x": 0.020017081931929585
+      },
+      "any_exact": true,
+      "exact_lambdas": [
+        0.02,
+        0.05,
+        0.08,
+        0.12,
+        0.18,
+        0.25
+      ],
+      "best_support": [
+        "u_wx",
+        "v_wy",
+        "w_xx",
+        "w_yy",
+        "force_y"
+      ],
+      "supports": {
+        "0.02": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.05": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.08": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.12": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.18": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.25": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.35": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y"
+        ]
+      }
+    },
+    {
+      "n_side": 64,
+      "frac": 0.2,
+      "stride": 13,
+      "unique_force_phases": 5,
+      "true_ls_rel_resid": 0.00010023210086997824,
+      "true_ls_coef": {
+        "u_wx": -0.9992549062925914,
+        "v_wy": -0.9994698105175225,
+        "w_xx": 0.03998176827002735,
+        "w_yy": 0.04001098704312276,
+        "force_y": 1.0000279266113288
+      },
+      "corr": {
+        "force_y__const": 0.07023066047141817,
+        "force_y__force_x": 0.004932345670251599,
+        "const__force_x": 0.07023066047141818
+      },
+      "any_exact": true,
+      "exact_lambdas": [
+        0.02,
+        0.05,
+        0.08,
+        0.12,
+        0.18,
+        0.25
+      ],
+      "best_support": [
+        "u_wx",
+        "v_wy",
+        "w_xx",
+        "w_yy",
+        "force_y"
+      ],
+      "supports": {
+        "0.02": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.05": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.08": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.12": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.18": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.25": [
+          "u_wx",
+          "v_wy",
+          "w_xx",
+          "w_yy",
+          "force_y"
+        ],
+        "0.35": [
+          "u_wx",
+          "v_wy",
+          "w_yy",
+          "force_y"
+        ]
+      }
+    }
+  ]
+}
