@@ -1920,6 +1920,10 @@ claims:
     locations:
       - file: docs/v03/warmstart.md
         pattern: 'passes every preregistered bar'
+      - file: CHANGELOG.md
+        pattern: 'passes all three preregistered bars'
+      - file: docs/README.md
+        pattern: 'passes all three preregistered bars'
     comparisons:
       - label: warm hybrid hard_ood mean rel <= protocol error limit
         op: "<="
@@ -1996,6 +2000,8 @@ claims:
     locations:
       - file: docs/v03/warmstart.md
         pattern: 'higher `hard_ood` mean relative error than the cold search on the same noisy fields at noise fractions 0\.02 and 0\.05'
+      - file: CHANGELOG.md
+        pattern: 'At 2% and 5% noise the warm start has higher `hard_ood` error than the cold search'
     comparisons:
       - label: noise 0.01 warm hybrid <= cold
         op: "<="
@@ -2058,6 +2064,8 @@ claims:
     locations:
       - file: docs/v03/warmstart.md
         pattern: 'With the restricted FNO data loss first guess, the `hard_ood` warm-start error is above the error bar limit and its coverage is below 0\.85\. With the restricted FNO hybrid loss first guess, the `hard_ood` warm-start error is above the error bar limit and its coverage is below 0\.85'
+      - file: CHANGELOG.md
+        pattern: 'with restricted-range operators'
     comparisons:
       - label: restricted data warm hard_ood error > error limit
         op: ">"
@@ -2108,3 +2116,16 @@ claims:
           evidence: docs/v03/warmstart_scores.json
           path: stage_f/cold/hard_ood/mean_rel_error
 
+  - id: v03-changelog-noise-levels
+    class: numeric
+    numbers:
+      - token: "2%"
+        files: [CHANGELOG.md]
+        evidence: docs/v03/warmstart_scores.json
+        path: noise/noise0p02/noise_fraction
+        scale: 100
+      - token: "5%"
+        files: [CHANGELOG.md]
+        evidence: docs/v03/warmstart_scores.json
+        path: noise/noise0p05/noise_fraction
+        scale: 100
