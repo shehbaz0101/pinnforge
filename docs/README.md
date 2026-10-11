@@ -22,6 +22,10 @@ All of these use the Stage A harder periodic Burgers pilot and its frozen `hard_
 
 [research/strong_baselines.md](research/strong_baselines.md) compares the Stage D FNO inverse with a weak-form identifier and two solver-in-the-loop fits on the Stage D mask, plus the Stage E noise and sparsity cells. Protocol: [strong_baselines_protocol.json](research/strong_baselines_protocol.json). Scores: [strong_baselines_scores.json](research/strong_baselines_scores.json). Every number in that note is a leaf of those two files.
 
+## v0.5.1 sensor-density study
+
+[v051/protocol.md](v051/protocol.md) is the human reading of the frozen contract [v051/protocol.json](v051/protocol.json). The study asks at which lattice WSINDy recovers the exact PDE support. Scoring and the claim leaves land after the test split is scored. No v05 artifact is edited.
+
 ## v0.5 2D PDE term discovery
 
 [v05/report.md](v05/report.md) scores WSINDy term discovery on the existing 2D Burgers and vorticity-form Navier-Stokes generators. Both problems fail the preregistered support-recovery bar. Protocol, frozen before the test scores: [protocol.json](v05/protocol.json). Validation choices: [validation.json](v05/validation.json). Scores: [scores.json](v05/scores.json). Reproducibility: [reproducibility.md](v05/reproducibility.md). Every number in the scored note is a leaf of those JSON files. No v04 or v041 artifact was edited.

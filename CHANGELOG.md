@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### v0.5.1 sensor-density study
+
+- `python -m pinnforge.v051` sweeps WSINDy on `8x8`, `16x16`, `32x32`, and full-field `64x64` probes of the existing 2D Burgers and Navier-Stokes generators. The protocol [docs/v051/protocol.json](docs/v051/protocol.json) was committed before the test split was scored. The v0.5 artifacts were not edited. The FNO-denoise arm is skipped. The reported quantity is the smallest lattice that reaches the frozen seed-success bar, or none. CI runs smoke only.
+
 ### v0.5 2D PDE term discovery
 
 - **FAIL.** `python -m pinnforge.v05` recovers which frozen library terms are present on the existing 2D Burgers and vorticity-form Navier-Stokes generators, from sparse noisy sensors, using numpy WSINDy on raw probes and on fields denoised by the reused 2D FNO. The protocol [docs/v05/protocol.json](docs/v05/protocol.json) was committed before the test split was scored. PySR is skipped because it needs Julia. CI runs smoke only.

@@ -1,6 +1,6 @@
-# v0.5.1 protocol (frozen before test scores)
+# v051 protocol (frozen before test scores)
 
-This note is the human reading of [protocol.json](protocol.json). That JSON is the contract. It was committed before any v0.5.1 test split was scored. It holds no v0.5.1 test number. It does not edit [docs/v05/](../v05/), [docs/v041/](../v041/), or [docs/v04/](../v04/).
+This note is the human reading of [protocol.json](protocol.json). That JSON is the contract. It was committed before any v051 test split was scored. It holds no v051 test number. It does not edit [docs/v05/](../v05/), [docs/v041/](../v041/), or [docs/v04/](../v04/).
 
 ## Question
 
@@ -8,11 +8,11 @@ At what sensor density does numpy WSINDy recover the exact PDE support on the ex
 
 ## Lattices
 
-Equispaced probes on the frozen 64-grid: `8x8`, `16x16`, `32x32`, and full-field `64x64`. Bursts and noise fractions match v0.5 (`0`, `0.01`, `0.02`, `0.05`). Five seeds. The identifier is `wsindy_raw` only. The FNO-denoise arm is optional and is not run.
+Equispaced probes on the frozen 64-grid: `8x8`, `16x16`, `32x32`, and full-field `64x64`. Bursts and noise fractions match v05 (`0`, `0.01`, `0.02`, `0.05`). Five seeds. The identifier is `wsindy_raw` only. The FNO-denoise arm is optional and is not run.
 
 ## Reported quantity (not retuned)
 
-The smallest lattice whose seed exact-support rate at noise `0.01` is `>= 0.8`, per problem, or `none`. Thresholds are chosen on the validation split only. The library is the v0.5 library, including distractors.
+The smallest lattice whose seed exact-support rate at noise `0.01` is `>= 0.8`, per problem, or `none`. Thresholds are chosen on the validation split only. The library is the v05 library, including distractors.
 
 ## Positive control
 
