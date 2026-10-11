@@ -1,0 +1,340 @@
+{
+  "format": "pinnforge.warmstart_protocol.v1",
+  "frozen_before_test_evaluation": true,
+  "test_used_for_selection": false,
+  "hyperparameters_tuned_on_test": false,
+  "hyperparameters_chosen_on_validation": true,
+  "role": "Preregistered contract for the warm-start study. It fixes the methods, the hyperparameters chosen on validation, the metrics, and the pass bars before the test split is scored. It holds no test number.",
+  "question": "Can an FNO first guess plus a bounded solver-in-the-loop refinement reach solver-level viscosity accuracy on the frozen hard_ood slice at a fraction of the cold solver search wall clock, with calibrated nominal 0.9 intervals?",
+  "failure_rule": "nu_hat <= 0 or rel_error > 0.5",
+  "failure_relative_error": 0.5,
+  "device": "cpu",
+  "workers": 4,
+  "split": "test",
+  "mask": {
+    "name": "sensors32_bursts",
+    "n_sensors": 32,
+    "burst_starts": [
+      0,
+      24,
+      48,
+      72
+    ],
+    "burst_length": 5,
+    "frame_dt": 0.01,
+    "unchanged": true
+  },
+  "hard_ood": {
+    "name": "hard_ood",
+    "comparison": "nu <= threshold_nu",
+    "threshold_nu": 0.027028120493367818,
+    "source": "docs/v02/pilot_protocol.json",
+    "refit": false
+  },
+  "slices": {
+    "full_test": "every test instance",
+    "hard_ood": "nu <= threshold_nu (true viscosity)",
+    "complement": "nu > threshold_nu (true viscosity)"
+  },
+  "solver_search": {
+    "nu_min": 0.005,
+    "nu_max": 0.1,
+    "n_coarse": 7,
+    "refine_width": 0.0005,
+    "max_refine": 10,
+    "n": 1024,
+    "dt": 0.00025,
+    "save_dt": 0.01,
+    "optimizer": "coarse_grid_plus_golden_section",
+    "tie_break": "smallest evaluated nu",
+    "returned_value": "evaluated point, not an interpolated vertex",
+    "forward_model": "pinnforge.reference.numerical.solver.solve",
+    "targets": "every burst except the opening burst",
+    "opening_frame": 0
+  },
+  "cold_start": {
+    "method": "solver_sensor_ic from docs/research/strong_baselines_protocol.json, unchanged",
+    "initial_condition": "sensor_lift",
+    "truth_diagnostic": false,
+    "retimed_in_this_run": true,
+    "timed_span": "the scalar search and every forward solve; building the solver problem is excluded",
+    "same_worker_as_warm_start": true,
+    "order_within_worker": "cold search first, then every warm start on the same field"
+  },
+  "first_guess": {
+    "objective": "Stage D sparse-rollout sensor mean square at lambda 0 (docs/v02/stage_d_inverse_protocol.json)",
+    "stage_d_inverse_protocol": "docs/v02/stage_d_inverse_protocol.json",
+    "stage_d_inverse_protocol_sha256": "24450a3d7dec8a1c0347b099c82f27f1941f6e869f4041b320cff302adad8a0a",
+    "grid": "geometric",
+    "n_points": 32,
+    "nu_min": 0.005,
+    "nu_max": 0.1,
+    "tie_break": "smallest nu on the grid",
+    "window": {
+      "input_frames": 8,
+      "output_frames": 8,
+      "stride": 8
+    },
+    "n_rollout_steps": 9,
+    "batched": "every grid viscosity is one batch of a single forward rollout",
+    "timed_span": "mask read, window construction, and every rollout; checkpoint loading is excluded",
+    "reason": "Fixed before validation by cost: the published 191-point linear grid takes about a tenth of the cold search wall clock per instance, which leaves too little of the time budget for refinement."
+  },
+  "refine": {
+    "max_evaluations": 2,
+    "probe_step": 0.02,
+    "trust_radius": 0.6931471805599453,
+    "step_tolerance": 0.001,
+    "nu_min": 0.005,
+    "nu_max": 0.1,
+    "return_mode": "prediction"
+  },
+  "refine_notes": {
+    "algorithm": "Gauss-Newton in s = log nu on the sensor residual vector of the cold-start objective. The first Jacobian is a one-sided difference with probe_step; later Jacobians are secants between the lowest-loss point and its nearest evaluated neighbour. Iterates are clipped to a box of half-width trust_radius around the first guess, intersected with [nu_min, nu_max]. The loop stops when the next step is at most step_tolerance or after max_evaluations solves and returns the final Gauss-Newton prediction.",
+    "fixed_before_validation": [
+      "probe_step",
+      "trust_radius",
+      "step_tolerance",
+      "return_mode",
+      "nu_min",
+      "nu_max"
+    ],
+    "chosen_on_validation": [
+      "max_evaluations"
+    ],
+    "validation_cap_trace": 6
+  },
+  "methods": {
+    "primary": "full/hybrid_1e-2",
+    "primary_description": "warm start from each full-range FNO hybrid_1e-2 seed; one estimate per seed",
+    "secondary": [
+      "full/data_only: warm start from each full-range data-loss seed",
+      "full/<arm>/ensemble: warm start from the median of the five seed first guesses of one arm",
+      "restricted/<arm>: the same methods with the Stage F restricted-range operators"
+    ]
+  },
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "checkpoint_roots": {
+    "full": "runs/v03/train",
+    "restricted": "runs/v03/stage_f"
+  },
+  "checkpoints": {
+    "full/data_only/0": "7b02691766b6e623e0b0635c00a3983cac69c9232974ec96e2c09ec4d2e6ca66",
+    "full/data_only/1": "7a8de99d3773ac8a16cd0e731250e0e11fd1785e1b421749b2310bb601e4deb2",
+    "full/data_only/2": "4fc2e05ca562a1c8f8012b4416891e4f0d4215f7da8cdce641e62e31fe2fc6f6",
+    "full/data_only/3": "3b9ebce946edbe37e413a8a6f8fbb1f238cacd7f17bf45e57fe1bb2abe8b039d",
+    "full/data_only/4": "b10e4adb783e9880e388eb620aa446b29b71a2adbd27dbc816bd6908d9548121",
+    "full/hybrid_1e-2/0": "09776b2a2af595f1eea57f574327658b206787fc6cb677a6223d4cdc10e71e56",
+    "full/hybrid_1e-2/1": "fed38dff4840894f7d072e094391e9bd0b0ed1ce799d1a08065a790ead795424",
+    "full/hybrid_1e-2/2": "8f5a4f3dffac79b639373e7016c17b905e2e2ecf00b4f3731af797b9aff2cfb0",
+    "full/hybrid_1e-2/3": "59a7c9680994035c1e296b4f9d73fdf4ecfecaa820991c347757fe1fd5bba765",
+    "full/hybrid_1e-2/4": "739509091ed680a07ad3df133272e9e63fe90d534075d148a6b9aecd2c25b3bf",
+    "restricted/data_only/0": "cdbdecba77d804acd1f16960d5b3aac02646e1de87ae62d1b13805d47345f666",
+    "restricted/data_only/1": "1ebaa0b01785b2dc0bb3a3e1a63bdcb8a44be95bd00d77c66fbf932a9f7e647b",
+    "restricted/data_only/2": "7100b6862e012e12f345cda75468f3bb7b0cba45ca2e432d4712e3b3ddf4b764",
+    "restricted/data_only/3": "0e9ddb10b4dea1bc6a5ef40aaf2d8e9f2fbe379c1dcf3f21a40b227187bf496d",
+    "restricted/data_only/4": "c6d6cf08712109926572d6b7f9566876e4d4620b56b24ed1fab8dfb83be07de9",
+    "restricted/hybrid_1e-2/0": "42c593eed8f4fc39cd73fceb721f6b46d0b4217a75edb36f5b150ea016b49ea8",
+    "restricted/hybrid_1e-2/1": "eeb9200b9b8cc708ad53bc36343797d1259c9c7e3eda01c4fa5dfd1b18ed1e65",
+    "restricted/hybrid_1e-2/2": "ea5976bd89131cc62280d9c1792678a0b1e4893281f2b130ebe0945e6661096a",
+    "restricted/hybrid_1e-2/3": "e5e36e5609a87a6776a689c8813844ee6a36f7c975499fb15498329eba404d27",
+    "restricted/hybrid_1e-2/4": "5c0a3a7f0ebaeedb49972a85d8b0c2d3f910a4071fe3bf6403bcdc13cf38dbec"
+  },
+  "retraining": {
+    "retrained": true,
+    "reason": "No Stage B, C, D, or F checkpoint is in git, and Stage D committed per-instance estimates only for the test split, on the 191-point grid. Validation estimates for calibration, noisy-field estimates, and restricted-range first guesses need the networks.",
+    "commands": [
+      "python -m pinnforge.operator train --protocol docs/v02/stage_c_train_protocol.json --pilot artifacts/burgers_hard_pilot --manifest docs/stage_a/pilot_manifest.json --epochs 30 --batch-size 32 --lr 0.001 --width 32 --modes 16 --layers 4 --input-frames 8 --output-frames 8 --stride 8 --seed 0 --loss hybrid --residual-weight 0.01 --residual-scope with_input --residual-space physical --dt 0.01 --output runs/v03/train/hybrid_1e-2/seed_0",
+      "python -m pinnforge.operator train --protocol docs/v02/stage_c_train_protocol.json --pilot artifacts/burgers_hard_pilot --manifest docs/stage_a/pilot_manifest.json --epochs 30 --batch-size 32 --lr 0.001 --width 32 --modes 16 --layers 4 --input-frames 8 --output-frames 8 --stride 8 --seed 1 --loss hybrid --residual-weight 0.01 --residual-scope with_input --residual-space physical --dt 0.01 --output runs/v03/train/hybrid_1e-2/seed_1",
+      "python -m pinnforge.operator train --protocol docs/v02/stage_c_train_protocol.json --pilot artifacts/burgers_hard_pilot --manifest docs/stage_a/pilot_manifest.json --epochs 30 --batch-size 32 --lr 0.001 --width 32 --modes 16 --layers 4 --input-frames 8 --output-frames 8 --stride 8 --seed 2 --loss hybrid --residual-weight 0.01 --residual-scope with_input --residual-space physical --dt 0.01 --output runs/v03/train/hybrid_1e-2/seed_2",
+      "python -m pinnforge.operator train --protocol docs/v02/stage_c_train_protocol.json --pilot artifacts/burgers_hard_pilot --manifest docs/stage_a/pilot_manifest.json --epochs 30 --batch-size 32 --lr 0.001 --width 32 --modes 16 --layers 4 --input-frames 8 --output-frames 8 --stride 8 --seed 3 --loss hybrid --residual-weight 0.01 --residual-scope with_input --residual-space physical --dt 0.01 --output runs/v03/train/hybrid_1e-2/seed_3",
+      "python -m pinnforge.operator train --protocol docs/v02/stage_c_train_protocol.json --pilot artifacts/burgers_hard_pilot --manifest docs/stage_a/pilot_manifest.json --epochs 30 --batch-size 32 --lr 0.001 --width 32 --modes 16 --layers 4 --input-frames 8 --output-frames 8 --stride 8 --seed 4 --loss hybrid --residual-weight 0.01 --residual-scope with_input --residual-space physical --dt 0.01 --output runs/v03/train/hybrid_1e-2/seed_4",
+      "python -m pinnforge.operator train --protocol docs/v02/stage_b_train_protocol.json --pilot artifacts/burgers_hard_pilot --manifest docs/stage_a/pilot_manifest.json --epochs 30 --batch-size 32 --lr 0.001 --width 32 --modes 16 --layers 4 --input-frames 8 --output-frames 8 --stride 8 --seed 0 --loss data --output runs/v03/train/data_only/seed_0",
+      "python -m pinnforge.operator train --protocol docs/v02/stage_b_train_protocol.json --pilot artifacts/burgers_hard_pilot --manifest docs/stage_a/pilot_manifest.json --epochs 30 --batch-size 32 --lr 0.001 --width 32 --modes 16 --layers 4 --input-frames 8 --output-frames 8 --stride 8 --seed 1 --loss data --output runs/v03/train/data_only/seed_1",
+      "python -m pinnforge.operator train --protocol docs/v02/stage_b_train_protocol.json --pilot artifacts/burgers_hard_pilot --manifest docs/stage_a/pilot_manifest.json --epochs 30 --batch-size 32 --lr 0.001 --width 32 --modes 16 --layers 4 --input-frames 8 --output-frames 8 --stride 8 --seed 2 --loss data --output runs/v03/train/data_only/seed_2",
+      "python -m pinnforge.operator train --protocol docs/v02/stage_b_train_protocol.json --pilot artifacts/burgers_hard_pilot --manifest docs/stage_a/pilot_manifest.json --epochs 30 --batch-size 32 --lr 0.001 --width 32 --modes 16 --layers 4 --input-frames 8 --output-frames 8 --stride 8 --seed 3 --loss data --output runs/v03/train/data_only/seed_3",
+      "python -m pinnforge.operator train --protocol docs/v02/stage_b_train_protocol.json --pilot artifacts/burgers_hard_pilot --manifest docs/stage_a/pilot_manifest.json --epochs 30 --batch-size 32 --lr 0.001 --width 32 --modes 16 --layers 4 --input-frames 8 --output-frames 8 --stride 8 --seed 4 --loss data --output runs/v03/train/data_only/seed_4",
+      "python -m pinnforge.operator train --protocol docs/v02/stage_f_ood_protocol.json --pilot artifacts/burgers_hard_pilot --manifest docs/stage_a/pilot_manifest.json --epochs 30 --batch-size 32 --lr 0.001 --width 32 --modes 16 --layers 4 --input-frames 8 --output-frames 8 --stride 8 --seed 0 --loss hybrid --residual-weight 0.01 --residual-scope with_input --residual-space physical --dt 0.01 --output runs/v03/stage_f/hybrid_1e-2/seed_0",
+      "python -m pinnforge.operator train --protocol docs/v02/stage_f_ood_protocol.json --pilot artifacts/burgers_hard_pilot --manifest docs/stage_a/pilot_manifest.json --epochs 30 --batch-size 32 --lr 0.001 --width 32 --modes 16 --layers 4 --input-frames 8 --output-frames 8 --stride 8 --seed 1 --loss hybrid --residual-weight 0.01 --residual-scope with_input --residual-space physical --dt 0.01 --output runs/v03/stage_f/hybrid_1e-2/seed_1",
+      "python -m pinnforge.operator train --protocol docs/v02/stage_f_ood_protocol.json --pilot artifacts/burgers_hard_pilot --manifest docs/stage_a/pilot_manifest.json --epochs 30 --batch-size 32 --lr 0.001 --width 32 --modes 16 --layers 4 --input-frames 8 --output-frames 8 --stride 8 --seed 2 --loss hybrid --residual-weight 0.01 --residual-scope with_input --residual-space physical --dt 0.01 --output runs/v03/stage_f/hybrid_1e-2/seed_2",
+      "python -m pinnforge.operator train --protocol docs/v02/stage_f_ood_protocol.json --pilot artifacts/burgers_hard_pilot --manifest docs/stage_a/pilot_manifest.json --epochs 30 --batch-size 32 --lr 0.001 --width 32 --modes 16 --layers 4 --input-frames 8 --output-frames 8 --stride 8 --seed 3 --loss hybrid --residual-weight 0.01 --residual-scope with_input --residual-space physical --dt 0.01 --output runs/v03/stage_f/hybrid_1e-2/seed_3",
+      "python -m pinnforge.operator train --protocol docs/v02/stage_f_ood_protocol.json --pilot artifacts/burgers_hard_pilot --manifest docs/stage_a/pilot_manifest.json --epochs 30 --batch-size 32 --lr 0.001 --width 32 --modes 16 --layers 4 --input-frames 8 --output-frames 8 --stride 8 --seed 4 --loss hybrid --residual-weight 0.01 --residual-scope with_input --residual-space physical --dt 0.01 --output runs/v03/stage_f/hybrid_1e-2/seed_4",
+      "python -m pinnforge.operator train --protocol docs/v02/stage_f_ood_protocol.json --pilot artifacts/burgers_hard_pilot --manifest docs/stage_a/pilot_manifest.json --epochs 30 --batch-size 32 --lr 0.001 --width 32 --modes 16 --layers 4 --input-frames 8 --output-frames 8 --stride 8 --seed 0 --loss data --output runs/v03/stage_f/data_only/seed_0",
+      "python -m pinnforge.operator train --protocol docs/v02/stage_f_ood_protocol.json --pilot artifacts/burgers_hard_pilot --manifest docs/stage_a/pilot_manifest.json --epochs 30 --batch-size 32 --lr 0.001 --width 32 --modes 16 --layers 4 --input-frames 8 --output-frames 8 --stride 8 --seed 1 --loss data --output runs/v03/stage_f/data_only/seed_1",
+      "python -m pinnforge.operator train --protocol docs/v02/stage_f_ood_protocol.json --pilot artifacts/burgers_hard_pilot --manifest docs/stage_a/pilot_manifest.json --epochs 30 --batch-size 32 --lr 0.001 --width 32 --modes 16 --layers 4 --input-frames 8 --output-frames 8 --stride 8 --seed 2 --loss data --output runs/v03/stage_f/data_only/seed_2",
+      "python -m pinnforge.operator train --protocol docs/v02/stage_f_ood_protocol.json --pilot artifacts/burgers_hard_pilot --manifest docs/stage_a/pilot_manifest.json --epochs 30 --batch-size 32 --lr 0.001 --width 32 --modes 16 --layers 4 --input-frames 8 --output-frames 8 --stride 8 --seed 3 --loss data --output runs/v03/stage_f/data_only/seed_3",
+      "python -m pinnforge.operator train --protocol docs/v02/stage_f_ood_protocol.json --pilot artifacts/burgers_hard_pilot --manifest docs/stage_a/pilot_manifest.json --epochs 30 --batch-size 32 --lr 0.001 --width 32 --modes 16 --layers 4 --input-frames 8 --output-frames 8 --stride 8 --seed 4 --loss data --output runs/v03/stage_f/data_only/seed_4"
+    ],
+    "bitwise_reproduction": "0 of 20 retrained checkpoints match both the published selected epoch and the published validation relative L2 exactly. The validation record lists the retrained and published values side by side, and the retrained Stage D validation inverse errors next to the published ones.",
+    "published_numbers_changed": false
+  },
+  "intervals": {
+    "alpha": 0.1,
+    "nominal_coverage": 0.9,
+    "score": "|log(nu / nu_hat)| / scale",
+    "interval": "nu_hat * exp(+- scale * quantile)",
+    "quantile": "the ceil((n + 1)(1 - alpha))-th smallest validation score",
+    "groups": "predicted_hard_ood if nu_hat <= threshold_nu, else predicted_complement; the true nu is not read",
+    "min_group": 10,
+    "small_group": "a group with fewer than min_group validation rows uses the pooled quantile",
+    "scale_floor": 0.001,
+    "scale_candidates": {
+      "seed": [
+        "none",
+        "gauss_newton"
+      ],
+      "ensemble": [
+        "none",
+        "gauss_newton",
+        "ensemble_spread"
+      ]
+    },
+    "selection_rule": "smallest two-fold cross-fitted mean log half-width on validation; folds by instance_id parity",
+    "calibration": "per method on the whole validation split; quantiles are stored in the validation record"
+  },
+  "abstain": {
+    "rate": 0.1,
+    "statistic_candidates": {
+      "seed": [
+        "relative_residual",
+        "log_standard_error",
+        "guess_shift"
+      ],
+      "ensemble": [
+        "relative_residual",
+        "log_standard_error",
+        "guess_shift",
+        "ensemble_log_std"
+      ]
+    },
+    "selection_rule": "smallest two-fold cross-fitted mean relative error on accepted validation instances at the fixed rate",
+    "threshold": "per method, the ceil(n (1 - rate))-th smallest validation statistic; abstain when strictly above"
+  },
+  "selected_on_validation": {
+    "max_evaluations": 2,
+    "cap_rule": "smallest cap with time_ratio <= 0.2 whose mean hard_ood relative error is within a factor 1.02 of the best such cap; if none, the fastest cap",
+    "caps_considered": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "time_guard": 0.2,
+    "error_slack": 1.02,
+    "choices": {
+      "full": {
+        "seed": {
+          "scale": "gauss_newton",
+          "abstain_statistic": "log_standard_error"
+        },
+        "ensemble": {
+          "scale": "gauss_newton",
+          "abstain_statistic": "log_standard_error"
+        }
+      },
+      "restricted": {
+        "seed": {
+          "scale": "gauss_newton",
+          "abstain_statistic": "log_standard_error"
+        },
+        "ensemble": {
+          "scale": "gauss_newton",
+          "abstain_statistic": "log_standard_error"
+        }
+      }
+    }
+  },
+  "pass_bars": {
+    "method": "full/hybrid_1e-2",
+    "aggregation": "arithmetic mean over the five seeds of the per-seed slice statistic",
+    "error": {
+      "statement": "hard_ood mean relative error <= 1.5 x the published solver_sensor_ic hard_ood mean",
+      "factor": 1.5,
+      "reference": 0.013796648990827172,
+      "reference_source": "docs/research/strong_baselines_scores.json methods/solver_sensor_ic/slices/hard_ood/mean_rel_error",
+      "limit": 0.020694973486240758
+    },
+    "time": {
+      "statement": "hard_ood mean warm-start wall clock <= 0.25 x the hard_ood mean cold-search wall clock, both measured in this run on this machine",
+      "limit_ratio": 0.25
+    },
+    "coverage": {
+      "statement": "full_test empirical coverage of the nominal 0.9 interval in [0.85, 0.95]",
+      "slice": "full_test",
+      "range": [
+        0.85,
+        0.95
+      ]
+    },
+    "overall": "pass only if all three bars pass"
+  },
+  "reported_not_bars": [
+    "coverage on hard_ood and complement",
+    "abstain rate and error on accepted and abstained instances, every slice",
+    "paired per-instance differences against the cold search",
+    "secondary methods, noise conditions, and restricted-range operators"
+  ],
+  "noise": {
+    "source": "docs/v02/stage_e_stress_protocol.json",
+    "noise_seed": 0,
+    "fractions": {
+      "noise0p01": 0.01,
+      "noise0p02": 0.02,
+      "noise0p05": 0.05
+    },
+    "slice": "hard_ood",
+    "methods": "full-range per-seed and ensemble warm starts, and the cold search re-run on the same noisy fields",
+    "calibration": "the clean validation calibration; nothing is refit for noise"
+  },
+  "stage_f": {
+    "protocol": "docs/v02/stage_f_ood_protocol.json",
+    "protocol_sha256": "dc12223986d762050802c144c7c7770116084c11a14fba342e49e75d7a6c4b6f",
+    "published_scores": "docs/v02/stage_f_scores.json",
+    "published_scores_sha256": "dde186832ced0a94c913c2ca80036ae2eccf0bb7996051f385214084219cc89a",
+    "family": "restricted",
+    "calibration": "validation instances with nu > threshold_nu only",
+    "slices": "hard_ood is outside the training range of these operators; complement is inside it"
+  },
+  "aggregation": {
+    "unit": "one scalar per seed per slice",
+    "center": "arithmetic mean",
+    "spread": "sample standard deviation",
+    "ddof": 1,
+    "deterministic": "the cold search and the ensembles are one run each",
+    "paired_delta": "warm relative error minus cold relative error on the same instance; negative means warm is lower"
+  },
+  "strong_baselines_protocol": "docs/research/strong_baselines_protocol.json",
+  "strong_baselines_protocol_sha256": "055aecf6ab7c3611c78652c8ddf727fe591158f51c670cb22f0556fddc129a86",
+  "strong_baselines_scores": "docs/research/strong_baselines_scores.json",
+  "strong_baselines_scores_sha256": "fa900290b92740a116927df9b48021bebcfc015fa28c92934a82a062b9562e69",
+  "stage_e_protocol": "docs/v02/stage_e_stress_protocol.json",
+  "stage_e_protocol_sha256": "f53f6d3d98f49335a6e64108048f74d7353b8df22543995851a07d6e428fed19",
+  "validation_record": "docs/v03/warmstart_validation.json",
+  "validation_record_sha256": "0d0caccb5e3029180512d5684e52d5c38b62edecf35d7bddde1c18aa2ffe2548",
+  "pilot": "artifacts/burgers_hard_pilot",
+  "manifest": "docs/stage_a/pilot_manifest.json",
+  "limitations": [
+    "One scalar viscosity, one-dimensional periodic Burgers, and the Stage A pilot. This is not a multi-equation benchmark.",
+    "The warm start minimizes the same sensor-lift objective as the cold search. It cannot be more accurate than that objective allows except by stopping at a different point; the oracle initial condition is the ceiling for both.",
+    "Wall clock is one CPU machine with the protocol worker count. Ratios, not absolute seconds, are the object of the time bar.",
+    "The networks were retrained for this study with the frozen commands. They are not bitwise copies of the published Stage B, C, and F networks.",
+    "Validation timing ran while other jobs shared the machine. Only the cap choice read validation time.",
+    "Coverage is marginal over instances and calibrated on one validation split of the same pilot. It is not conditional coverage for a given viscosity."
+  ],
+  "not_claimed": [
+    "a retuned hard_ood threshold, sensor mask, solver search, or Stage A through F protocol",
+    "a change to any previously reported number",
+    "that the warm start is more accurate than the cold search; the bar is accuracy within a factor of the cold search",
+    "speed-ups on other machines, other worker counts, GPUs, or other solvers",
+    "coverage conditional on viscosity, on noise level, or outside the training range",
+    "that the abstain flag detects every large error",
+    "any result for viscosity ranges, equations, or observation masks outside this pilot"
+  ]
+}
