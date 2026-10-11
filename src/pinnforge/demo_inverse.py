@@ -240,11 +240,12 @@ def results_table_terminal(record: dict[str, Any]) -> str:
 
 
 def results_takeaway(record: dict[str, Any]) -> str:
-    """One sentence from this record, plus the Stage D doc for the hard slice.
+    """One sentence from this record, plus where the hard slice sits.
 
     The published demo is the smooth four-mode sample. On that sample the
-    closed form has the lower mean relative error. The FNO comparison that
-    goes the other way is Stage D ``hard_ood``, not this command.
+    closed form has the lower mean relative error. On Stage D ``hard_ood``
+    the FNO mean relative error is below the closed form and above the
+    sensor-lift solver.
     """
 
     closed = float(record["aggregates"]["closed_form"]["mean_rel_error"])
@@ -264,7 +265,11 @@ def results_takeaway(record: dict[str, Any]) -> str:
             f"On {sample} the closed form wins "
             f"({closed_pct} vs {operator_pct} mean relative error)."
         )
-        pointer = "The FNO edge shows on the hard-OOD Stage D slice (STAGE_D_REPORT.md)."
+        pointer = (
+            "On the hard-OOD Stage D slice the FNO mean relative error is lower than "
+            "the closed form (STAGE_D_REPORT.md) and higher than the sensor-lift solver "
+            "(docs/research/strong_baselines.md)."
+        )
     elif operator < closed:
         opening = (
             f"On {sample} the FNO wins "

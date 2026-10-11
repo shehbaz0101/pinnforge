@@ -14,7 +14,7 @@ FNO sensor match         4  2.556e-03     4.97%   11.85%         0
 training-mean constant   4  1.052e-02    25.93%   54.20%         1
 ```
 
-On this smooth sample the closed form wins (0.41% vs 4.97% mean relative error). The FNO edge shows on the hard-OOD Stage D slice (STAGE_D_REPORT.md).
+On this smooth sample the closed form wins (0.41% vs 4.97% mean relative error). On the hard-OOD Stage D slice the FNO mean relative error is lower than the closed form (STAGE_D_REPORT.md) and higher than the sensor-lift solver (docs/research/strong_baselines.md).
 
 ### Full precision
 

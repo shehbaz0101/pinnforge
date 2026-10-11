@@ -1,0 +1,1308 @@
+# Claim registry for python -m pinnforge.claims check.
+# A numeric token is the published text. scale multiplies the evidence before
+# rounding. Paths use "/" so keys such as "0.0" stay intact.
+# Lower mean relative error is the more accurate inverse method.
+
+version: 1
+
+stronger_baselines:
+  evidence: docs/research/strong_baselines_scores.json
+  fno_methods:
+    - fno_hybrid_1e-2
+    - fno_data_only
+  methods:
+    solver_oracle_ic: methods/solver_oracle_ic/slices/hard_ood/mean_rel_error
+    solver_sensor_ic: methods/solver_sensor_ic/slices/hard_ood/mean_rel_error
+    fno_hybrid_1e-2: fno/arms/hybrid_1e-2/slices/hard_ood/mean_rel_error
+    fno_data_only: fno/arms/data_only/slices/hard_ood/mean_rel_error
+    weak_form: methods/weak_form/slices/hard_ood/mean_rel_error
+    closed_form_ls: methods/closed_form_ls/slices/hard_ood/mean_rel_error
+
+scan:
+  superiority:
+    - README.md
+    - CHANGELOG.md
+    - PROJECT_STATUS.md
+    - docs/demo/result.md
+    - docs/demo/index.html
+    - docs/research/strong_baselines.md
+    - docs/v02/*.md
+    - STAGE1_REPORT.md
+    - STAGE2_REPORT.md
+    - STAGE3_REPORT.md
+    - STAGE4_REPORT.md
+    - STAGE5_REPORT.md
+    - STAGE_A_REPORT.md
+    - STAGE_B_REPORT.md
+    - STAGE_C_REPORT.md
+    - STAGE_D_REPORT.md
+    - STAGE_E_REPORT.md
+    - STAGE_F_REPORT.md
+  numbers:
+    - README.md
+    - CHANGELOG.md
+    - PROJECT_STATUS.md
+    - docs/demo/result.md
+    - docs/demo/index.html
+    - docs/v02/*.md
+  number_ignore:
+    - 'Python 3\.\d+'
+    - '\b3\.1[12]\b'
+    - '127\.0\.0\.1'
+    - '0\.0\.0\.0'
+    - 'v0\.\d+\.\d+'
+    - '(?<![0-9])0\.\d+\.\d+'
+    - 'NumPy \d+\.\d+\.\d+'
+    - 'torch \d+\.\d+\.\d+\+cpu'
+
+leaf_documents:
+  - file: docs/research/strong_baselines.md
+    evidence:
+      - docs/research/strong_baselines_scores.json
+      - docs/research/strong_baselines_protocol.json
+
+claims:
+  - id: number-0_41pct
+    class: numeric
+    numbers:
+      - token: "0.41%"
+        files:
+          - README.md
+          - docs/demo/result.md
+          - docs/demo/index.html
+          - docs/v02/stage_g_claims.md
+        evidence: docs/demo/result.json
+        path: aggregates/closed_form/mean_rel_error
+        scale: 100
+  - id: number-4_97pct
+    class: numeric
+    numbers:
+      - token: "4.97%"
+        files:
+          - README.md
+          - docs/demo/result.md
+          - docs/demo/index.html
+          - docs/v02/stage_g_claims.md
+        evidence: docs/demo/result.json
+        path: aggregates/operator/mean_rel_error
+        scale: 100
+  - id: number-0_71pct
+    class: numeric
+    numbers:
+      - token: "0.71%"
+        files:
+          - README.md
+          - docs/demo/result.md
+          - docs/demo/index.html
+        evidence: docs/demo/result.json
+        path: aggregates/closed_form/max_rel_error
+        scale: 100
+  - id: number-11_85pct
+    class: numeric
+    numbers:
+      - token: "11.85%"
+        files:
+          - README.md
+          - docs/demo/result.md
+          - docs/demo/index.html
+        evidence: docs/demo/result.json
+        path: aggregates/operator/max_rel_error
+        scale: 100
+  - id: number-25_93pct
+    class: numeric
+    numbers:
+      - token: "25.93%"
+        files:
+          - README.md
+          - docs/demo/result.md
+          - docs/demo/index.html
+        evidence: docs/demo/result.json
+        path: aggregates/baseline/mean_rel_error
+        scale: 100
+  - id: number-54_20pct
+    class: numeric
+    numbers:
+      - token: "54.20%"
+        files:
+          - README.md
+          - docs/demo/result.md
+          - docs/demo/index.html
+        evidence: docs/demo/result.json
+        path: aggregates/baseline/max_rel_error
+        scale: 100
+  - id: number-1_670em04
+    class: numeric
+    numbers:
+      - token: "1.670e-04"
+        files:
+          - README.md
+          - docs/demo/result.md
+          - docs/demo/index.html
+        evidence: docs/demo/result.json
+        path: aggregates/closed_form/mean_abs_error
+  - id: number-2_556em03
+    class: numeric
+    numbers:
+      - token: "2.556e-03"
+        files:
+          - README.md
+          - docs/demo/result.md
+          - docs/demo/index.html
+        evidence: docs/demo/result.json
+        path: aggregates/operator/mean_abs_error
+  - id: number-1_052em02
+    class: numeric
+    numbers:
+      - token: "1.052e-02"
+        files:
+          - README.md
+          - docs/demo/result.md
+          - docs/demo/index.html
+        evidence: docs/demo/result.json
+        path: aggregates/baseline/mean_abs_error
+  - id: number-1_66974755em04
+    class: numeric
+    numbers:
+      - token: "1.66974755e-04"
+        files:
+          - README.md
+          - docs/demo/result.md
+          - docs/demo/index.html
+        evidence: docs/demo/result.json
+        path: aggregates/closed_form/mean_abs_error
+  - id: number-4_05968068em03
+    class: numeric
+    numbers:
+      - token: "4.05968068e-03"
+        files:
+          - README.md
+          - docs/demo/result.md
+          - docs/demo/index.html
+        evidence: docs/demo/result.json
+        path: aggregates/closed_form/mean_rel_error
+  - id: number-7_08700857em03
+    class: numeric
+    numbers:
+      - token: "7.08700857e-03"
+        files:
+          - README.md
+          - docs/demo/result.md
+          - docs/demo/index.html
+        evidence: docs/demo/result.json
+        path: aggregates/closed_form/max_rel_error
+  - id: number-2_55609737em03
+    class: numeric
+    numbers:
+      - token: "2.55609737e-03"
+        files:
+          - README.md
+          - docs/demo/result.md
+          - docs/demo/index.html
+        evidence: docs/demo/result.json
+        path: aggregates/operator/mean_abs_error
+  - id: number-4_96650095em02
+    class: numeric
+    numbers:
+      - token: "4.96650095e-02"
+        files:
+          - README.md
+          - docs/demo/result.md
+          - docs/demo/index.html
+        evidence: docs/demo/result.json
+        path: aggregates/operator/mean_rel_error
+  - id: number-1_18468303em01
+    class: numeric
+    numbers:
+      - token: "1.18468303e-01"
+        files:
+          - README.md
+          - docs/demo/result.md
+          - docs/demo/index.html
+        evidence: docs/demo/result.json
+        path: aggregates/operator/max_rel_error
+  - id: number-1_05151535em02
+    class: numeric
+    numbers:
+      - token: "1.05151535e-02"
+        files:
+          - README.md
+          - docs/demo/result.md
+          - docs/demo/index.html
+        evidence: docs/demo/result.json
+        path: aggregates/baseline/mean_abs_error
+  - id: number-2_59304474em01
+    class: numeric
+    numbers:
+      - token: "2.59304474e-01"
+        files:
+          - README.md
+          - docs/demo/result.md
+          - docs/demo/index.html
+        evidence: docs/demo/result.json
+        path: aggregates/baseline/mean_rel_error
+  - id: number-5_41994932em01
+    class: numeric
+    numbers:
+      - token: "5.41994932e-01"
+        files:
+          - README.md
+          - docs/demo/result.md
+          - docs/demo/index.html
+        evidence: docs/demo/result.json
+        path: aggregates/baseline/max_rel_error
+  - id: number-3_69904987em02
+    class: numeric
+    numbers:
+      - token: "3.69904987e-02"
+        files:
+          - README.md
+          - docs/demo/result.md
+          - docs/demo/index.html
+        evidence: docs/demo/result.json
+        path: val_relative_l2
+  - id: number-2_77327819ep00
+    class: numeric
+    numbers:
+      - token: "2.77327819e+00"
+        files:
+          - README.md
+          - docs/demo/result.md
+          - docs/demo/index.html
+        evidence: docs/demo/result.json
+        path: wall_clock_seconds
+  - id: number-1_00000000em03
+    class: numeric
+    numbers:
+      - token: "1.00000000e-03"
+        files:
+          - README.md
+          - docs/demo/result.md
+        evidence: docs/demo/result.json
+        path: nu_grid_step
+  - id: number-0_001
+    class: numeric
+    numbers:
+      - token: "0.001"
+        files:
+          - README.md
+        evidence: docs/demo/result.json
+        path: nu_grid_step
+  - id: number-0_5
+    class: numeric
+    numbers:
+      - token: "0.5"
+        files:
+          - README.md
+          - docs/demo/result.md
+          - CHANGELOG.md
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_d_inverse_protocol.json
+        path: failure_relative_error
+  - id: number-0_02
+    class: numeric
+    numbers:
+      - token: "0.02"
+        files:
+          - README.md
+          - CHANGELOG.md
+          - PROJECT_STATUS.md
+        evidence: docs/demo/result.json
+        path: config/nu_min
+  - id: number-0_08
+    class: numeric
+    numbers:
+      - token: "0.08"
+        files:
+          - README.md
+          - CHANGELOG.md
+          - PROJECT_STATUS.md
+        evidence: docs/demo/result.json
+        path: config/nu_max
+  - id: number-0_10
+    class: numeric
+    numbers:
+      - token: "0.10"
+        files:
+          - CHANGELOG.md
+          - PROJECT_STATUS.md
+        evidence: docs/stage2/pilot_manifest.json
+        path: pilot/nu_max
+  - id: number-0_005
+    class: numeric
+    numbers:
+      - token: "0.005"
+        files:
+          - CHANGELOG.md
+          - PROJECT_STATUS.md
+        evidence: docs/v02/pilot_protocol.json
+        path: nu_range/min
+  - id: number-0_1
+    class: numeric
+    numbers:
+      - token: "0.1"
+        files:
+          - CHANGELOG.md
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_d_inverse_protocol.json
+        path: nu_search/max
+  - id: number-1em2
+    class: numeric
+    numbers:
+      - token: "1e-2"
+        files:
+          - CHANGELOG.md
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_c_train_protocol.json
+        path: losses/hybrid/weights/2
+  - id: number-1em4
+    class: numeric
+    numbers:
+      - token: "1e-4"
+        files:
+          - CHANGELOG.md
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_c_train_protocol.json
+        path: losses/hybrid/weights/1
+  - id: number-1em6
+    class: numeric
+    numbers:
+      - token: "1e-6"
+        files:
+          - CHANGELOG.md
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_c_train_protocol.json
+        path: losses/hybrid/weights/0
+  - id: number-2_5em4
+    class: numeric
+    numbers:
+      - token: "2.5e-4"
+        files:
+          - CHANGELOG.md
+          - PROJECT_STATUS.md
+        evidence: docs/v02/pilot_protocol.json
+        path: pilot/dt
+  - id: number-1em9
+    class: numeric
+    numbers:
+      - token: "1e-9"
+        files:
+          - CHANGELOG.md
+          - PROJECT_STATUS.md
+        evidence: docs/stage_a/convergence.json
+        path: label_gate/relative_l2_final_max
+  - id: number-0_027028120493367818
+    class: numeric
+    numbers:
+      - token: "0.027028120493367818"
+        files:
+          - CHANGELOG.md
+          - PROJECT_STATUS.md
+        evidence: docs/v02/pilot_protocol.json
+        path: hard_ood/threshold_nu
+  - id: number-0_049487208469027544
+    class: numeric
+    numbers:
+      - token: "0.049487208469027544"
+        files:
+          - CHANGELOG.md
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_d_scores.json
+        path: arms/data_only/objectives/0.0/slices/hard_ood/mean_rel_error/mean
+  - id: number-0_0144232271670265
+    class: numeric
+    numbers:
+      - token: "0.0144232271670265"
+        files:
+          - CHANGELOG.md
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_d_scores.json
+        path: arms/data_only/objectives/0.0/slices/hard_ood/mean_rel_error/std
+  - id: number-0_03368266375533967
+    class: numeric
+    numbers:
+      - token: "0.03368266375533967"
+        files:
+          - CHANGELOG.md
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_d_scores.json
+        path: arms/hybrid_1e-2/objectives/0.0/slices/hard_ood/mean_rel_error/mean
+  - id: number-0_0034734247381767768
+    class: numeric
+    numbers:
+      - token: "0.0034734247381767768"
+        files:
+          - CHANGELOG.md
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_d_scores.json
+        path: arms/hybrid_1e-2/objectives/0.0/slices/hard_ood/mean_rel_error/std
+  - id: number-0_3494591802034973
+    class: numeric
+    numbers:
+      - token: "0.3494591802034973"
+        files:
+          - CHANGELOG.md
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_d_scores.json
+        path: baselines/sensors32_bursts/hard_ood/mean_rel_error
+  - id: number-5_215427637735405em03
+    class: numeric
+    numbers:
+      - token: "5.215427637735405e-03"
+        files:
+          - CHANGELOG.md
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_c_scores.json
+        path: hybrid/slices/hard_ood/mean_relative_l2/mean
+  - id: number-6_736875927560861em04
+    class: numeric
+    numbers:
+      - token: "6.736875927560861e-04"
+        files:
+          - CHANGELOG.md
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_c_scores.json
+        path: hybrid/slices/hard_ood/mean_relative_l2/std
+  - id: number-7_049252763443842em03
+    class: numeric
+    numbers:
+      - token: "7.049252763443842e-03"
+        files:
+          - CHANGELOG.md
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_b_scores.json
+        path: slices/hard_ood/mean_relative_l2/mean
+  - id: number-3_032654479273341em04
+    class: numeric
+    numbers:
+      - token: "3.032654479273341e-04"
+        files:
+          - CHANGELOG.md
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_b_scores.json
+        path: slices/hard_ood/mean_relative_l2/std
+  - id: number-4_298970125314308em03
+    class: numeric
+    numbers:
+      - token: "4.298970125314308e-03"
+        files:
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_b_scores.json
+        path: slices/full_test/mean_relative_l2/mean
+  - id: number-3_608651258270467em04
+    class: numeric
+    numbers:
+      - token: "3.608651258270467e-04"
+        files:
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_b_scores.json
+        path: slices/full_test/mean_relative_l2/std
+  - id: number-3_457046868744042em03
+    class: numeric
+    numbers:
+      - token: "3.457046868744042e-03"
+        files:
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_b_scores.json
+        path: slices/complement/mean_relative_l2/mean
+  - id: number-3_865637014640921em04
+    class: numeric
+    numbers:
+      - token: "3.865637014640921e-04"
+        files:
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_b_scores.json
+        path: slices/complement/mean_relative_l2/std
+  - id: number-8_46em2
+    class: numeric
+    numbers:
+      - token: "8.46e-2"
+        files:
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_b_scores.json
+        path: slices/full_test/persistence_mean_relative_l2/mean
+  - id: number-9_78em2
+    class: numeric
+    numbers:
+      - token: "9.78e-2"
+        files:
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_b_scores.json
+        path: slices/hard_ood/persistence_mean_relative_l2/mean
+  - id: number-8_05em2
+    class: numeric
+    numbers:
+      - token: "8.05e-2"
+        files:
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_b_scores.json
+        path: slices/complement/persistence_mean_relative_l2/mean
+  - id: number-5_704581248709277em03
+    class: numeric
+    numbers:
+      - token: "5.704581248709277e-03"
+        files:
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_c_scores.json
+        path: residual/slices/hard_ood/mean_relative_l2/mean
+  - id: number-7_767311465741109em04
+    class: numeric
+    numbers:
+      - token: "7.767311465741109e-04"
+        files:
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_c_scores.json
+        path: residual/slices/hard_ood/mean_relative_l2/std
+  - id: number-0_0013208386837906374
+    class: numeric
+    numbers:
+      - token: "0.0013208386837906374"
+        files:
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_d_scores.json
+        path: baselines/dense_reference/hard_ood/mean_rel_error
+  - id: number-0_0030159391726451274
+    class: numeric
+    numbers:
+      - token: "0.0030159391726451274"
+        files:
+          - PROJECT_STATUS.md
+        evidence: docs/v02/inverse_stress.json
+        path: sensors32_bursts/mean_abs_error
+  - id: number-1em3
+    class: numeric
+    numbers:
+      - token: "1e-3"
+        files:
+          - PROJECT_STATUS.md
+        evidence: docs/stage2/pilot_manifest.json
+        path: pilot/dt
+  - id: number-0_05
+    class: numeric
+    numbers:
+      - token: "0.05"
+        files:
+          - PROJECT_STATUS.md
+        evidence: docs/stage2/convergence.json
+        path: pilot_versus_reference/nu
+  - id: number-1_09em12
+    class: numeric
+    numbers:
+      - token: "1.09e-12"
+        files:
+          - PROJECT_STATUS.md
+        evidence: docs/stage2/convergence.json
+        path: pilot_versus_reference/rel_l2_final
+  - id: number-0_01
+    class: numeric
+    numbers:
+      - token: "0.01"
+        files:
+          - PROJECT_STATUS.md
+        evidence: docs/stage2/pilot_manifest.json
+        path: pilot/save_dt
+  - id: number-1_25em4
+    class: numeric
+    numbers:
+      - token: "1.25e-4"
+        files:
+          - PROJECT_STATUS.md
+        evidence: docs/stage_a/convergence.json
+        path: label_gate/reference_dt
+  - id: number-4em11
+    class: numeric
+    numbers:
+      - token: "4e-11"
+        files:
+          - PROJECT_STATUS.md
+        evidence: docs/stage_a/convergence.json
+        path: pilot_versus_reference/0/rel_l2_spacetime
+  - id: number-0_1pct
+    class: numeric
+    numbers:
+      - token: "0.1%"
+        files:
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_e_stress_protocol.json
+        path: noise/fractions/1
+        scale: 100
+  - id: number-0_5pct
+    class: numeric
+    numbers:
+      - token: "0.5%"
+        files:
+          - PROJECT_STATUS.md
+        evidence: docs/v02/stage_e_stress_protocol.json
+        path: noise/fractions/2
+        scale: 100
+  - id: number-0_0138
+    class: numeric
+    numbers:
+      - token: "0.0138"
+        files:
+          - docs/v02/stage_g_claims.md
+        evidence: docs/research/strong_baselines_scores.json
+        path: methods/solver_sensor_ic/slices/hard_ood/mean_rel_error
+  - id: number-0_0337
+    class: numeric
+    numbers:
+      - token: "0.0337"
+        files:
+          - docs/v02/stage_g_claims.md
+        evidence: docs/research/strong_baselines_scores.json
+        path: fno/arms/hybrid_1e-2/slices/hard_ood/mean_rel_error
+  - id: number-0_0495
+    class: numeric
+    numbers:
+      - token: "0.0495"
+        files:
+          - docs/v02/stage_g_claims.md
+        evidence: docs/research/strong_baselines_scores.json
+        path: fno/arms/data_only/slices/hard_ood/mean_rel_error
+  - id: number-0_0898
+    class: numeric
+    numbers:
+      - token: "0.0898"
+        files:
+          - docs/v02/stage_g_claims.md
+        evidence: docs/research/strong_baselines_scores.json
+        path: methods/weak_form/slices/hard_ood/mean_rel_error
+  - id: number-0_349
+    class: numeric
+    numbers:
+      - token: "0.349"
+        files:
+          - docs/v02/stage_g_claims.md
+        evidence: docs/research/strong_baselines_scores.json
+        path: methods/closed_form_ls/slices/hard_ood/mean_rel_error
+  - id: number-0_00251
+    class: numeric
+    numbers:
+      - token: "0.00251"
+        files:
+          - docs/v02/stage_g_claims.md
+        evidence: docs/research/strong_baselines_scores.json
+        path: methods/solver_oracle_ic/slices/hard_ood/mean_rel_error
+  - id: number-1em8
+    class: numeric
+    numbers:
+      - token: "1e-8"
+        files:
+          - PROJECT_STATUS.md
+        evidence: STAGE2_REPORT.md
+        regex: "final-time relative L2 ≤ `([0-9.e-]+)`"
+  - id: number-2_65em3
+    class: numeric
+    numbers:
+      - token: "2.65e-3"
+        files:
+          - PROJECT_STATUS.md
+        evidence: STAGE3_REPORT.md
+        regex: "\\| mean relative L2 \\| ([0-9.]+) \\|"
+  - id: number-6_64em2
+    class: numeric
+    numbers:
+      - token: "6.64e-2"
+        files:
+          - PROJECT_STATUS.md
+        evidence: STAGE3_REPORT.md
+        regex: "\\| persistence mean relative L2 \\| ([0-9.]+) \\|"
+  - id: number-1_98em3
+    class: numeric
+    numbers:
+      - token: "1.98e-3"
+        files:
+          - PROJECT_STATUS.md
+        evidence: STAGE4_REPORT.md
+        regex: "The hybrid's `([0-9.]+)`"
+  - id: number-6_09em5
+    class: numeric
+    numbers:
+      - token: "6.09e-5"
+        files:
+          - PROJECT_STATUS.md
+        evidence: STAGE5_REPORT.md
+        regex: "\\| mean absolute error \\| ([0-9.e+-]+) \\|"
+  - id: number-1_81em2
+    class: numeric
+    numbers:
+      - token: "1.81e-2"
+        files:
+          - PROJECT_STATUS.md
+        evidence: STAGE5_REPORT.md
+        regex: "\\| mean absolute error \\| [0-9.e+-]+ \\| [0-9.e+-]+ \\| [0-9.e+-]+ \\| ([0-9.e+-]+) \\|"
+  - id: number-1_33em3
+    class: numeric
+    numbers:
+      - token: "1.33e-3"
+        files:
+          - PROJECT_STATUS.md
+        evidence: STAGE5_REPORT.md
+        regex: "\\| mean relative error \\| ([0-9.e+-]+) \\|"
+  - id: number-0_999994
+    class: numeric
+    numbers:
+      - token: "0.999994"
+        files:
+          - PROJECT_STATUS.md
+        evidence: STAGE5_REPORT.md
+        regex: "\\| correlation \\| ([0-9.]+) \\|"
+
+  - id: demo-closed-form-wins
+    class: superiority
+    assertion:
+      kind: ranking
+    locations:
+      - file: README.md
+        pattern: 'closed form wins'
+      - file: docs/demo/result.md
+        pattern: 'closed form wins'
+      - file: docs/demo/index.html
+        pattern: 'closed form wins'
+      - file: docs/v02/stage_g_claims.md
+        pattern: 'closed form wins'
+    comparisons:
+      - label: smooth demo closed form mean rel < FNO mean rel
+        op: "<"
+        left:
+          evidence: docs/demo/result.json
+          path: aggregates/closed_form/mean_rel_error
+        right:
+          evidence: docs/demo/result.json
+          path: aggregates/operator/mean_rel_error
+
+  - id: readme-fno-hard-ood-between-baselines
+    class: comparison
+    locations:
+      - file: README.md
+        pattern: 'On the hard-OOD Stage D slice the FNO mean relative error is lower than the closed form \(STAGE_D_REPORT\.md\) and higher than the sensor-lift solver'
+      - file: docs/demo/result.md
+        pattern: 'On the hard-OOD Stage D slice the FNO mean relative error is lower than the closed form \(STAGE_D_REPORT\.md\) and higher than the sensor-lift solver'
+      - file: docs/demo/index.html
+        pattern: 'On the hard-OOD Stage D slice the FNO mean relative error is lower than the closed form \(STAGE_D_REPORT\.md\) and higher than the sensor-lift solver'
+    comparisons:
+      - label: hybrid FNO hard_ood mean rel < closed form
+        op: "<"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/hybrid_1e-2/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/closed_form_ls/slices/hard_ood/mean_rel_error
+      - label: data-only FNO hard_ood mean rel < closed form
+        op: "<"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/data_only/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/closed_form_ls/slices/hard_ood/mean_rel_error
+      - label: hybrid FNO hard_ood mean rel > sensor-lift solver
+        op: ">"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/hybrid_1e-2/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/solver_sensor_ic/slices/hard_ood/mean_rel_error
+      - label: data-only FNO hard_ood mean rel > sensor-lift solver
+        op: ">"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/data_only/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/solver_sensor_ic/slices/hard_ood/mean_rel_error
+
+  - id: readme-best-match-is-argmin
+    class: superiority
+    assertion:
+      kind: not_a_ranking
+      note: argmin of sensor mean square, not a ranking of estimators
+    locations:
+      - file: README.md
+        pattern: 'predicted sensors best match the later frames'
+
+  - id: strong-baselines-denies-fno-beats-both
+    class: superiority
+    assertion:
+      kind: denies_best
+      scope: hard_ood_inverse_mean_rel
+      method: fno_inverse
+    locations:
+      - file: docs/research/strong_baselines.md
+        pattern: 'operator beats a weak-form identifier and a solver-in-the-loop fit'
+
+  - id: stage-g-phrase-list-is-vocabulary
+    class: superiority
+    assertion:
+      kind: not_a_ranking
+      note: names the scanned words and does not rank a method
+    locations:
+      - file: docs/v02/stage_g_claims.md
+        pattern: 'Scanned superiority phrases are `best`, `beats`, `beat`, `beating`, `outperform`, `outperforms`, `outperforming`, `most accurate`, `win`, `wins`, and `edge`'
+
+  - id: stage-g-denies-fno-most-accurate
+    class: superiority
+    assertion:
+      kind: denies_best
+      scope: hard_ood_inverse_mean_rel
+      method: fno_inverse
+    locations:
+      - file: docs/v02/stage_g_claims.md
+        pattern: 'is not the most accurate method on `hard_ood`'
+
+  - id: stage-g-hyperparameters-are-not-best
+    class: superiority
+    assertion:
+      kind: not_a_ranking
+      note: refuses an optimality claim outside the frozen set
+    locations:
+      - file: docs/v02/stage_g_claims.md
+        pattern: 'is best outside the set'
+
+  - id: hard-ood-inverse-order
+    class: comparison
+    locations:
+      - file: docs/v02/stage_g_claims.md
+        pattern: 'sensor-lift solver `0\.0138`, hybrid FNO `0\.0337`, data-only FNO `0\.0495`, weak form `0\.0898`, closed form `0\.349`'
+    comparisons:
+      - label: solver_sensor_ic hard_ood mean rel < hybrid FNO
+        op: "<"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/solver_sensor_ic/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/hybrid_1e-2/slices/hard_ood/mean_rel_error
+      - label: hybrid FNO hard_ood mean rel < data-only FNO
+        op: "<"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/hybrid_1e-2/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/data_only/slices/hard_ood/mean_rel_error
+      - label: data-only FNO hard_ood mean rel < weak form
+        op: "<"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: fno/arms/data_only/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/weak_form/slices/hard_ood/mean_rel_error
+      - label: weak form hard_ood mean rel < closed form
+        op: "<"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/weak_form/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/closed_form_ls/slices/hard_ood/mean_rel_error
+      - label: oracle IC hard_ood mean rel < sensor-lift solver
+        op: "<"
+        left:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/solver_oracle_ic/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/research/strong_baselines_scores.json
+          path: methods/solver_sensor_ic/slices/hard_ood/mean_rel_error
+
+  - id: stage-b-beats-persistence
+    class: superiority
+    assertion:
+      kind: ranking
+    locations:
+      - file: STAGE_B_REPORT.md
+        pattern: 'beats? persistence'
+      - file: STAGE_B_REPORT.md
+        pattern: 'Beating persistence'
+      - file: CHANGELOG.md
+        pattern: 'beat the one-step persistence baseline'
+      - file: PROJECT_STATUS.md
+        pattern: 'Both beat persistence'
+    comparisons:
+      - label: stage B full-test mean relative L2 < persistence
+        op: "<"
+        left:
+          evidence: docs/v02/stage_b_scores.json
+          path: slices/full_test/mean_relative_l2/mean
+        right:
+          evidence: docs/v02/stage_b_scores.json
+          path: slices/full_test/persistence_mean_relative_l2/mean
+      - label: stage B hard_ood mean relative L2 < persistence
+        op: "<"
+        left:
+          evidence: docs/v02/stage_b_scores.json
+          path: slices/hard_ood/mean_relative_l2/mean
+        right:
+          evidence: docs/v02/stage_b_scores.json
+          path: slices/hard_ood/persistence_mean_relative_l2/mean
+      - label: stage B complement mean relative L2 < persistence
+        op: "<"
+        left:
+          evidence: docs/v02/stage_b_scores.json
+          path: slices/complement/mean_relative_l2/mean
+        right:
+          evidence: docs/v02/stage_b_scores.json
+          path: slices/complement/persistence_mean_relative_l2/mean
+
+  - id: stage-c-beats-persistence
+    class: superiority
+    assertion:
+      kind: ranking
+    locations:
+      - file: STAGE_C_REPORT.md
+        pattern: 'beats persistence'
+    comparisons:
+      - label: stage C hybrid hard_ood mean relative L2 < persistence
+        op: "<"
+        left:
+          evidence: docs/v02/stage_c_scores.json
+          path: hybrid/slices/hard_ood/mean_relative_l2/mean
+        right:
+          evidence: docs/v02/stage_c_scores.json
+          path: hybrid/slices/hard_ood/persistence_mean_relative_l2/mean
+
+  - id: stage-4-beating-persistence
+    class: superiority
+    assertion:
+      kind: ranking
+    locations:
+      - file: STAGE4_REPORT.md
+        pattern: 'Beating persistence'
+    comparisons:
+      - label: stage 3 data-only test mean relative L2 < persistence
+        op: "<"
+        left:
+          evidence: STAGE3_REPORT.md
+          regex: '\| mean relative L2 \| ([0-9.]+) \|'
+        right:
+          evidence: STAGE3_REPORT.md
+          regex: '\| persistence mean relative L2 \| ([0-9.]+) \|'
+      - label: stage 4 hybrid test mean relative L2 < persistence
+        op: "<"
+        left:
+          evidence: STAGE4_REPORT.md
+          regex: "The hybrid's `([0-9.]+)`"
+        right:
+          evidence: STAGE3_REPORT.md
+          regex: '\| persistence mean relative L2 \| ([0-9.]+) \|'
+
+  - id: stage-a-beats-constant
+    class: superiority
+    assertion:
+      kind: ranking
+    locations:
+      - file: STAGE_A_REPORT.md
+        pattern: 'beats that constant on 126 of 128'
+    comparisons:
+      - label: sensors32_bursts beats the training-mean constant on 126 of 128
+        op: "=="
+        left:
+          evidence: docs/v02/inverse_stress.json
+          path: sensors32_bursts/n_instances
+          minus:
+            evidence: docs/v02/inverse_stress.json
+            path: sensors32_bursts/n_worse_than_baseline
+        right:
+          literal: 126
+
+  - id: stage-d-lambda-zero-wins
+    class: superiority
+    assertion:
+      kind: ranking
+    locations:
+      - file: STAGE_D_REPORT.md
+        pattern: 'λ = 0` wins'
+    comparisons:
+      - label: data-only lambda 0 lower than lambda 1 on every validation seed
+        op: "each<"
+        left:
+          evidence: docs/v02/stage_d_objective_selection.json
+          path: arms/data_only/candidates/0/hard_ood_mean_rel_error
+        right:
+          evidence: docs/v02/stage_d_objective_selection.json
+          path: arms/data_only/candidates/1/hard_ood_mean_rel_error
+      - label: data-only lambda 0 lower than lambda 10 on every validation seed
+        op: "each<"
+        left:
+          evidence: docs/v02/stage_d_objective_selection.json
+          path: arms/data_only/candidates/0/hard_ood_mean_rel_error
+        right:
+          evidence: docs/v02/stage_d_objective_selection.json
+          path: arms/data_only/candidates/2/hard_ood_mean_rel_error
+      - label: hybrid lambda 0 lower than lambda 1 on every validation seed
+        op: "each<"
+        left:
+          evidence: docs/v02/stage_d_objective_selection.json
+          path: arms/hybrid_1e-2/candidates/0/hard_ood_mean_rel_error
+        right:
+          evidence: docs/v02/stage_d_objective_selection.json
+          path: arms/hybrid_1e-2/candidates/1/hard_ood_mean_rel_error
+      - label: hybrid lambda 0 lower than lambda 10 on every validation seed
+        op: "each<"
+        left:
+          evidence: docs/v02/stage_d_objective_selection.json
+          path: arms/hybrid_1e-2/candidates/0/hard_ood_mean_rel_error
+        right:
+          evidence: docs/v02/stage_d_objective_selection.json
+          path: arms/hybrid_1e-2/candidates/2/hard_ood_mean_rel_error
+
+  - id: checkpoint-selection-is-not-a-ranking
+    class: superiority
+    assertion:
+      kind: not_a_ranking
+      note: epoch or validation rule, not a ranking of inverse methods
+    locations:
+      - file: CHANGELOG.md
+        pattern: 'best validation relative L2'
+      - file: STAGE_D_REPORT.md
+        pattern: 'best validation relative L2'
+      - file: STAGE3_REPORT.md
+        pattern: 'is best'
+      - file: STAGE4_REPORT.md
+        pattern: 'is best'
+
+  - id: stage-f-beats-persistence
+    class: superiority
+    assertion:
+      kind: ranking
+    locations:
+      - file: STAGE_F_REPORT.md
+        pattern: 'still beats persistence'
+    comparisons:
+      - label: stage F data-only OOD mean relative L2 < persistence
+        op: "<"
+        left:
+          evidence: docs/v02/stage_f_scores.json
+          path: forward/data_only/slices/ood/mean_relative_l2/mean
+        right:
+          evidence: docs/v02/stage_f_scores.json
+          path: forward/data_only/slices/ood/persistence_mean_relative_l2/mean
+      - label: stage F hybrid OOD mean relative L2 < persistence
+        op: "<"
+        left:
+          evidence: docs/v02/stage_f_scores.json
+          path: forward/hybrid_1e-2/slices/ood/mean_relative_l2/mean
+        right:
+          evidence: docs/v02/stage_f_scores.json
+          path: forward/hybrid_1e-2/slices/ood/persistence_mean_relative_l2/mean
+
+  - id: stage-f-beats-instance-persistence
+    class: superiority
+    assertion:
+      kind: ranking
+    locations:
+      - file: STAGE_F_REPORT.md
+        pattern: 'beat one-step persistence'
+    comparisons:
+      - label: stage F data-only instance 179 one-step mean < stage B persistence
+        op: "<"
+        left:
+          evidence: docs/v02/stage_f_scores.json
+          path: forward/data_only/worst_ood_one_step/0/mean
+        right:
+          evidence: STAGE_B_REPORT.md
+          regex: '\| 179 \| [0-9.]+ \| [0-9.]+ \| ([0-9.]+) \|'
+      - label: stage F hybrid instance 179 one-step mean < stage B persistence
+        op: "<"
+        left:
+          evidence: docs/v02/stage_f_scores.json
+          path: forward/hybrid_1e-2/worst_ood_one_step/0/mean
+        right:
+          evidence: STAGE_B_REPORT.md
+          regex: '\| 179 \| [0-9.]+ \| [0-9.]+ \| ([0-9.]+) \|'
+
+  - id: stage-f-beats-closed-form-slice
+    class: superiority
+    assertion:
+      kind: ranking
+    locations:
+      - file: STAGE_F_REPORT.md
+        pattern: 'beat that slice mean'
+      - file: STAGE_F_REPORT.md
+        pattern: 'Beating the closed form'
+    comparisons:
+      - label: stage F data-only OOD inverse mean rel < closed form
+        op: "<"
+        left:
+          evidence: docs/v02/stage_f_scores.json
+          path: inverse/arms/data_only/slices/ood/mean_rel_error/mean
+        right:
+          evidence: docs/v02/stage_f_scores.json
+          path: inverse/closed_form_sensors32/slices/ood/mean_rel_error
+      - label: stage F hybrid OOD inverse mean rel < closed form
+        op: "<"
+        left:
+          evidence: docs/v02/stage_f_scores.json
+          path: inverse/arms/hybrid_1e-2/slices/ood/mean_rel_error/mean
+        right:
+          evidence: docs/v02/stage_f_scores.json
+          path: inverse/closed_form_sensors32/slices/ood/mean_rel_error
+
+  - id: stage-d-beating-closed-form-is-not-dense
+    class: superiority
+    assertion:
+      kind: ranking
+    locations:
+      - file: STAGE_D_REPORT.md
+        pattern: 'Beating the closed form'
+    comparisons:
+      - label: stage D data-only hard_ood mean rel < closed form
+        op: "<"
+        left:
+          evidence: docs/v02/stage_d_scores.json
+          path: arms/data_only/objectives/0.0/slices/hard_ood/mean_rel_error/mean
+        right:
+          evidence: docs/v02/stage_d_scores.json
+          path: baselines/sensors32_bursts/hard_ood/mean_rel_error
+      - label: stage D hybrid hard_ood mean rel < closed form
+        op: "<"
+        left:
+          evidence: docs/v02/stage_d_scores.json
+          path: arms/hybrid_1e-2/objectives/0.0/slices/hard_ood/mean_rel_error/mean
+        right:
+          evidence: docs/v02/stage_d_scores.json
+          path: baselines/sensors32_bursts/hard_ood/mean_rel_error
+      - label: stage D data-only hard_ood mean rel > dense reference
+        op: ">"
+        left:
+          evidence: docs/v02/stage_d_scores.json
+          path: arms/data_only/objectives/0.0/slices/hard_ood/mean_rel_error/mean
+        right:
+          evidence: docs/v02/stage_d_scores.json
+          path: baselines/dense_reference/hard_ood/mean_rel_error
+      - label: stage D hybrid hard_ood mean rel > dense reference
+        op: ">"
+        left:
+          evidence: docs/v02/stage_d_scores.json
+          path: arms/hybrid_1e-2/objectives/0.0/slices/hard_ood/mean_rel_error/mean
+        right:
+          evidence: docs/v02/stage_d_scores.json
+          path: baselines/dense_reference/hard_ood/mean_rel_error
+
+  - id: stage-e-beating-closed-form-until-one-percent
+    class: superiority
+    assertion:
+      kind: ranking
+    locations:
+      - file: STAGE_E_REPORT.md
+        pattern: 'Beating the closed form'
+    comparisons:
+      - label: stage E data-only clean hard_ood mean rel < closed form
+        op: "<"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0_sensors32_bursts4/operator_data_only/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0_sensors32_bursts4/closed_form_ls/slices/hard_ood/mean_rel_error
+      - label: stage E hybrid clean hard_ood mean rel < closed form
+        op: "<"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0_sensors32_bursts4/operator_hybrid_1e-2/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0_sensors32_bursts4/closed_form_ls/slices/hard_ood/mean_rel_error
+      - label: stage E data-only 0.1% noise hard_ood mean rel < closed form
+        op: "<"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p001_sensors32_bursts4/operator_data_only/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p001_sensors32_bursts4/closed_form_ls/slices/hard_ood/mean_rel_error
+      - label: stage E hybrid 0.1% noise hard_ood mean rel < closed form
+        op: "<"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p001_sensors32_bursts4/operator_hybrid_1e-2/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p001_sensors32_bursts4/closed_form_ls/slices/hard_ood/mean_rel_error
+      - label: stage E data-only 0.5% noise hard_ood mean rel < closed form
+        op: "<"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p005_sensors32_bursts4/operator_data_only/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p005_sensors32_bursts4/closed_form_ls/slices/hard_ood/mean_rel_error
+      - label: stage E hybrid 0.5% noise hard_ood mean rel < closed form
+        op: "<"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p005_sensors32_bursts4/operator_hybrid_1e-2/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p005_sensors32_bursts4/closed_form_ls/slices/hard_ood/mean_rel_error
+      - label: stage E data-only 1% noise hard_ood mean rel < closed form
+        op: "<"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p01_sensors32_bursts4/operator_data_only/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p01_sensors32_bursts4/closed_form_ls/slices/hard_ood/mean_rel_error
+      - label: stage E hybrid 1% noise hard_ood mean rel < closed form
+        op: "<"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p01_sensors32_bursts4/operator_hybrid_1e-2/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p01_sensors32_bursts4/closed_form_ls/slices/hard_ood/mean_rel_error
+      - label: stage E data-only clean hard_ood mean rel > dense reference
+        op: ">"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0_sensors32_bursts4/operator_data_only/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/v02/stage_d_scores.json
+          path: baselines/dense_reference/hard_ood/mean_rel_error
+      - label: stage E hybrid clean hard_ood mean rel > dense reference
+        op: ">"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0_sensors32_bursts4/operator_hybrid_1e-2/slices/hard_ood/mean_rel_error
+        right:
+          evidence: docs/v02/stage_d_scores.json
+          path: baselines/dense_reference/hard_ood/mean_rel_error
+      - label: stage E data-only 2% noise hard_ood mean rel crosses 10%
+        op: ">"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p02_sensors32_bursts4/operator_data_only/slices/hard_ood/mean_rel_error
+        right:
+          literal: 0.10
+      - label: stage E hybrid 2% noise hard_ood mean rel crosses 10%
+        op: ">"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0p02_sensors32_bursts4/operator_hybrid_1e-2/slices/hard_ood/mean_rel_error
+        right:
+          literal: 0.10
+      - label: stage E data-only 16-sensor hard_ood mean rel crosses 10%
+        op: ">"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0_sensors16_bursts4/operator_data_only/slices/hard_ood/mean_rel_error
+        right:
+          literal: 0.10
+      - label: stage E hybrid 16-sensor hard_ood mean rel crosses 10%
+        op: ">"
+        left:
+          evidence: docs/v02/stage_e_scores.json
+          path: conditions/noise0_sensors16_bursts4/operator_hybrid_1e-2/slices/hard_ood/mean_rel_error
+        right:
+          literal: 0.10
+
+  - id: stage-f-not-a-win
+    class: superiority
+    assertion:
+      kind: not_a_ranking
+      note: the report refuses to call a mixed seed split a win
+    locations:
+      - file: STAGE_F_REPORT.md
+        pattern: 'not a win'

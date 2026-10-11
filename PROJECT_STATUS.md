@@ -59,7 +59,8 @@ CI runs on pull requests and on pushes to `main`. The unit-test job installs
 `pip install -e ".[dev,api]"` and runs `pytest -m "not ml"` on Python 3.11
 and 3.12. A separate job installs the CPU torch wheel, then the same extras,
 and runs the full suite on Python 3.12. A lint job runs `ruff check .`
-(rules E4, E7, E9, F, I). HTTP tests use FastAPI `TestClient` and do not
+(rules E4, E7, E9, F, I). A claim-to-evidence job runs
+`python -m pinnforge.claims check`. HTTP tests use FastAPI `TestClient` and do not
 bind a port. Nothing in the suite downloads weights.
 
 ## Stage 1
