@@ -1,0 +1,86 @@
+{
+  "format": "pinnforge.v061_download_valid_manifest.v1",
+  "role": "validation-file provenance for the identifiability sweep. Not a test score.",
+  "repo": "polymathic-ai/shear_flow",
+  "anonymous": true,
+  "files": [
+    {
+      "path": "data/valid/shear_flow_Reynolds_1e4_Schmidt_1e-1.hdf5",
+      "local": "/workspace/artifacts/v061_raw/data/valid/shear_flow_Reynolds_1e4_Schmidt_1e-1.hdf5",
+      "bytes": 1694498816,
+      "sha256": "71ff80e7e59d22167359aa4f9dc02af0e272ed0059336a043e40805e89ac71e1"
+    },
+    {
+      "path": "data/valid/shear_flow_Reynolds_1e4_Schmidt_1e0.hdf5",
+      "local": "artifacts/v061_raw/data/valid/shear_flow_Reynolds_1e4_Schmidt_1e0.hdf5",
+      "bytes": 1694498816,
+      "sha256": "4fe350b4d80e3a2b5133c4cc9927221209bbe293232caf71036aaf11782cebc3"
+    },
+    {
+      "path": "data/valid/shear_flow_Reynolds_1e4_Schmidt_2e-1.hdf5",
+      "local": "artifacts/v061_raw/data/valid/shear_flow_Reynolds_1e4_Schmidt_2e-1.hdf5",
+      "bytes": 1694498816,
+      "sha256": "802ce9d3093f945e6aeb8766aa8e6f6eae8149dac69a5f58b6343b9944f0b99b"
+    },
+    {
+      "path": "data/valid/shear_flow_Reynolds_1e4_Schmidt_2e0.hdf5",
+      "local": "/workspace/artifacts/v061_raw/data/valid/shear_flow_Reynolds_1e4_Schmidt_2e0.hdf5",
+      "bytes": 1694498816,
+      "sha256": "aa6dc8ba9682c501d89b1af234e001feb1bc6bc3d7b0e07ee1893f38c379864e"
+    },
+    {
+      "path": "data/valid/shear_flow_Reynolds_1e4_Schmidt_5e-1.hdf5",
+      "local": "artifacts/v061_raw/data/valid/shear_flow_Reynolds_1e4_Schmidt_5e-1.hdf5",
+      "bytes": 1694498816,
+      "sha256": "ff37ab34febce45a266af99b1d058cbd22eb272da759c98df8240ad8c00cd1de"
+    },
+    {
+      "path": "data/valid/shear_flow_Reynolds_1e4_Schmidt_5e0.hdf5",
+      "local": "/workspace/artifacts/v061_raw/data/valid/shear_flow_Reynolds_1e4_Schmidt_5e0.hdf5",
+      "bytes": 1694498816,
+      "sha256": "495cec5412ab97e6fc47ab3eee80d99155d973cfa978a6c18860fc7fea64f85a"
+    },
+    {
+      "path": "data/valid/shear_flow_Reynolds_1e5_Schmidt_1e0.hdf5",
+      "local": "artifacts/v061_raw/data/valid/shear_flow_Reynolds_1e5_Schmidt_1e0.hdf5",
+      "bytes": 1694498816,
+      "sha256": "d0a7426a85a71230a7657b1b6d6ae9f070f9d20872c6dc2ccabe84b6e57df9e2"
+    },
+    {
+      "path": "data/valid/shear_flow_Reynolds_1e5_Schmidt_5e-1.hdf5",
+      "local": "/workspace/artifacts/v061_raw/data/valid/shear_flow_Reynolds_1e5_Schmidt_5e-1.hdf5",
+      "bytes": 1694498816,
+      "sha256": "30d3637384b2b54a57b56001d45a43c6e970ed425d6c88d8e8a51c080c281418"
+    },
+    {
+      "path": "data/valid/shear_flow_Reynolds_5e4_Schmidt_1e0.hdf5",
+      "local": "artifacts/v061_raw/data/valid/shear_flow_Reynolds_5e4_Schmidt_1e0.hdf5",
+      "bytes": 1694498816,
+      "sha256": "b9685d3dee927f1664a3d13e44e2eadf98d2cdf2b7a4beae4441f1406ca4884c"
+    },
+    {
+      "path": "data/valid/shear_flow_Reynolds_5e4_Schmidt_2e0.hdf5",
+      "local": "/workspace/artifacts/v061_raw/data/valid/shear_flow_Reynolds_5e4_Schmidt_2e0.hdf5",
+      "bytes": 1694498816,
+      "sha256": "3ef78897ee550f04ca24f80cd5fafa5f8da3f7ee6eb0bd6effb8d4bb1103d26b"
+    },
+    {
+      "path": "data/valid/shear_flow_Reynolds_5e4_Schmidt_5e-1.hdf5",
+      "local": "/workspace/artifacts/v061_raw/data/valid/shear_flow_Reynolds_5e4_Schmidt_5e-1.hdf5",
+      "bytes": 1694498816,
+      "sha256": "60ac2ed9c78ba90b86497c06854b9d617d3203194517c62533165b6427ac6257"
+    },
+    {
+      "path": "data/valid/shear_flow_Reynolds_5e5_Schmidt_1e-1.hdf5",
+      "local": "/workspace/artifacts/v061_raw/data/valid/shear_flow_Reynolds_5e5_Schmidt_1e-1.hdf5",
+      "bytes": 1694498816,
+      "sha256": "3cd176e0d71e79dbcf2d9dfdeb26bc7d909f0e6092ac4f3c068853cdbe389e75"
+    },
+    {
+      "path": "data/valid/shear_flow_Reynolds_5e5_Schmidt_1e0.hdf5",
+      "local": "/workspace/artifacts/v061_raw/data/valid/shear_flow_Reynolds_5e5_Schmidt_1e0.hdf5",
+      "bytes": 1694498816,
+      "sha256": "0c3d90142f92923472f94fd150d5592651242967c4b54a17892b7099642d8804"
+    }
+  ]
+}

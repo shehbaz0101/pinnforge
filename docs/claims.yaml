@@ -35,6 +35,7 @@ scan:
     - docs/v051/*.md
     - docs/v052/*.md
     - docs/v06/*.md
+    - docs/v061/*.md
     - STAGE1_REPORT.md
     - STAGE2_REPORT.md
     - STAGE3_REPORT.md
@@ -133,6 +134,10 @@ leaf_documents:
       - docs/v06/validation.json
       - docs/v06/download_manifest.json
       - docs/v06/pilot_manifest.json
+  - file: docs/v061/identifiability.md
+    evidence:
+      - docs/v061/identifiability.json
+      - docs/v061/download_valid_manifest.json
 
 claims:
   - id: number-0_41pct

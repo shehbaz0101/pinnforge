@@ -75,6 +75,7 @@ SUBCOMMANDS = (
     "v051",
     "v052",
     "v06",
+    "v061",
     "claims",
 )
 
@@ -149,6 +150,9 @@ def test_forwarded_subcommand_help() -> None:
     v06 = _help_output([sys.executable, "-m", "pinnforge", "v06"])
     assert v06.startswith("usage: pinnforge v06")
     assert "smoke" in v06
+    v061 = _help_output([sys.executable, "-m", "pinnforge", "v061"])
+    assert v061.startswith("usage: pinnforge v061")
+    assert "smoke" in v061
     claims = _help_output([sys.executable, "-m", "pinnforge", "claims"])
     assert claims.startswith("usage: pinnforge claims")
     assert "check" in claims

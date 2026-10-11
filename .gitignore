@@ -59,4 +59,9 @@ docs/v052/score_cases.jsonl
 artifacts/v06_raw/
 artifacts/v06_pilot/
 docs/v06/score_cases.jsonl
+
+# v0.6.1 identifiability-first shear_flow. Manifests live in docs/v061/.
+artifacts/v061_raw/
+artifacts/v061_pilot/
+docs/v061/score_cases.jsonl
 *.hdf5
