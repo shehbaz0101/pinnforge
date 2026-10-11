@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### v061 identifiable The Well shear_flow inverse
+
+- **FAIL.** `python -m pinnforge.v061` recovers `kappa` on the identifiable Reynolds `10000` subset of The Well `shear_flow` chosen in [docs/v061/identifiability.md](docs/v061/identifiability.md). The protocol [docs/v061/protocol.json](docs/v061/protocol.json) was committed after that diagnostic and before the test split was scored. No v06 artifact was edited. Raw HDF5 is not committed. CI runs smoke only. The subset is CC BY 4 (Ohana et al.).
+- The Well shear_flow inverse fails the preregistered bars on the identifiable subset. The in-distribution median-rel bar, the OOD median-rel bar, the gap bar, the coverage bar, the hybrid-below-baselines bar, and the constant-predictor bar fail. The noise-robustness bar passes. The full-field oracle on the chosen cell is below the identifiability gate. The note is [docs/v061/report.md](docs/v061/report.md). The scores are [docs/v061/scores.json](docs/v061/scores.json). This is a recorded negative result.
+
 ### v06 The Well shear_flow inverse
 
 - **FAIL.** `python -m pinnforge.v06` recovers `nu` and `kappa` from sparse probes of a named subset of The Well `shear_flow`. The protocol [docs/v06/protocol.json](docs/v06/protocol.json) was committed before the test split was scored. Raw HDF5 is not committed. PySR is skipped. CI runs smoke only and never downloads The Well. The subset is CC BY 4 (Ohana et al.).

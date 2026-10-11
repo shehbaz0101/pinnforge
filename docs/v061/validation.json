@@ -1,0 +1,10 @@
+{
+  "protocol_sha256": "d3d7af4088e8170ce1555f1ded10b7ade98110446e2a70cebe51cb9ca1a8b052",
+  "n_cal": 64,
+  "identifiability": "docs/v061/identifiability.json",
+  "chosen_window": "late_9",
+  "chosen_grid": [
+    256,
+    512
+  ]
+}

@@ -98,6 +98,7 @@ Other plots: [relative error](docs/demo/relative_error.png), [first test field a
 | v0.3 | FNO-warm-started solver fit with calibrated intervals and an abstain flag | [docs/v03/warmstart.md](docs/v03/warmstart.md) | [docs/v03/warmstart_scores.json](docs/v03/warmstart_scores.json) |
 | v0.4 | 2D Burgers and vorticity-form Navier-Stokes viscosity inverse; both problems fail the preregistered bars | [docs/v04/report.md](docs/v04/report.md) | [docs/v04/scores.json](docs/v04/scores.json) |
 | v06 | The Well shear_flow nu/kappa inverse; fails the preregistered bars | [docs/v06/report.md](docs/v06/report.md) | [docs/v06/scores.json](docs/v06/scores.json) |
+| v061 | identifiable The Well shear_flow inverse; fails the preregistered bars on the identifiable subset | [docs/v061/report.md](docs/v061/report.md) | [docs/v061/scores.json](docs/v061/scores.json) |
 
 ## What is NOT claimed
 
