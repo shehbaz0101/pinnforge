@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import shutil
 import threading
 import time
@@ -41,6 +42,9 @@ from pinnforge.equations.registry import resolve_equation_id
 from pinnforge.sampling.defaults import default_spec
 
 GITHUB_URL = "https://github.com/shehbaz0101/pinnforge"
+HEALTH_PATH = "/health"
+_PORT_MIN = 1
+_PORT_MAX = 65535
 HEADER_MARKDOWN = (
     "# PINNForge\n\n"
     "A physics-informed network learns a classic equation from its residual on CPU, "
@@ -153,6 +157,33 @@ class StageDHeadline:
 
     def rows(self) -> tuple[HardOodRow, HardOodRow, HardOodRow]:
         return (self.closed_form, self.data_only, self.hybrid)
+
+
+def server_bind() -> tuple[str, int]:
+    """Host and port for the Gradio process.
+
+    Render injects ``PORT``. A local run with ``PORT`` unset listens on 7860.
+    The host is ``0.0.0.0`` so the free web service can reach the process.
+
+    Raises:
+        ValueError: ``PORT`` is set and is not an integer from 1 to 65535.
+    """
+
+    raw = os.environ.get("PORT", "").strip()
+    if not raw:
+        return "0.0.0.0", 7860
+    if not raw.isascii() or not raw.isdigit():
+        raise ValueError("PORT must be an integer from 1 to 65535")
+    port = int(raw)
+    if port < _PORT_MIN or port > _PORT_MAX:
+        raise ValueError("PORT must be an integer from 1 to 65535")
+    return "0.0.0.0", port
+
+
+def health_body() -> dict[str, str]:
+    """JSON body for the Render health check. It does not import torch."""
+
+    return {"status": "ok"}
 
 
 def equation_choices() -> list[tuple[str, str]]:
@@ -289,6 +320,34 @@ def format_error_percent(value: float) -> str:
     if not math.isfinite(number):
         raise ValueError("percent is not finite")
     return f"{number:.1f}%"
+
+
+def release_heap() -> None:
+    """Return unused heap pages after a click so the free instance can sit lower."""
+
+    import gc
+
+    gc.collect()
+    try:
+        import ctypes
+
+        ctypes.CDLL("libc.so.6").malloc_trim(0)
+    except (OSError, AttributeError):
+        return
+
+
+def release_other_figures(keep: object) -> None:
+    """Close plot figures from earlier clicks, keeping the cached viscosity chart."""
+
+    plt = _pyplot()
+    for number in list(plt.get_fignums()):
+        figure = plt.figure(number)
+        if figure is keep:
+            continue
+        title = figure.axes[0].get_title() if figure.axes else ""
+        if title.startswith("Hard-OOD"):
+            continue
+        plt.close(figure)
 
 
 def prediction_figure(solved: LiveSolve) -> Any:

@@ -19,26 +19,31 @@ PINNForge is a CPU sandbox for a few classic physics-informed residuals, plus on
 
 ## Live demo
 
-A Gradio page on a free Hugging Face CPU Space: pick harmonic, Burgers, or Poisson, run a small PINN, and read the Stage D viscosity result. No GPU and no API key. The live curve is trained on that click. The viscosity bars are read from [docs/v02/stage_d_scores.json](docs/v02/stage_d_scores.json) and the page labels them precomputed.
+A Gradio page on a Render free web service (0.1 CPU, 512 MB RAM, spins down when idle). Pick harmonic, Burgers, or Poisson, run a small PINN, and read the Stage D viscosity result. The live curve is trained on that click. Torch loads on the first click. The viscosity bars are read from [docs/v02/stage_d_scores.json](docs/v02/stage_d_scores.json) and the page labels them precomputed.
 
-**Live demo:** https://huggingface.co/spaces/PLACEHOLDER/pinnforge
+**Live demo:** https://pinnforge.onrender.com
 
-`PLACEHOLDER` is not a Space yet. Replace it with the Hugging Face username or organization after you create the Space. The repository root is the Space (`app.py`, `requirements.txt`, and the YAML block at the top of this file).
+That host is a placeholder in the `https://<service-name>.onrender.com` form. It will be filled in when the free web service named `pinnforge` exists. If the created service name differs, replace the host.
 
-1. Open https://huggingface.co/new-space.
-2. Owner: the account that should appear in the link above. Space name: `pinnforge`. License: MIT.
-3. SDK: Gradio. The YAML `sdk_version` is `5.50.0`.
-4. Hardware: CPU basic. That flavor is the free CPU tier. `suggested_hardware: cpu-basic` only suggests it; the hardware control on this form is what assigns the machine.
-5. Visibility: Public. Create the Space.
-6. The new Space has a template commit. From a clone of this repository, replace that template with `main`:
+The YAML block at the top of this file is Gradio metadata. Render ignores it. The service is [render.yaml](render.yaml), with Python 3.12 from [.python-version](.python-version).
 
-```bash
-huggingface-cli login
-git remote add space https://huggingface.co/spaces/<user>/pinnforge
-git push --force-with-lease space main:main
-```
+Create a Blueprint from this repository and branch `cursor/hf-live-demo-6f9a` (Dashboard → New → Blueprint). The file sets:
 
-The Space installs `requirements.txt` (a CPU torch wheel, then this package) and reads `python_version: "3.12"`. Gradio comes from the Space SDK. Leave the secrets table empty. The public page is `app.py`.
+| Setting | Value |
+| --- | --- |
+| Name | `pinnforge` |
+| Type | Web service |
+| Runtime | Python |
+| Plan | `free` (0.1 CPU, 512 MB RAM) |
+| Region | Oregon |
+| Branch | `cursor/hf-live-demo-6f9a` |
+| Python | `3.12` via `.python-version` (Render's latest 3.12 patch). Leave `PYTHON_VERSION` unset. |
+| Build command | `pip install --upgrade pip && pip install "torch==2.14.1+cpu" --index-url https://download.pytorch.org/whl/cpu && pip install -r requirements.txt` |
+| Start command | `python app.py` |
+| Health check path | `/health` |
+| Env vars | `PYTHONUNBUFFERED=1`, `MALLOC_ARENA_MAX=2`, `OMP_NUM_THREADS=1`, `MKL_NUM_THREADS=1`, `OPENBLAS_NUM_THREADS=1`, `NUMEXPR_NUM_THREADS=1` |
+
+Leave `PORT` unset. Render injects it, and `app.py` binds `0.0.0.0:$PORT`. A local run with `PORT` unset uses 7860. Secrets: none. `requirements.txt` installs the CPU torch wheel, Gradio 5.50.0, and this package.
 
 Same page on a laptop:
 
