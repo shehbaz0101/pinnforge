@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import math
+import multiprocessing as mp
 import platform
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -19,11 +21,17 @@ from pinnforge.operator.warmstart import (
     predicted_group,
 )
 from pinnforge.reference.spectral2d.dataset import generate_problem, load_protocol, protocol_sha256
-from pinnforge.v04.baselines import closed_form_ls, relative_error, weak_form
-from pinnforge.v04.inverse import fno_inverse, solver_fit
-from pinnforge.v04.sensors import SensorMask, add_noise, mask_from_protocol
-from pinnforge.v04.train import cut_windows, field_stats, train_fno, viscosity_stats
-from pinnforge.v041.inverse import bracket_search
+from pinnforge.v04.baselines import relative_error
+from pinnforge.v041.checkpoint import (
+    CaseLog,
+    classical_key,
+    default_workers,
+    fno_key,
+    run_cases,
+    single_thread,
+    solver_key,
+    warm_key,
+)
 
 PROTOCOL = Path("docs/v041/protocol.json")
 ARTIFACT = Path("artifacts/v041_pilot")
@@ -39,6 +47,12 @@ def run_generate(output: Path | None = None, *, tiny: bool = False) -> dict[str,
         kwargs.update(n=8, n_train=2, n_val=2, n_test=1, t_final=0.05, dt=0.01, save_dt=0.025)
     records = {}
     for problem in ("burgers2d", "ns2d"):
+        manifest_path = root / f"{problem}_manifest.json"
+        fields_path = root / f"{problem}_fields.npy"
+        if not tiny and manifest_path.is_file() and fields_path.is_file():
+            records[problem] = json.loads(manifest_path.read_text(encoding="utf-8"))
+            print(f"reused {problem} pilot", flush=True)
+            continue
         records[problem] = generate_problem(problem, protocol, root, **kwargs)
     combined = {
         "format": "pinnforge.v041_pilot_index.v1",
@@ -50,99 +64,143 @@ def run_generate(output: Path | None = None, *, tiny: bool = False) -> dict[str,
     return combined
 
 
-def run_train(output: Path | None = None, *, seeds: list[int] | None = None) -> dict[str, Any]:
+def run_train(
+    output: Path | None = None,
+    *,
+    seeds: list[int] | None = None,
+    workers: int | None = None,
+) -> dict[str, Any]:
     protocol = load_protocol(PROTOCOL)
     root = ARTIFACT if output is None else output
     use_seeds = protocol["seeds"] if seeds is None else seeds
-    summary: dict[str, Any] = {"seeds": use_seeds, "runs": []}
+    n_workers = default_workers() if workers is None else max(1, int(workers))
+    jobs = []
+    reused: list[dict[str, Any]] = []
     for problem in ("burgers2d", "ns2d"):
-        fields, nu, manifest = _load_problem(root, problem)
-        splits = manifest["splits"]
-        u_mean, u_std = field_stats(fields[splits["train"]])
-        nu_mean, nu_std = viscosity_stats(np.asarray(manifest["nu"])[splits["train"]])
-        spec = protocol["fno"]
-        train_w = cut_windows(
-            fields,
-            np.asarray(manifest["nu"]),
-            input_frames=spec["input_frames"],
-            output_frames=spec["output_frames"],
-            stride=spec["stride"],
-            instance_ids=splits["train"],
-            forcings=manifest["forcing"],
-        )
-        cal_w = cut_windows(
-            fields,
-            np.asarray(manifest["nu"]),
-            input_frames=spec["input_frames"],
-            output_frames=spec["output_frames"],
-            stride=spec["stride"],
-            instance_ids=splits["val"],
-            forcings=manifest["forcing"],
-        )
         for loss in ("data", "hybrid"):
             for seed in use_seeds:
                 dest = root / "train" / problem / loss / f"seed_{seed}"
-                record = train_fno(
-                    train_w,
-                    cal_w,
-                    problem=problem,
-                    protocol=protocol,
-                    seed=int(seed),
-                    loss=loss,
-                    output=dest,
-                    length=float(manifest["length"]),
-                    dt=float(protocol["time"]["save_dt"]),
-                    u_mean=u_mean,
-                    u_std=u_std,
-                    nu_mean=nu_mean,
-                    nu_std=nu_std,
+                record_path = dest / "train.json"
+                if (dest / "checkpoint.pt").is_file() and record_path.is_file():
+                    reused.append(json.loads(record_path.read_text(encoding="utf-8")))
+                    print(f"reused train {problem} {loss} seed {seed}", flush=True)
+                    continue
+                jobs.append(
+                    {
+                        "root": str(root),
+                        "problem": problem,
+                        "loss": loss,
+                        "seed": int(seed),
+                        "dest": str(dest),
+                    }
                 )
-                summary["runs"].append(record)
+    runs = list(reused)
+    if jobs and n_workers <= 1:
+        runs.extend(_train_one(job) for job in jobs)
+    elif jobs:
+        single_thread()
+        ctx = mp.get_context("spawn")
+        with ProcessPoolExecutor(max_workers=n_workers, mp_context=ctx, initializer=single_thread) as pool:
+            futures = [pool.submit(_train_one, job) for job in jobs]
+            for future in as_completed(futures):
+                runs.append(future.result())
+    runs.sort(key=lambda row: (row["problem"], row["loss"], int(row["seed"])))
+    summary: dict[str, Any] = {"seeds": use_seeds, "runs": runs}
+    MANIFEST_DIR.mkdir(parents=True, exist_ok=True)
     (MANIFEST_DIR / "train_summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     return summary
 
 
-def run_calibrate_and_test(output: Path | None = None, *, seeds: list[int] | None = None) -> dict[str, Any]:
+def run_calibrate_and_test(
+    output: Path | None = None,
+    *,
+    seeds: list[int] | None = None,
+    workers: int | None = None,
+    checkpoint: Path | None = None,
+) -> dict[str, Any]:
     protocol = load_protocol(PROTOCOL)
     root = ARTIFACT if output is None else output
     use_seeds = protocol["seeds"] if seeds is None else seeds
-    mask = mask_from_protocol(protocol)
-    validation: dict[str, Any] = {"protocol_sha256": protocol_sha256(PROTOCOL), "problems": {}}
+    n_workers = default_workers() if workers is None else max(1, int(workers))
+    digest = protocol_sha256(PROTOCOL)
+    log = CaseLog(checkpoint or (MANIFEST_DIR / "score_cases.jsonl"), digest)
+    validation: dict[str, Any] = {"protocol_sha256": digest, "problems": {}}
     scores: dict[str, Any] = {
         "format": "pinnforge.v041_scores.v1",
-        "protocol_sha256": protocol_sha256(PROTOCOL),
+        "protocol_sha256": digest,
         "python": platform.python_version(),
         "numpy": np.__version__,
         "problems": {},
     }
     try:
-        import torch
+        from importlib.metadata import version
 
-        scores["torch"] = torch.__version__
-    except ImportError:
+        scores["torch"] = version("torch")
+    except Exception:
         scores["torch"] = None
     for problem in ("burgers2d", "ns2d"):
-        fields, nu, manifest = _load_problem(root, problem)
+        _fields, nu, manifest = _load_problem(root, problem)
         threshold = float(manifest["hard_ood"]["threshold_nu"])
-        cal_ids = manifest["splits"]["val"]
-        test_ids = manifest["splits"]["test"]
-        fno_q = _fno_quantiles(protocol, root, problem, fields, nu, manifest, mask, cal_ids, use_seeds)
-        n_local = _select_n_local(
-            protocol, root, problem, fields, nu, manifest, mask, cal_ids, use_seeds[0], fno_q["hybrid"]
+        cal_ids = list(manifest["splits"]["val"])
+        test_ids = list(manifest["splits"]["test"])
+        print(f"scoring {problem} calibration FNO inverses", flush=True)
+        run_cases(
+            _fno_jobs(root, problem, cal_ids, 0.0, use_seeds),
+            log=log,
+            workers=n_workers,
         )
-        cal_warm = _score_split(
-            protocol,
-            root,
+        fno_q = _fno_quantiles_from_log(protocol, problem, nu, cal_ids, use_seeds, log)
+        hard_ids = [i for i in cal_ids if float(nu[i]) <= threshold] or list(cal_ids)
+        print(f"scoring {problem} calibration solvers and n_local trials", flush=True)
+        run_cases(
+            _solver_jobs(root, problem, cal_ids, 0.0, initials=("sensor",)),
+            log=log,
+            workers=n_workers,
+        )
+        n_candidates = [int(item) for item in protocol["methods"]["warm_start"]["local_search"]["n_local_candidates"]]
+        run_cases(
+            _warm_jobs(
+                root,
+                problem,
+                hard_ids,
+                0.0,
+                losses=("hybrid",),
+                seeds=(int(use_seeds[0]),),
+                n_locals=n_candidates,
+                fno_quantiles=fno_q,
+                log=log,
+            ),
+            log=log,
+            workers=n_workers,
+        )
+        n_local = _select_n_local_from_log(
+            protocol, problem, nu, manifest, cal_ids, int(use_seeds[0]), log
+        )
+        print(f"scoring {problem} calibration warm starts n_local={n_local}", flush=True)
+        run_cases(
+            _warm_jobs(
+                root,
+                problem,
+                cal_ids,
+                0.0,
+                losses=("data", "hybrid"),
+                seeds=use_seeds,
+                n_locals=(n_local,),
+                fno_quantiles=fno_q,
+                log=log,
+            ),
+            log=log,
+            workers=n_workers,
+        )
+        cal_warm = _assemble_split(
             problem,
-            fields,
             nu,
             manifest,
-            mask,
             cal_ids,
             use_seeds,
             noise=0.0,
             n_local=n_local,
-            fno_quantiles=fno_q,
+            log=log,
             methods=("fno_data", "fno_hybrid", "solver_sensor_ic", "warm_data", "warm_hybrid"),
         )
         calibration = _calibrate(protocol, cal_warm["warm_hybrid"], threshold)
@@ -160,27 +218,48 @@ def run_calibrate_and_test(output: Path | None = None, *, seeds: list[int] | Non
             "noise": {},
         }
         for fraction in protocol["noise"]["fractions"]:
-            scored = _score_split(
-                protocol,
-                root,
+            noise = float(fraction)
+            print(f"scoring {problem} test noise={noise}", flush=True)
+            run_cases(
+                [
+                    *_classical_jobs(root, problem, test_ids, noise),
+                    *_solver_jobs(root, problem, test_ids, noise, initials=("sensor", "oracle")),
+                    *_fno_jobs(root, problem, test_ids, noise, use_seeds),
+                ],
+                log=log,
+                workers=n_workers,
+            )
+            run_cases(
+                _warm_jobs(
+                    root,
+                    problem,
+                    test_ids,
+                    noise,
+                    losses=("data", "hybrid"),
+                    seeds=use_seeds,
+                    n_locals=(n_local,),
+                    fno_quantiles=fno_q,
+                    log=log,
+                ),
+                log=log,
+                workers=n_workers,
+            )
+            problem_scores["noise"][str(fraction)] = _assemble_split(
                 problem,
-                fields,
                 nu,
                 manifest,
-                mask,
                 test_ids,
                 use_seeds,
-                noise=float(fraction),
+                noise=noise,
                 n_local=n_local,
-                fno_quantiles=fno_q,
+                log=log,
                 calibration=calibration,
                 threshold=threshold,
             )
-            problem_scores["noise"][str(fraction)] = scored
         problem_scores["bars"] = _evaluate_bars(protocol, problem_scores["noise"]["0.0"], problem)
         scores["problems"][problem] = problem_scores
-    (MANIFEST_DIR / "validation.json").write_text(json.dumps(validation, indent=2) + "\n", encoding="utf-8")
-    (MANIFEST_DIR / "scores.json").write_text(json.dumps(scores, indent=2) + "\n", encoding="utf-8")
+        _write_progress(validation, scores)
+    _write_progress(validation, scores)
     return scores
 
 
@@ -191,36 +270,192 @@ def _load_problem(root: Path, problem: str) -> tuple[np.ndarray, np.ndarray, dic
     return fields, nu, manifest
 
 
-def _model_path(root: Path, problem: str, loss: str, seed: int) -> Path:
-    return root / "train" / problem / loss / f"seed_{seed}" / "checkpoint.pt"
+def _write_progress(validation: dict[str, Any], scores: dict[str, Any]) -> None:
+    MANIFEST_DIR.mkdir(parents=True, exist_ok=True)
+    (MANIFEST_DIR / "validation.json").write_text(json.dumps(validation, indent=2) + "\n", encoding="utf-8")
+    (MANIFEST_DIR / "scores.json").write_text(json.dumps(scores, indent=2) + "\n", encoding="utf-8")
 
 
-def _fno_quantiles(
-    protocol: dict[str, Any],
+def _train_one(job: dict[str, Any]) -> dict[str, Any]:
+    from pinnforge.v04.train import cut_windows, field_stats, train_fno, viscosity_stats
+
+    protocol = load_protocol(PROTOCOL)
+    root = Path(job["root"])
+    problem = str(job["problem"])
+    fields, _nu, manifest = _load_problem(root, problem)
+    splits = manifest["splits"]
+    u_mean, u_std = field_stats(fields[splits["train"]])
+    nu_mean, nu_std = viscosity_stats(np.asarray(manifest["nu"])[splits["train"]])
+    spec = protocol["fno"]
+    train_w = cut_windows(
+        fields,
+        np.asarray(manifest["nu"]),
+        input_frames=spec["input_frames"],
+        output_frames=spec["output_frames"],
+        stride=spec["stride"],
+        instance_ids=splits["train"],
+        forcings=manifest["forcing"],
+    )
+    cal_w = cut_windows(
+        fields,
+        np.asarray(manifest["nu"]),
+        input_frames=spec["input_frames"],
+        output_frames=spec["output_frames"],
+        stride=spec["stride"],
+        instance_ids=splits["val"],
+        forcings=manifest["forcing"],
+    )
+    print(f"train {problem} {job['loss']} seed {job['seed']}", flush=True)
+    return train_fno(
+        train_w,
+        cal_w,
+        problem=problem,
+        protocol=protocol,
+        seed=int(job["seed"]),
+        loss=str(job["loss"]),
+        output=Path(job["dest"]),
+        length=float(manifest["length"]),
+        dt=float(protocol["time"]["save_dt"]),
+        u_mean=u_mean,
+        u_std=u_std,
+        nu_mean=nu_mean,
+        nu_std=nu_std,
+    )
+
+
+def _base_job(
+    root: Path, problem: str, instance_id: int, instance_ids: list[int], noise: float
+) -> dict[str, Any]:
+    return {
+        "protocol": str(PROTOCOL),
+        "root": str(root),
+        "problem": problem,
+        "instance_id": int(instance_id),
+        "instance_ids": [int(item) for item in instance_ids],
+        "noise": float(noise),
+    }
+
+
+def _fno_jobs(
     root: Path,
     problem: str,
-    fields: np.ndarray,
+    instance_ids: list[int],
+    noise: float,
+    seeds: list[int],
+) -> list[dict[str, Any]]:
+    jobs = []
+    for instance_id in instance_ids:
+        for loss in ("data", "hybrid"):
+            for seed in seeds:
+                job = _base_job(root, problem, instance_id, instance_ids, noise)
+                job.update(
+                    {
+                        "key": fno_key(problem, noise, instance_id, loss, int(seed)),
+                        "kind": "fno",
+                        "loss": loss,
+                        "seed": int(seed),
+                    }
+                )
+                jobs.append(job)
+    return jobs
+
+
+def _solver_jobs(
+    root: Path,
+    problem: str,
+    instance_ids: list[int],
+    noise: float,
+    *,
+    initials: tuple[str, ...],
+) -> list[dict[str, Any]]:
+    jobs = []
+    for instance_id in instance_ids:
+        for initial in initials:
+            job = _base_job(root, problem, instance_id, instance_ids, noise)
+            job.update(
+                {
+                    "key": solver_key(problem, noise, instance_id, initial),
+                    "kind": "solver",
+                    "initial": initial,
+                }
+            )
+            jobs.append(job)
+    return jobs
+
+
+def _classical_jobs(
+    root: Path,
+    problem: str,
+    instance_ids: list[int],
+    noise: float,
+) -> list[dict[str, Any]]:
+    jobs = []
+    for instance_id in instance_ids:
+        for method in ("closed_form_ls", "weak_form"):
+            job = _base_job(root, problem, instance_id, instance_ids, noise)
+            job.update(
+                {
+                    "key": classical_key(problem, noise, instance_id, method),
+                    "kind": "classical",
+                    "method": method,
+                }
+            )
+            jobs.append(job)
+    return jobs
+
+
+def _warm_jobs(
+    root: Path,
+    problem: str,
+    instance_ids: list[int],
+    noise: float,
+    *,
+    losses: tuple[str, ...],
+    seeds: list[int] | tuple[int, ...],
+    n_locals: list[int] | tuple[int, ...],
+    fno_quantiles: dict[str, float],
+    log: CaseLog,
+) -> list[dict[str, Any]]:
+    jobs = []
+    for instance_id in instance_ids:
+        for loss in losses:
+            for seed in seeds:
+                guess = log.require(fno_key(problem, noise, instance_id, loss, int(seed)))
+                for n_local in n_locals:
+                    job = _base_job(root, problem, instance_id, instance_ids, noise)
+                    job.update(
+                        {
+                            "key": warm_key(problem, noise, instance_id, loss, int(seed), int(n_local)),
+                            "kind": "warm",
+                            "loss": loss,
+                            "seed": int(seed),
+                            "n_local": int(n_local),
+                            "first_guess": float(guess["nu_hat"]),
+                            "guess_seconds": float(guess["seconds"]),
+                            "q_log": float(fno_quantiles[loss]),
+                        }
+                    )
+                    jobs.append(job)
+    return jobs
+
+
+def _fno_quantiles_from_log(
+    protocol: dict[str, Any],
+    problem: str,
     nu: np.ndarray,
-    manifest: dict[str, Any],
-    mask: SensorMask,
     instance_ids: list[int],
     seeds: list[int],
+    log: CaseLog,
 ) -> dict[str, float]:
     alpha = float(protocol["methods"]["warm_start"]["bracket"]["alpha"])
     out: dict[str, float] = {}
     for loss in ("data", "hybrid"):
         scores: list[float] = []
         for instance_id in instance_ids:
-            hats = []
-            for seed in seeds:
-                guess = fno_inverse(
-                    fields[instance_id],
-                    mask,
-                    model_path=_model_path(root, problem, loss, int(seed)),
-                    protocol=protocol,
-                    problem=problem,
-                )["nu_hat"]
-                hats.append(guess)
+            hats = [
+                float(log.require(fno_key(problem, 0.0, instance_id, loss, int(seed)))["nu_hat"])
+                for seed in seeds
+            ]
             nu_hat = float(np.mean(hats))
             if nu_hat > 0 and float(nu[instance_id]) > 0:
                 scores.append(abs(math.log(float(nu[instance_id]) / nu_hat)))
@@ -228,55 +463,30 @@ def _fno_quantiles(
     return out
 
 
-def _select_n_local(
+def _select_n_local_from_log(
     protocol: dict[str, Any],
-    root: Path,
     problem: str,
-    fields: np.ndarray,
     nu: np.ndarray,
     manifest: dict[str, Any],
-    mask: SensorMask,
     instance_ids: list[int],
     seed: int,
-    q_log: float,
+    log: CaseLog,
 ) -> int:
-    candidates = list(protocol["methods"]["warm_start"]["local_search"]["n_local_candidates"])
+    candidates = [int(item) for item in protocol["methods"]["warm_start"]["local_search"]["n_local_candidates"]]
     threshold = float(manifest["hard_ood"]["threshold_nu"])
     hard_ids = [i for i in instance_ids if float(nu[i]) <= threshold] or list(instance_ids)
     table: list[dict[str, float]] = []
     for n_local in candidates:
         rows = []
         for instance_id in hard_ids:
-            field = fields[instance_id]
-            guess = fno_inverse(
-                field,
-                mask,
-                model_path=_model_path(root, problem, "hybrid", seed),
-                protocol=protocol,
-                problem=problem,
-            )
-            cold = solver_fit(
-                field,
-                mask,
-                problem=problem,
-                protocol=protocol,
-                forcing=manifest["forcing"][instance_id],
-                initial="sensor",
-            )
-            warm = bracket_search(
-                field,
-                mask,
-                first_guess=guess["nu_hat"],
-                q_log=q_log,
-                n_local=int(n_local),
-                problem=problem,
-                protocol=protocol,
-                forcing=manifest["forcing"][instance_id],
-            )
+            guess = log.require(fno_key(problem, 0.0, instance_id, "hybrid", seed))
+            cold = log.require(solver_key(problem, 0.0, instance_id, "sensor"))
+            warm = log.require(warm_key(problem, 0.0, instance_id, "hybrid", seed, n_local))
             rows.append(
                 {
                     "rel": relative_error(warm["nu_hat"], float(nu[instance_id])),
-                    "time_ratio": (warm["seconds"] + guess["seconds"]) / max(cold["seconds"], 1e-9),
+                    "time_ratio": (float(warm["seconds"]) + float(guess["seconds"]))
+                    / max(float(cold["seconds"]), 1e-9),
                 }
             )
         table.append(
@@ -296,23 +506,19 @@ def _select_n_local(
     return int(chosen["n_local"])
 
 
-def _score_split(
-    protocol: dict[str, Any],
-    root: Path,
+def _assemble_split(
     problem: str,
-    fields: np.ndarray,
     nu: np.ndarray,
     manifest: dict[str, Any],
-    mask: SensorMask,
     instance_ids: list[int],
     seeds: list[int],
     *,
     noise: float,
     n_local: int,
-    fno_quantiles: dict[str, float],
+    log: CaseLog,
+    methods: tuple[str, ...] | None = None,
     calibration: dict[str, Any] | None = None,
     threshold: float | None = None,
-    methods: tuple[str, ...] | None = None,
 ) -> dict[str, Any]:
     wanted = set(
         methods
@@ -329,79 +535,57 @@ def _score_split(
     )
     cut = float(manifest["hard_ood"]["threshold_nu"] if threshold is None else threshold)
     collected: dict[str, list[dict[str, Any]]] = {name: [] for name in wanted}
-    rng = np.random.default_rng(int(protocol["noise"]["noise_seed"]) + int(1000 * noise))
     for instance_id in instance_ids:
-        field = add_noise(fields[instance_id], noise, rng)
-        forcing = manifest["forcing"][instance_id]
         true = float(nu[instance_id])
         if "closed_form_ls" in wanted:
-            closed = closed_form_ls(
-                field,
-                mask,
-                problem=problem,
-                dt=float(protocol["time"]["save_dt"]),
-                forcing=forcing,
-                length=float(manifest["length"]),
-            )
-            collected["closed_form_ls"].append(_row(instance_id, true, closed, 0.0, cut))
+            payload = log.require(classical_key(problem, noise, instance_id, "closed_form_ls"))
+            collected["closed_form_ls"].append(_row(instance_id, true, payload["nu_hat"], 0.0, cut))
         if "weak_form" in wanted:
-            weak = weak_form(
-                field,
-                mask,
-                problem=problem,
-                dt=float(protocol["time"]["save_dt"]),
-                forcing=forcing,
-                length=float(manifest["length"]),
-            )
-            collected["weak_form"].append(_row(instance_id, true, weak, 0.0, cut))
+            payload = log.require(classical_key(problem, noise, instance_id, "weak_form"))
+            collected["weak_form"].append(_row(instance_id, true, payload["nu_hat"], 0.0, cut))
         cold = None
         if "solver_sensor_ic" in wanted or "warm_data" in wanted or "warm_hybrid" in wanted:
-            cold = solver_fit(field, mask, problem=problem, protocol=protocol, forcing=forcing, initial="sensor")
+            cold = log.require(solver_key(problem, noise, instance_id, "sensor"))
         if "solver_sensor_ic" in wanted and cold is not None:
-            collected["solver_sensor_ic"].append(_row(instance_id, true, cold["nu_hat"], cold["seconds"], cut))
+            collected["solver_sensor_ic"].append(
+                _row(instance_id, true, cold["nu_hat"], float(cold["seconds"]), cut)
+            )
         if "solver_oracle_ic" in wanted:
-            oracle = solver_fit(field, mask, problem=problem, protocol=protocol, forcing=forcing, initial="oracle")
-            collected["solver_oracle_ic"].append(_row(instance_id, true, oracle["nu_hat"], oracle["seconds"], cut))
-        for loss, key, warm_key in (("data", "fno_data", "warm_data"), ("hybrid", "fno_hybrid", "warm_hybrid")):
-            if key not in wanted and warm_key not in wanted:
+            oracle = log.require(solver_key(problem, noise, instance_id, "oracle"))
+            collected["solver_oracle_ic"].append(
+                _row(instance_id, true, oracle["nu_hat"], float(oracle["seconds"]), cut)
+            )
+        for loss, key, warm_name in (("data", "fno_data", "warm_data"), ("hybrid", "fno_hybrid", "warm_hybrid")):
+            if key not in wanted and warm_name not in wanted:
                 continue
             seed_rows = []
             warm_rows = []
             for seed in seeds:
-                guess = fno_inverse(
-                    field,
-                    mask,
-                    model_path=_model_path(root, problem, loss, int(seed)),
-                    protocol=protocol,
-                    problem=problem,
-                )
-                seed_rows.append(_row(instance_id, true, guess["nu_hat"], guess["seconds"], cut))
-                if warm_key in wanted:
-                    warm = bracket_search(
-                        field,
-                        mask,
-                        first_guess=guess["nu_hat"],
-                        q_log=float(fno_quantiles[loss]),
-                        n_local=n_local,
-                        problem=problem,
-                        protocol=protocol,
-                        forcing=forcing,
+                guess = log.require(fno_key(problem, noise, instance_id, loss, int(seed)))
+                seed_rows.append(_row(instance_id, true, guess["nu_hat"], float(guess["seconds"]), cut))
+                if warm_name in wanted:
+                    warm = log.require(warm_key(problem, noise, instance_id, loss, int(seed), n_local))
+                    extra = _row(
+                        instance_id,
+                        true,
+                        warm["nu_hat"],
+                        float(warm["seconds"]) + float(guess["seconds"]),
+                        cut,
                     )
-                    extra = _row(instance_id, true, warm["nu_hat"], warm["seconds"] + guess["seconds"], cut)
-                    extra["bracket_log_half_width"] = warm["bracket_log_half_width"]
-                    extra["nu_guess"] = guess["nu_hat"]
-                    extra["bracket_low"] = warm["bracket_low"]
-                    extra["bracket_high"] = warm["bracket_high"]
+                    extra["bracket_log_half_width"] = float(warm["bracket_log_half_width"])
+                    extra["nu_guess"] = float(guess["nu_hat"])
+                    extra["bracket_low"] = float(warm["bracket_low"])
+                    extra["bracket_high"] = float(warm["bracket_high"])
                     if cold is not None:
-                        extra["cold_seconds"] = cold["seconds"]
-                        extra["cold_rel"] = relative_error(cold["nu_hat"], true)
+                        extra["cold_seconds"] = float(cold["seconds"])
+                        extra["cold_rel"] = relative_error(float(cold["nu_hat"]), true)
                     if calibration is not None:
                         extra.update(_apply_calibration(extra, calibration, cut))
                     warm_rows.append(extra)
             if key in wanted:
                 collected[key].append(_reduce_seeds(seed_rows))
-            if warm_key in wanted:
-                collected[warm_key].append(_reduce_seeds(warm_rows))
+            if warm_name in wanted:
+                collected[warm_name].append(_reduce_seeds(warm_rows))
     return {name: {"instances": rows, "summary": _summarize(rows)} for name, rows in collected.items()}
 
 

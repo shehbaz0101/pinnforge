@@ -21,7 +21,24 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("generate", help="Generate the 64x64 pilots")
     train = sub.add_parser("train", help="Train the 2D FNO arms")
     train.add_argument("--seeds", default=None, help="Comma-separated seeds (default: protocol seeds)")
-    sub.add_parser("score", help="Calibrate, then score the frozen test split")
+    train.add_argument(
+        "--workers",
+        type=int,
+        default=None,
+        help="Process-pool size across problem/loss/seed runs (default: CPU count)",
+    )
+    score = sub.add_parser("score", help="Calibrate, then score the frozen test split")
+    score.add_argument(
+        "--workers",
+        type=int,
+        default=None,
+        help="Process-pool size across cases and seeds (default: PINNFORGE_V041_WORKERS or CPU count)",
+    )
+    score.add_argument(
+        "--checkpoint",
+        default=None,
+        help="JSONL case log used to skip completed cases (default: docs/v041/score_cases.jsonl)",
+    )
     sub.add_parser("report", help="Write docs/v041/report.md and figures")
     sub.add_parser("smoke", help="Tiny CPU smoke that does not score the study")
     return parser
@@ -43,12 +60,15 @@ def main(argv: list[str] | None = None) -> int:
         from pinnforge.v041.study import run_train
 
         seeds = None if args.seeds is None else [int(item) for item in args.seeds.split(",")]
-        run_train(seeds=seeds)
+        run_train(seeds=seeds, workers=args.workers)
         return 0
     if args.command == "score":
         from pinnforge.v041.study import run_calibrate_and_test
 
-        scores = run_calibrate_and_test()
+        scores = run_calibrate_and_test(
+            workers=args.workers,
+            checkpoint=None if args.checkpoint is None else Path(args.checkpoint),
+        )
         for problem, block in scores["problems"].items():
             print(problem, "pass" if block["bars"]["pass"] else "fail")
         return 0

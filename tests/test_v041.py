@@ -17,8 +17,12 @@ V04_SCORES = ROOT / "docs" / "v04" / "scores.json"
 V04_REPORT = ROOT / "docs" / "v04" / "report.md"
 
 
+FROZEN_PROTOCOL_SHA256 = "0fd6749a4cfd43154d661d385475f5b019c12e8ff1524c90d2334968360c840a"
+
+
 def test_protocol_is_frozen_and_has_no_v041_test_scores() -> None:
     protocol = load_protocol(PROTOCOL)
+    assert protocol_sha256(PROTOCOL) == FROZEN_PROTOCOL_SHA256
     assert protocol["format"] == "pinnforge.v041_2d_inverse_protocol.v1"
     assert protocol["frozen_before_test_evaluation"] is True
     assert protocol["test_used_for_selection"] is False

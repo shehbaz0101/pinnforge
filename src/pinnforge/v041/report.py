@@ -60,6 +60,36 @@ def write_report(scores_path: Path | None = None) -> Path:
             "Primary problem: `burgers2d`. "
             + _overall_sentence(burgers, ns),
             "",
+            "## Versus v0.4 (same frozen bars)",
+            "",
+            "v0.4 numbers are copied from [docs/v04/scores.json](../v04/scores.json). "
+            "They were not recomputed. The v0.4.1 bars were not retuned.",
+            "",
+            "| problem | bar | v0.4 | v0.4.1 |",
+            "| --- | --- | --- | --- |",
+        ]
+    )
+    v04 = json.loads((DOCS.parent / "v04" / "scores.json").read_text(encoding="utf-8"))
+    bar_names = (
+        ("in_distribution_error", "in-dist `ν` error `<= 0.05`"),
+        ("hard_ood_gap", "hard_ood / complement `<= 3`"),
+        ("warm_vs_cold_error", "warm error `<= 1.5×` cold"),
+        ("warm_vs_cold_time", "warm time `<= 0.25×` cold"),
+        ("coverage", "coverage in `[0.85, 0.95]`"),
+    )
+    for problem in ("burgers2d", "ns2d"):
+        old = v04["problems"][problem]["bars"]
+        new = scores["problems"][problem]["bars"]
+        for key, label in bar_names:
+            lines.append(
+                f"| {problem} | {label} | {_cell(old['checks'][key])} | {_cell(new['checks'][key])} |"
+            )
+        lines.append(
+            f"| {problem} | overall | {'pass' if old['pass'] else 'fail'} | {'pass' if new['pass'] else 'fail'} |"
+        )
+    lines.extend(
+        [
+            "",
             "## Headline tables (clean sensors)",
             "",
         ]
