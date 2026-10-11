@@ -144,7 +144,9 @@ def test_terminal_table_uses_percents_and_markdown_keeps_full_precision() -> Non
     assert takeaway == (
         "On this smooth sample the closed form wins "
         "(0.41% vs 4.97% mean relative error). "
-        "The FNO edge shows on the hard-OOD Stage D slice (STAGE_D_REPORT.md)."
+        "On the hard-OOD Stage D slice the FNO mean relative error is lower than "
+        "the closed form (STAGE_D_REPORT.md) and higher than the sensor-lift solver "
+        "(docs/research/strong_baselines.md)."
     )
     assert "\n" not in takeaway
 

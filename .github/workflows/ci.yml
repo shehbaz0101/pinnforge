@@ -87,6 +87,21 @@ jobs:
           assert Path("runs/burgers-inverse/viscosity_scatter.png").read_bytes().startswith(b"\x89PNG")
           PY
 
+  claims:
+    name: claim-to-evidence
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+      - name: Check claims
+        run: python -m pinnforge.claims check
+
   lint:
     name: ruff check
     runs-on: ubuntu-latest
