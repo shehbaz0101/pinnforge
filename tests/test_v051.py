@@ -58,5 +58,19 @@ def test_lattice_masks_divide_the_64_grid() -> None:
         assert mask.stride == 64 // n_side
 
 
+def test_committed_scores_match_frozen_protocol() -> None:
+    scores_path = ROOT / "docs" / "v051" / "scores.json"
+    scores = json.loads(scores_path.read_text(encoding="utf-8"))
+    assert scores["protocol_sha256"] == protocol_sha256(PROTOCOL)
+    assert scores["problems"]["burgers2d"]["min_lattice_at_bar"] == "64x64"
+    assert scores["problems"]["ns2d"]["min_lattice_at_bar"] == "none"
+    assert scores["problems"]["burgers2d"]["positive_control"]["pass"] is True
+    assert scores["problems"]["ns2d"]["positive_control"]["pass"] is False
+    assert scores["wsindy_fno"]["used"] is False
+    report = (ROOT / "docs" / "v051" / "report.md").read_text(encoding="utf-8")
+    assert "64x64" in report
+    assert "none" in report
+
+
 def test_v051_smoke() -> None:
     assert v051_main(["smoke"]) == 0

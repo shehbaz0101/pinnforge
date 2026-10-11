@@ -17,7 +17,7 @@ def write_report(scores_path: Path | None = None) -> Path:
     bar_noise = _fmt(protocol["reported"]["noise"])
     bar_rate = _fmt(protocol["reported"]["min_seed_success_rate"])
     lines = [
-        "# v0.5.1 sensor-density study",
+        "# v051 sensor-density study",
         "",
         "Research note. The contract is [protocol.json](protocol.json). "
         "Its SHA-256 is stored as `protocol_sha256` in [scores.json](scores.json). "
@@ -114,12 +114,12 @@ def _write_reproducibility(scores: dict[str, Any], validation: dict[str, Any]) -
         ("pilot_manifest.json", DOCS / "pilot_manifest.json"),
     ]
     lines = [
-        "# v0.5.1 reproducibility",
+        "# v051 reproducibility",
         "",
         "CPU-only run in this repository. No paid GPU. No secrets. "
         "The detached runner is [scripts/v051_run.sh](../../scripts/v051_run.sh).",
         "",
-        "The protocol [protocol.json](protocol.json) was committed before any v0.5.1 test score. "
+        "The protocol [protocol.json](protocol.json) was committed before any v051 test score. "
         "It was not edited after that commit. No v0.5 artifact was edited.",
         "",
         f"- python: `{scores.get('python')}`",

@@ -24,7 +24,7 @@ All of these use the Stage A harder periodic Burgers pilot and its frozen `hard_
 
 ## v0.5.1 sensor-density study
 
-[v051/protocol.md](v051/protocol.md) is the human reading of the frozen contract [v051/protocol.json](v051/protocol.json). The study asks at which lattice WSINDy recovers the exact PDE support. Scoring and the claim leaves land after the test split is scored. No v05 artifact is edited.
+[v051/report.md](v051/report.md) sweeps WSINDy over `8x8`, `16x16`, `32x32`, and full-field `64x64` probes. Burgers first reaches the frozen bar at `64x64`. Navier-Stokes reaches it at none. The `64x64` noise-0 control passes on Burgers and fails on Navier-Stokes (method or implementation failure, not a sparsity finding). Protocol, frozen before the test scores: [protocol.json](v051/protocol.json). Validation: [validation.json](v051/validation.json). Scores: [scores.json](v051/scores.json). Reproducibility: [reproducibility.md](v051/reproducibility.md). No v05 artifact was edited.
 
 ## v0.5 2D PDE term discovery
 
