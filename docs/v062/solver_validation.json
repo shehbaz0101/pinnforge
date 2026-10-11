@@ -1,0 +1,108 @@
+{
+  "format": "pinnforge.v062_solver_validation.v1",
+  "role": "solver vs The Well at the v0.6.1 identifiable setting. Not a test score.",
+  "source": {
+    "dataset": "The Well shear_flow",
+    "file": "data/valid/shear_flow_Reynolds_1e4_Schmidt_1e0.hdf5",
+    "trajectory": 3,
+    "generator": "RudyMorel/the-well-rbc-sf src/generate_sf.py",
+    "dedalus_paper": "Burns et al., Phys. Rev. Research 2, 023068, 2020",
+    "dataset_url": "https://polymathic-ai.org/the_well/datasets/shear_flow/"
+  },
+  "setting": {
+    "reynolds": 10000.0,
+    "schmidt": 1.0,
+    "nu": 0.0001,
+    "kappa": 0.0001,
+    "nx": 256,
+    "ny": 512,
+    "dt": 0.002,
+    "ident_frame_start": 160,
+    "ident_n_frames": 9,
+    "window_t": 0.8
+  },
+  "gates": {
+    "ic_rel_l2_max": 0.02,
+    "window_rel_l2_max": 0.15,
+    "window_note": "Start from The Well frame 160 and integrate 0.8. Pressure is recovered, not evolved."
+  },
+  "matched_ic": {
+    "n_shear": 2,
+    "n_blobs": 3,
+    "width": 4.0,
+    "rel_l2_ux": 0.004621310353043073,
+    "rel_l2_uy": 0.014401211258849767,
+    "score": 0.01902252161189284
+  },
+  "ic_rel_l2": {
+    "ux": 0.004621310353043073,
+    "uy": 0.014401211258849767,
+    "tracer": 0.004621310353043073,
+    "pressure": 0.0
+  },
+  "window_rel_l2": {
+    "ux": 0.058745913034668334,
+    "uy": 0.11396674191197133,
+    "pressure": 0.0853974869743909,
+    "tracer": 0.0015207358898230458
+  },
+  "window_per_frame": [
+    {
+      "ux": 0.0,
+      "uy": 0.0,
+      "pressure": 0.00236113873105075,
+      "tracer": 0.0
+    },
+    {
+      "ux": 0.05870513890907914,
+      "uy": 0.021459038671859373,
+      "pressure": 0.010507290739730307,
+      "tracer": 0.00020990366504227822
+    },
+    {
+      "ux": 0.058710952323266945,
+      "uy": 0.032734908537242965,
+      "pressure": 0.020984786838915127,
+      "tracer": 0.0004137308357970139
+    },
+    {
+      "ux": 0.05871677036756307,
+      "uy": 0.0456175661834793,
+      "pressure": 0.03150659018781145,
+      "tracer": 0.0006117318574222308
+    },
+    {
+      "ux": 0.05872259222625355,
+      "uy": 0.059045349735303135,
+      "pressure": 0.04211574012461174,
+      "tracer": 0.0008040944005731626
+    },
+    {
+      "ux": 0.058728417860484876,
+      "uy": 0.07269981268222342,
+      "pressure": 0.05284851910890328,
+      "tracer": 0.0009910016886629383
+    },
+    {
+      "ux": 0.058734246863696125,
+      "uy": 0.08645029162232287,
+      "pressure": 0.0637072716617334,
+      "tracer": 0.0011726313285766402
+    },
+    {
+      "ux": 0.0587400785755775,
+      "uy": 0.10022330463043688,
+      "pressure": 0.07461460027685175,
+      "tracer": 0.0013491542556687873
+    },
+    {
+      "ux": 0.058745913034668334,
+      "uy": 0.11396674191197133,
+      "pressure": 0.0853974869743909,
+      "tracer": 0.0015207358898230458
+    }
+  ],
+  "ic_pass": true,
+  "window_pass": true,
+  "overall_pass": true
+}

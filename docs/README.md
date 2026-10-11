@@ -4,6 +4,10 @@ The top-level [README](../README.md) has the headline results, the quickstart, a
 
 Every study stage froze a protocol file before its test scores were computed. The report explains the run. The score file is the record. `pinnforge claims check` ([Stage G](v02/stage_g_claims.md)) ties the README, the changelog, the status note, and the notes in `docs/v02/` to those score files through [claims.yaml](claims.yaml).
 
+## v062 sim-train / The Well-test inverse
+
+[v062/solver_validation.md](v062/solver_validation.md) is the numpy solver vs The Well field check. Both pre-stated gates pass. [v062/report.md](v062/report.md) trains on continuously sampled Schmidt from that solver and tests on official The Well files. The inverse fails the preregistered bars on The Well. The in-distribution median-rel bar, the OOD median-rel bar, the gap bar, the coverage bar, the hybrid-below-baselines bar, and the constant-predictor bar fail. The noise-robustness bar passes. Protocol, frozen before the test scores: [protocol.json](v062/protocol.json). The Well `shear_flow` is CC BY 4 (Ohana et al.). No v061 artifact was edited.
+
 ## v061 identifiable The Well shear_flow inverse
 
 [v061/identifiability.md](v061/identifiability.md) is the validation-only full-field oracle sweep. No cell recovered both coefficients at every listed `(Re, Sc)`. The cheapest passing subset is the native grid and the `late_9` window on the Reynolds `10000` slice recorded in that note. [v061/report.md](v061/report.md) scores the inverse on that subset. The inverse fails the preregistered bars on the identifiable subset. The in-distribution median-rel bar, the OOD median-rel bar, the gap bar, the coverage bar, the hybrid-below-baselines bar, and the constant-predictor bar fail. The noise-robustness bar passes. Protocol, frozen before the test scores: [protocol.json](v061/protocol.json). Scores: [scores.json](v061/scores.json). The Well `shear_flow` is CC BY 4 (Ohana et al.). No v06 artifact was edited.

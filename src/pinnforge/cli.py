@@ -404,6 +404,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="v0.6.1 identifiable shear-flow inverse",
     )
     subparsers.add_parser(
+        "v062",
+        help="v0.6.2 sim-train The Well-test inverse",
+    )
+    subparsers.add_parser(
         "claims",
         help="Check doc claims against committed score files",
     )
@@ -444,6 +448,10 @@ def main(argv: list[str] | None = None) -> int:
         from pinnforge.v061.__main__ import main as v061_main
 
         return v061_main(forwarded[1:])
+    if forwarded and forwarded[0] == "v062":
+        from pinnforge.v062.__main__ import main as v062_main
+
+        return v062_main(forwarded[1:])
     if forwarded and forwarded[0] == "claims":
         from pinnforge.claims.__main__ import main as claims_main
 

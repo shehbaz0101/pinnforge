@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### v062 sim-train / The Well-test inverse
+
+- **FAIL.** `python -m pinnforge.v062` trains on continuously sampled Schmidt from a The Well-matched numpy solver and tests on official The Well `shear_flow` files. The protocol [docs/v062/protocol.json](docs/v062/protocol.json) was committed after [docs/v062/solver_validation.md](docs/v062/solver_validation.md) and before the test split was scored. No v061 artifact was edited. CI runs smoke only. The subset is CC BY 4 (Ohana et al.).
+- The inverse fails the preregistered bars on The Well. The in-distribution median-rel bar, the OOD median-rel bar, the gap bar, the coverage bar, the hybrid-below-baselines bar, and the constant-predictor bar fail. The noise-robustness bar passes. The solver meets the pre-stated The Well field gates. The note is [docs/v062/report.md](docs/v062/report.md). This is a recorded negative result.
+
 ### v061 identifiable The Well shear_flow inverse
 
 - **FAIL.** `python -m pinnforge.v061` recovers `kappa` on the identifiable Reynolds `10000` subset of The Well `shear_flow` chosen in [docs/v061/identifiability.md](docs/v061/identifiability.md). The protocol [docs/v061/protocol.json](docs/v061/protocol.json) was committed after that diagnostic and before the test split was scored. No v06 artifact was edited. Raw HDF5 is not committed. CI runs smoke only. The subset is CC BY 4 (Ohana et al.).

@@ -64,4 +64,9 @@ docs/v06/score_cases.jsonl
 artifacts/v061_raw/
 artifacts/v061_pilot/
 docs/v061/score_cases.jsonl
+
+# v0.6.2 sim-train / The Well-test. Manifests live in docs/v062/.
+artifacts/v062_raw/
+artifacts/v062_pilot/
+docs/v062/score_cases.jsonl
 *.hdf5

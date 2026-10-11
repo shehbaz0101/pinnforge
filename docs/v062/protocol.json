@@ -1,0 +1,192 @@
+{
+  "format": "pinnforge.v062_sim_train_well_test_protocol.v1",
+  "study_version": 6.2,
+  "frozen_before_test_evaluation": true,
+  "test_used_for_selection": false,
+  "hyperparameters_tuned_on_test": false,
+  "hyperparameters_chosen_on_validation": true,
+  "role": "Preregistered contract for the v0.6.2 sim-train / The Well-test kappa inverse. Training uses continuously sampled Sc from the numpy solver. Test uses official The Well files. It holds no v0.6.2 test number. It does not edit v0.6.1 or earlier artifacts.",
+  "parent_study": "v0.6.1",
+  "parent_protocol": "docs/v061/protocol.json",
+  "parent_protocol_sha256": "d3d7af4088e8170ce1555f1ded10b7ade98110446e2a70cebe51cb9ca1a8b052",
+  "solver_validation": "docs/v062/solver_validation.json",
+  "identifiability": "docs/v061/identifiability.json",
+  "identifiability_gate": 0.02,
+  "excluded_reynolds": 50000.0,
+  "question": "If a data-only FNO and a solver-in-the-loop search are trained on continuously sampled Sc from a The Well-matched shear-flow solver, can they recover kappa on official The Well files at Reynolds 10000 against the frozen v0.6 bars plus a constant-predictor gate?",
+  "attribution": {
+    "dataset": "The Well shear_flow",
+    "huggingface": "polymathic-ai/shear_flow",
+    "license": "CC BY 4.0",
+    "dataset_url": "https://polymathic-ai.org/the_well/datasets/shear_flow/",
+    "paper": "https://arxiv.org/abs/2412.00568",
+    "generator": "Dedalus (Burns et al., Phys. Rev. Research 2, 023068, 2020)",
+    "our_solver": "pinnforge.v062.solver, IC family from RudyMorel/the-well-rbc-sf src/generate_sf.py",
+    "access": "huggingface_hub anonymous; no token."
+  },
+  "not_claimed": [
+    "a result on Petrobras 3W",
+    "3D",
+    "the full 547 GB ensemble",
+    "that Dedalus was run in this study",
+    "that PySR was run",
+    "identifiability at Reynolds 50000 or higher",
+    "a retuned bar after seeing test scores",
+    "a change to any v0.6.1 or earlier number, protocol, or score file"
+  ],
+  "device": "cpu",
+  "workers": 1,
+  "seeds": [0, 1, 2],
+  "compute_reduction": {
+    "reason": "A native 256 by 512 integrate to t=16.8 is too slow for a free CPU budget. Training trajectories are generated at 64 by 128. On those generated fields the late_9 full-field oracle recovered both coefficients far below the identifiability gate. The Well test stays on the native 256 by 512 identifiable setting. SITL searches kappa only, eight golden-section steps, window length 0.8, dt=0.005, on the 64 by 128 solver.",
+    "sim_nx": 64,
+    "sim_ny": 128,
+    "n_sim": 112,
+    "sitl_steps": 8,
+    "sitl_dt": 0.005,
+    "sitl_window": 0.8
+  },
+  "aggregation": {
+    "unit": "one (nu, kappa) pair per instance per method per noise per density, then median relative error over the slice",
+    "relative_error": "|c_hat - c_true| / max(|c_true|, 1e-18)",
+    "center": "median over instances, then mean over seeds, then mean over the two densities",
+    "coverage": "fraction of test instances whose true nu and true kappa both lie in their split-conformal intervals at alpha 0.1",
+    "primary_coefficient": "kappa"
+  },
+  "pde": {
+    "form": "u_t + u·∇u + ∇p = nu Δu;  s_t + u·∇s = kappa Δs;  periodic;  mean(p) = 0",
+    "nu": "1 / Reynolds",
+    "kappa": "nu / Schmidt"
+  },
+  "source_grid": {
+    "nx": 256,
+    "ny": 512,
+    "length_x": 1.0,
+    "length_y": 2.0
+  },
+  "sim_grid": {
+    "nx": 64,
+    "ny": 128,
+    "length_x": 1.0,
+    "length_y": 2.0,
+    "dt": 0.005,
+    "t_final": 16.8,
+    "save_dt": 0.1
+  },
+  "time_window": {
+    "name": "late_9",
+    "frame_start": 160,
+    "n_frames": 9,
+    "dt": 0.1,
+    "frame_stride": 1,
+    "burst_starts": [0, 3, 6],
+    "burst_length": 3
+  },
+  "sensors": {
+    "densities": [
+      {"name": "16x32", "n_side_x": 16, "n_side_y": 32},
+      {"name": "32x64", "n_side_x": 32, "n_side_y": 64}
+    ],
+    "observables": ["ux", "uy", "pressure", "tracer"]
+  },
+  "noise": {
+    "model": "additive iid Gaussian on observed field values, scaled by the clean-field standard deviation of that instance",
+    "fractions": [0.0, 0.01, 0.05],
+    "noise_seed": 0
+  },
+  "training": {
+    "reynolds": 10000.0,
+    "schmidt_min": 0.08,
+    "schmidt_max": 1.3,
+    "schmidt_sampling": "log-uniform",
+    "n_train": 32,
+    "n_cal": 64,
+    "n_val": 16,
+    "n_cal_min": 60,
+    "ic_family": "n_shear in {2,4}, n_blobs in {2,3,4,5}, width in {0.25,0.5,1,2,4}",
+    "split_seed": 0
+  },
+  "subset": {
+    "in_distribution": [
+      {"reynolds": 10000.0, "schmidt": 0.1, "nu": 0.0001, "kappa": 0.001},
+      {"reynolds": 10000.0, "schmidt": 0.2, "nu": 0.0001, "kappa": 0.0005},
+      {"reynolds": 10000.0, "schmidt": 0.5, "nu": 0.0001, "kappa": 0.0002},
+      {"reynolds": 10000.0, "schmidt": 1.0, "nu": 0.0001, "kappa": 0.0001}
+    ],
+    "ood": [
+      {"reynolds": 10000.0, "schmidt": 2.0, "nu": 0.0001, "kappa": 0.00005, "reading": "held-out Schmidt on The Well"}
+    ],
+    "files": {
+      "test": [
+        "data/test/shear_flow_Reynolds_1e4_Schmidt_1e-1.hdf5",
+        "data/test/shear_flow_Reynolds_1e4_Schmidt_2e-1.hdf5",
+        "data/test/shear_flow_Reynolds_1e4_Schmidt_5e-1.hdf5",
+        "data/test/shear_flow_Reynolds_1e4_Schmidt_1e0.hdf5"
+      ],
+      "ood_test": [
+        "data/test/shear_flow_Reynolds_1e4_Schmidt_2e0.hdf5"
+      ]
+    }
+  },
+  "methods": {
+    "wsindy": {
+      "implementation": "pinnforge.v06.wsindy",
+      "test_function": {
+        "degree": 4,
+        "space_radius_fraction": 0.25,
+        "center_stride_fraction": 0.16666666666666666
+      }
+    },
+    "oracle": {"used": true, "role": "full-field weak-form ceiling on the field the method sees"},
+    "constant": {"used": true, "role": "training-set median of nu and of kappa"},
+    "fno_data": {
+      "architecture": "FNO2d on the probe lattice",
+      "width": 8,
+      "modes": 4,
+      "layers": 2,
+      "epochs": 8,
+      "batch_size": 4,
+      "lr": 0.001
+    },
+    "sitl_cold": {
+      "role": "kappa-only golden-section search on the 64 by 128 solver, started from the training-median kappa",
+      "n_steps": 8,
+      "nu_fixed": true
+    },
+    "hybrid": {
+      "role": "FNO log-bracket plus SITL kappa clipped into that bracket, split-conformal on 64 sim calibration instances",
+      "n_cal": 64,
+      "alpha": 0.1
+    },
+    "pysr": {"used": false, "reason": "PySR needs Julia. The skip is recorded here before scoring."}
+  },
+  "pass_bars": {
+    "source": "docs roadmap copied from v0.6, plus the constant-predictor gate. Not retuned.",
+    "nu_kappa_in_dist": {"name": "in_dist_median_rel", "max": 0.05},
+    "nu_kappa_ood": {"name": "ood_median_rel", "max": 0.1},
+    "gap": {"name": "ood_over_in_dist", "max": 3.0},
+    "coverage": {"name": "interval_coverage", "min": 0.88, "max": 0.92},
+    "hybrid_beats": {"name": "hybrid_beats_baselines_ood", "comparison": "<"},
+    "noise_robustness": {"name": "noise_5pct_not_worse_than_wsindy", "comparison": "<="},
+    "constant_predictor": {"name": "beats_constant_predictor", "comparison": "<"},
+    "overall": "pass only if every bar above passes"
+  },
+  "reported_not_bars": [
+    "noise 0 except as a diagnostic",
+    "oracle ceiling",
+    "sitl_cold vs hybrid",
+    "per-density split",
+    "wall clock"
+  ],
+  "compute": {
+    "target": "one CPU, free of charge",
+    "gpu": false,
+    "ci": "tiny synthetic fixture only. CI never downloads The Well and never generates the study."
+  },
+  "outputs": {
+    "protocol": "docs/v062/protocol.json",
+    "solver_validation": "docs/v062/solver_validation.json",
+    "scores": "docs/v062/scores.json",
+    "report": "docs/v062/report.md"
+  }
+}
