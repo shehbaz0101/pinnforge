@@ -84,12 +84,40 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _smoke() -> int:
-    from pinnforge.v061.identifiability import GATE, GRIDS, WINDOWS
+    import numpy as np
+
+    from pinnforge.reference.spectral2d.dataset import load_protocol, protocol_sha256
+    from pinnforge.v06.masks import ShearMask
+    from pinnforge.v06.wsindy import fit_coefficients
+    from pinnforge.v061.identifiability import GATE
 
     assert GATE == 0.02
-    assert GRIDS[0]["nx"] == 32
-    assert WINDOWS[0]["name"] == "v06_short"
-    print("v061 smoke ok identifiability fixture")
+    if not PROTOCOL.is_file():
+        print("v061 smoke ok identifiability fixture")
+        return 0
+    protocol = load_protocol(PROTOCOL)
+    assert protocol["frozen_before_test_evaluation"]
+    assert protocol["test_used_for_selection"] is False
+    assert protocol["methods"]["pysr"]["used"] is False
+    assert int(protocol["splits"]["from_train_files"]["n_cal"]) >= 60
+    tiny = json.loads(json.dumps(protocol))
+    tiny["downsample"]["nx"] = 8
+    tiny["downsample"]["ny"] = 16
+    tiny["time_window"]["n_frames"] = 9
+    from pinnforge.v06.synthetic import manufactured_pack
+
+    fields, _nu, _kappa = manufactured_pack(tiny, n_instances=1)
+    mask = ShearMask(
+        nx=8,
+        ny=16,
+        n_side_x=4,
+        n_side_y=8,
+        burst_starts=(0, 3, 6),
+        burst_length=3,
+    )
+    hat = fit_coefficients(fields[0], protocol=tiny, mask=mask, full_field=True)
+    assert np.isfinite(hat["kappa"])
+    print("v061 smoke ok", protocol_sha256(PROTOCOL)[:12])
     return 0
 
 
