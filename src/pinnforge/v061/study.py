@@ -271,7 +271,7 @@ def _worker_state() -> dict[str, Any]:
             "protocol": protocol,
             "root": root,
             "manifest": manifest,
-            "fields": np.load(root / manifest["files"]["fields"]),
+            "fields": np.load(root / manifest["files"]["fields"], mmap_mode="r"),
             "oracles": {},
         }
     )
@@ -302,31 +302,34 @@ def case_worker(job: dict[str, Any]) -> dict[str, Any]:
     if job["kind"] == "train":
         from pinnforge.v061.fno_inverse import train_fno
 
+        from pinnforge.v061.fno_inverse import pack_lattice
+
         seed = int(job["seed"])
         xs = []
         nu = []
         kappa = []
         for noise in protocol["noise"]["fractions"]:
             for instance_id in manifest["splits"]["train"]:
-                xs.append(replay_noise(fields, instance_id, float(noise), seed, protocol))
+                xs.append(pack_lattice(replay_noise(fields, instance_id, float(noise), seed, protocol), mask))
                 row = manifest["instances"][instance_id]
                 nu.append(row["nu"])
                 kappa.append(row["kappa"])
-        packed = np.stack(xs, axis=0)
-        val_fields = []
+        val_x = []
         val_nu = []
         val_ka = []
         for instance_id in manifest["splits"]["val"]:
-            val_fields.append(replay_noise(fields, instance_id, 0.01, seed, protocol))
+            val_x.append(pack_lattice(replay_noise(fields, instance_id, 0.01, seed, protocol), mask))
             row = manifest["instances"][instance_id]
             val_nu.append(row["nu"])
             val_ka.append(row["kappa"])
-        train_ids = list(range(packed.shape[0]))
-        combined = np.concatenate([packed, np.stack(val_fields, axis=0)], axis=0)
-        val_ids = list(range(packed.shape[0], combined.shape[0]))
+        train_x = np.stack(xs, axis=0)
+        val_x = np.stack(val_x, axis=0)
+        train_ids = list(range(train_x.shape[0]))
+        val_ids = list(range(train_x.shape[0], train_x.shape[0] + val_x.shape[0]))
         ckpt = root / f"fno_seed{seed}_{density}.pt"
+        dummy = np.zeros((1, 1))
         return train_fno(
-            combined,
+            dummy,
             np.asarray(nu + val_nu),
             np.asarray(kappa + val_ka),
             train_ids,
@@ -335,6 +338,8 @@ def case_worker(job: dict[str, Any]) -> dict[str, Any]:
             mask=mask,
             seed=seed,
             checkpoint=ckpt,
+            train_x=train_x,
+            val_x=val_x,
         )
 
     seed = int(job["seed"])

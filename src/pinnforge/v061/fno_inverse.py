@@ -31,12 +31,20 @@ def train_fno(
     mask: ShearMask,
     seed: int,
     checkpoint: Path,
+    train_x: np.ndarray | None = None,
+    val_x: np.ndarray | None = None,
 ) -> dict[str, Any]:
     torch = _torch()
     spec = protocol["methods"]["fno_data"]
     rng = np.random.default_rng(int(seed))
     torch.manual_seed(int(seed))
-    sample = pack_lattice(fields[train_ids[0]], mask)
+    if train_x is None or val_x is None:
+        train_x, train_y = _stack(fields, nu, kappa, train_ids, mask)
+        val_x, val_y = _stack(fields, nu, kappa, val_ids, mask)
+    else:
+        train_y = np.stack([np.log([float(nu[i]), float(kappa[i])]) for i in train_ids], axis=0)
+        val_y = np.stack([np.log([float(nu[i]), float(kappa[i])]) for i in val_ids], axis=0)
+    sample = train_x[0]
     model = FNO2d(
         int(sample.shape[0]),
         2,
@@ -48,8 +56,6 @@ def train_fno(
     batch = int(spec["batch_size"])
     best = float("inf")
     history: list[float] = []
-    train_x, train_y = _stack(fields, nu, kappa, train_ids, mask)
-    val_x, val_y = _stack(fields, nu, kappa, val_ids, mask)
     for _epoch in range(int(spec["epochs"])):
         order = rng.permutation(train_x.shape[0])
         model.train()
