@@ -1,17 +1,15 @@
 """CPU page behind the public Gradio demo.
 
-A visitor picks the harmonic oscillator, viscous Burgers, or the Poisson
-toy. :func:`run_quick_pinn` trains a small coordinate network for that
-problem and returns the prediction next to a reference curve. The
-Burgers network has no closed form, so its reference is one Fourier
-trajectory of the same initial-value problem. The network, the collocation
-budget, and the time window are small enough that the fit finishes in
-seconds on a free CPU.
+The page opens on prediction-versus-reference plots for the harmonic
+oscillator, viscous Burgers, and the Poisson toy, plus the Stage D
+viscosity chart. Those curves were written by a real run of
+:func:`run_quick_pinn` and are loaded from ``docs/live``. The viscosity
+chart is the published Stage D scores. Importing this module does not
+import torch.
 
-The viscosity chart is not that fit. :func:`stage_d_headline` reads the
-published Stage D scores and labels them as precomputed. Importing this
-module does not import torch. :func:`run_quick_pinn` and
-:func:`prepare_runtime` do.
+:func:`run_quick_pinn` is the optional live button. It trains a smaller
+harmonic or Burgers budget than the saved curves, on one torch thread.
+:func:`prepare_runtime` also imports torch.
 """
 
 from __future__ import annotations
@@ -43,6 +41,7 @@ from pinnforge.sampling.defaults import default_spec
 
 GITHUB_URL = "https://github.com/shehbaz0101/pinnforge"
 HEALTH_PATH = "/health"
+PRECOMPUTED_PHRASE = "precomputed from a real run of this code"
 _PORT_MIN = 1
 _PORT_MAX = 65535
 HEADER_MARKDOWN = (
@@ -52,6 +51,18 @@ HEADER_MARKDOWN = (
     f"[GitHub]({GITHUB_URL})"
 )
 STAGE_D_RELATIVE = Path("docs") / "v02" / "stage_d_scores.json"
+_GALLERY_RELATIVE = Path("docs") / "live" / "manifest.json"
+_GALLERY_ORDER = ("harmonic_oscillator", "burgers_1d", "poisson_toy")
+# First click on a cgroup capped at 0.1 CPU (cpu.max "10000 100000"), rounded up.
+# Measured wall clock was torch import 9.6 s plus the first solve, which also pays
+# kernel warmup: harmonic 19 s, Poisson 23 s, Burgers about 30 s. A later harmonic
+# click was 1.5 s, warm Poisson 5.8 s, and warm Burgers 13.7 s.
+_LIVE_FIRST_SECONDS = {
+    "harmonic_oscillator": 20,
+    "poisson_toy": 25,
+    "burgers_1d": 30,
+}
+_INTEROP_LIMITED = False
 _STAGE_D_FORMAT = "pinnforge.stage_d_scores.v1"
 _LOCK = threading.Lock()
 _REFERENCE = "#1f4e79"
@@ -74,26 +85,27 @@ class LiveBudget:
     lr: float
 
 
+# Harmonic and Burgers are shorter than the saved gallery run. Poisson stays on the
+# gallery budget: cutting it moved relative L2 from 0.5% to 1.5% and saved little time.
 BUDGETS: dict[str, LiveBudget] = {
-    "harmonic_oscillator": LiveBudget(150, 48, 8, 0, (32, 32), 1e-2),
+    "harmonic_oscillator": LiveBudget(80, 32, 8, 0, (32, 32), 1e-2),
     "poisson_toy": LiveBudget(250, 64, 0, 16, (48, 48), 5e-3),
-    "burgers_1d": LiveBudget(800, 128, 32, 16, (32, 32), 1e-2),
+    "burgers_1d": LiveBudget(500, 96, 24, 12, (32, 32), 1e-2),
 }
 
 _BLURBS: dict[str, str] = {
     "harmonic_oscillator": (
         "u'' + ω²u = 0 on t ∈ [0, 1], with ω = 1, u(0) = 1, and u'(0) = 0. "
-        "The reference curve is the closed form cos(t). The network is trained when you click Run."
+        "The reference curve is the closed form cos(t)."
     ),
     "poisson_toy": (
         "−u'' = sin(πx) on [0, 1], with u(0) = u(1) = 0. "
-        "The reference curve is sin(πx) / π². The network is trained when you click Run."
+        "The reference curve is sin(πx) / π²."
     ),
     "burgers_1d": (
         "u_t + u u_x = ν u_xx with ν = 0.1, periodic on x ∈ [−1, 1], t ∈ [0, 0.4], "
         "and initial data −sin(πx). There is no closed form. The reference curve is a "
-        "Fourier solution of that same problem. This window is short and smooth so the "
-        "fit finishes in seconds. The viscosity chart is a separate precomputed study."
+        "Fourier solution of that same problem. The viscosity chart is a separate precomputed study."
     ),
 }
 
@@ -200,6 +212,94 @@ def equation_blurb(equation: str) -> str:
     """One sentence for the selected equation, before any training."""
 
     return _BLURBS[_canonical(equation)]
+
+
+def live_button_label(equation: str) -> str:
+    """Secondary-button text. The number is the first click on a 0.1 CPU."""
+
+    seconds = _LIVE_FIRST_SECONDS[_canonical(equation)]
+    return f"Run live on free CPU, about {seconds} s"
+
+
+def landing_markdown(headline: StageDHeadline | None = None) -> str:
+    """Text above the gallery. The curves are already on the page."""
+
+    headline = stage_d_headline() if headline is None else headline
+    hybrid = format_error_percent(headline.hybrid.mean_rel)
+    closed = format_error_percent(headline.closed_form.mean_rel)
+    return (
+        f"Hybrid operator **{hybrid}** mean relative error on the hard out-of-distribution "
+        f"slice, versus **{closed}** for the closed form, from 32 sparse sensors.\n\n"
+        f"The three curves below are {PRECOMPUTED_PHRASE}. "
+        "They are on the page as soon as it opens. Opening the page does not import PyTorch."
+    )
+
+
+def live_section_markdown() -> str:
+    """Caption for the optional button, under the saved plots."""
+
+    return (
+        "### Optional live solve\n\n"
+        "The plots above are the result. This button trains again on the free CPU "
+        "(about 0.1 core). The label is the first click, which also imports PyTorch. "
+        "A later harmonic click is about 1 s, Poisson about 6 s, and Burgers about 14 s. "
+        "The status line reports the relative L2 of the click you just ran."
+    )
+
+
+def precomputed_dir() -> Path:
+    """Directory of the saved gallery. The search matches :func:`stage_d_scores_path`."""
+
+    start = Path(__file__).resolve().parent
+    for parent in (start, *start.parents):
+        candidate = parent / _GALLERY_RELATIVE
+        if candidate.is_file():
+            return candidate.parent
+    cwd_candidate = Path.cwd() / _GALLERY_RELATIVE
+    if cwd_candidate.is_file():
+        return cwd_candidate.parent
+    raise FileNotFoundError(f"missing precomputed gallery at {_GALLERY_RELATIVE.parent.as_posix()}")
+
+
+def precomputed_manifest() -> dict[str, Any]:
+    """Hyperparameters of the run that wrote the gallery images."""
+
+    path = precomputed_dir() / "manifest.json"
+    record = json.loads(path.read_text(encoding="utf-8"))
+    if record.get("phrase") != PRECOMPUTED_PHRASE:
+        raise ValueError(f"gallery manifest is missing the precomputed phrase in {path}")
+    return record
+
+
+def precomputed_images() -> list[tuple[str, Path]]:
+    """Caption and PNG path for each equation, in radio order."""
+
+    record = precomputed_manifest()
+    directory = precomputed_dir()
+    runs = record["runs"]
+    images: list[tuple[str, Path]] = []
+    for equation_id in _GALLERY_ORDER:
+        run = runs[equation_id]
+        path = directory / str(run["image"])
+        if not path.is_file():
+            raise FileNotFoundError(path)
+        rel = format_error_percent(float(run["relative_l2"]))
+        caption = (
+            f"{run['display_name']}: {rel} relative L2, {int(run['epochs'])} Adam steps. "
+            f"{PRECOMPUTED_PHRASE}."
+        )
+        images.append((caption, path))
+    return images
+
+
+def viscosity_image_path() -> Path:
+    """Saved Stage D bar chart. Drawing it does not import matplotlib or torch."""
+
+    record = precomputed_manifest()
+    path = precomputed_dir() / str(record["viscosity_image"])
+    if not path.is_file():
+        raise FileNotFoundError(path)
+    return path
 
 
 def prepare_runtime() -> None:
@@ -414,6 +514,20 @@ def solve_status(solved: LiveSolve) -> str:
     )
 
 
+def _limit_torch_threads(torch: Any) -> None:
+    """One intra-op thread, and one inter-op thread the first time torch is used."""
+
+    global _INTEROP_LIMITED
+    torch.set_num_threads(1)
+    if _INTEROP_LIMITED:
+        return
+    try:
+        torch.set_num_interop_threads(1)
+    except RuntimeError:
+        pass
+    _INTEROP_LIMITED = True
+
+
 def _canonical(equation: str) -> str:
     try:
         equation_id = resolve_equation_id(equation)
@@ -431,7 +545,7 @@ def _run_locked(equation_id: str) -> LiveSolve:
     from pinnforge.training.loop import train_loop
 
     torch = require_torch()
-    torch.set_num_threads(1)
+    _limit_torch_threads(torch)
     spec = _spec(equation_id)
     budget = BUDGETS[equation_id]
     run_dir = Path("runs") / "live-demo" / uuid.uuid4().hex

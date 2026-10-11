@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import matplotlib.figure
@@ -14,15 +16,21 @@ from pinnforge.live_demo import (
     GITHUB_URL,
     HEADER_MARKDOWN,
     HEALTH_PATH,
+    PRECOMPUTED_PHRASE,
     equation_blurb,
     format_error_percent,
     health_body,
+    landing_markdown,
+    live_button_label,
+    precomputed_images,
+    precomputed_manifest,
     run_quick_pinn,
     server_bind,
     solve_status,
     stage_d_headline,
     stage_d_markdown,
     viscosity_figure,
+    viscosity_image_path,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -66,12 +74,51 @@ def test_blurbs_name_the_reference_and_burgers_stays_a_short_problem() -> None:
     burgers = equation_blurb("burgers")
     assert "Fourier" in burgers
     assert "precomputed" in burgers
-    assert BUDGETS["burgers_1d"].epochs == 800
-    assert BUDGETS["harmonic_oscillator"].epochs == 150
+    assert BUDGETS["burgers_1d"].epochs == 500
+    assert BUDGETS["harmonic_oscillator"].epochs == 80
     assert BUDGETS["poisson_toy"].epochs == 250
+    assert BUDGETS["poisson_toy"].hidden == (48, 48)
+    assert BUDGETS["harmonic_oscillator"].hidden == (32, 32)
 
 
-def test_readme_points_at_a_render_placeholder() -> None:
+def test_gallery_is_a_real_run_and_the_page_says_so() -> None:
+    assert PRECOMPUTED_PHRASE == "precomputed from a real run of this code"
+    text = landing_markdown()
+    assert PRECOMPUTED_PHRASE in text
+    assert "3.4%" in text
+    assert "34.9%" in text
+    assert "does not import PyTorch" in text
+    record = precomputed_manifest()
+    assert record["phrase"] == PRECOMPUTED_PHRASE
+    assert record["generator"] == "pinnforge.live_demo.run_quick_pinn"
+    assert record["seed"] == 0
+    runs = record["runs"]
+    assert runs["harmonic_oscillator"]["epochs"] == 150
+    assert runs["poisson_toy"]["epochs"] == 250
+    assert runs["burgers_1d"]["epochs"] == 800
+    assert runs["harmonic_oscillator"]["relative_l2"] < 0.01
+    assert runs["poisson_toy"]["relative_l2"] < 0.01
+    assert runs["burgers_1d"]["relative_l2"] < 0.06
+    images = precomputed_images()
+    assert [path.name for _caption, path in images] == [
+        "harmonic.png",
+        "burgers.png",
+        "poisson.png",
+    ]
+    for caption, path in images:
+        assert PRECOMPUTED_PHRASE in caption
+        blob = path.read_bytes()
+        assert blob.startswith(b"\x89PNG\r\n\x1a\n")
+        assert len(blob) > 10_000
+    viscosity = viscosity_image_path().read_bytes()
+    assert viscosity.startswith(b"\x89PNG\r\n\x1a\n")
+    assert len(viscosity) > 10_000
+    assert live_button_label("harmonic") == "Run live on free CPU, about 20 s"
+    assert live_button_label("poisson") == "Run live on free CPU, about 25 s"
+    assert live_button_label("burgers") == "Run live on free CPU, about 30 s"
+
+
+def test_readme_points_at_the_render_demo() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert readme.startswith("---\n")
     assert "sdk: gradio" in readme
@@ -81,8 +128,9 @@ def test_readme_points_at_a_render_placeholder() -> None:
     assert "app_file: app.py" in readme
     assert "## Live demo" in readme
     assert "https://pinnforge.onrender.com" in readme
-    assert "placeholder" in readme.lower()
-    assert "filled" in readme.lower()
+    assert PRECOMPUTED_PHRASE in readme
+    assert "about 20 s" in readme
+    assert "about 30 s" in readme
     assert (ROOT / "app.py").is_file()
     assert (ROOT / "requirements.txt").is_file()
     assert (ROOT / ".python-version").read_text(encoding="utf-8").strip() == "3.12"
@@ -141,12 +189,35 @@ def test_harmonic_live_solve_matches_the_closed_form(monkeypatch: pytest.MonkeyP
     monkeypatch.chdir(tmp_path)
     solved = run_quick_pinn("harmonic")
     assert solved.equation_id == "harmonic_oscillator"
-    assert solved.epochs == 150
+    assert solved.epochs == 80
     assert solved.relative_l2 < 0.02
     assert solved.seconds < 30.0
     assert solved.x.shape == solved.prediction.shape == solved.reference.shape
     assert not (tmp_path / "runs").exists()
     assert "Live CPU solve" in solve_status(solved)
+
+
+def test_importing_the_app_does_not_import_torch() -> None:
+    pytest.importorskip("gradio")
+    code = (
+        "import sys\n"
+        "from pathlib import Path\n"
+        f"root = Path({str(ROOT)!r})\n"
+        "sys.path.insert(0, str(root))\n"
+        "sys.path.insert(0, str(root / 'src'))\n"
+        "import app\n"
+        "app.build_demo()\n"
+        "assert 'torch' not in sys.modules\n"
+        "print('ok')\n"
+    )
+    completed = subprocess.run(
+        [sys.executable, "-c", code],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert "ok" in completed.stdout
 
 
 def test_health_route_is_ok_without_training() -> None:

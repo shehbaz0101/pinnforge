@@ -19,11 +19,11 @@ PINNForge is a CPU sandbox for a few classic physics-informed residuals, plus on
 
 ## Live demo
 
-A Gradio page on a Render free web service (0.1 CPU, 512 MB RAM, spins down when idle). Pick harmonic, Burgers, or Poisson, run a small PINN, and read the Stage D viscosity result. The live curve is trained on that click. Torch loads on the first click. The viscosity bars are read from [docs/v02/stage_d_scores.json](docs/v02/stage_d_scores.json) and the page labels them precomputed.
+A Gradio page on a Render free web service (0.1 CPU, 512 MB RAM, spins down when idle): https://pinnforge.onrender.com
+
+The page opens on results. Prediction-versus-reference plots for the harmonic oscillator, Burgers, and Poisson are precomputed from a real run of this code, and the Stage D viscosity chart is on the page as well. The chart is read from [docs/v02/stage_d_scores.json](docs/v02/stage_d_scores.json). Nothing is trained, and PyTorch is not imported, until the secondary button. That button is labeled with the first-click wait on this free CPU: about 20 s for the harmonic oscillator, about 25 s for Poisson, and about 30 s for Burgers. The first click loads PyTorch. A later harmonic click is about 1 s.
 
 **Live demo:** https://pinnforge.onrender.com
-
-That host is a placeholder in the `https://<service-name>.onrender.com` form. It will be filled in when the free web service named `pinnforge` exists. If the created service name differs, replace the host.
 
 The YAML block at the top of this file is Gradio metadata. Render ignores it. The service is [render.yaml](render.yaml), with Python 3.12 from [.python-version](.python-version).
 
