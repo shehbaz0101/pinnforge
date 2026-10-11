@@ -154,6 +154,10 @@ leaf_documents:
   - file: docs/v062/solver_validation.md
     evidence:
       - docs/v062/solver_validation.json
+  - file: docs/v062/protocol.md
+    evidence:
+      - docs/v062/protocol.json
+      - docs/v062/solver_validation.json
 
 claims:
   - id: number-0_41pct
