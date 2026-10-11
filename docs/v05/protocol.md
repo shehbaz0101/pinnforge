@@ -4,11 +4,11 @@ This note is the human reading of [protocol.json](protocol.json). That JSON is t
 
 ## Question
 
-With sparse noisy sensors of the existing 2D Burgers and vorticity-form Navier-Stokes generators, can weak-form sparse regression (WSINDy) recover the exact PDE support — the true terms and no extras — on raw probes and on fields denoised by a reused 2D FNO, against a frozen 80% seed-success bar at 1% noise?
+With sparse noisy sensors of the existing 2D Burgers and vorticity-form Navier-Stokes generators, can weak-form sparse regression (WSINDy) recover the exact PDE support — the true terms and no extras — on raw probes and on fields denoised by a reused 2D FNO, against a frozen `0.8` seed-success bar at noise `0.01`?
 
 ## What is recovered
 
-The unknown is the **support** of a frozen library, not only a scalar viscosity. Burgers truth is `{u q_x, v q_y, q_xx, q_yy}`. Navier-Stokes Kolmogorov truth adds the known forcing `-4 cos(4 y)`. Decaying Navier-Stokes drops that forcing. The library also holds distractors: `q²`, third derivatives, mixed derivatives, crossed advection, constants, and a wrong-axis forcing.
+The unknown is the **support** of a frozen library, not only a scalar viscosity. Burgers truth is `{u q_x, v q_y, q_xx, q_yy}`. Navier-Stokes Kolmogorov truth adds the known forcing `force_y`. Decaying Navier-Stokes drops that forcing. The library also holds distractors: `q²`, third derivatives, mixed derivatives, crossed advection, constants, and a wrong-axis forcing.
 
 ## Methods
 
@@ -20,7 +20,7 @@ The STLSQ threshold is chosen on the validation split only. Five seeds. Noise fr
 
 ## Pass bar (not retuned)
 
-Correct support in `>= 80%` of seeds at `1%` noise for at least one method on each problem. Navier-Stokes uses the Kolmogorov family for that bar.
+Correct support in `>= 0.8` of seeds at noise `0.01` for at least one method on each problem. Navier-Stokes uses the Kolmogorov family for that bar.
 
 ## What is NOT claimed
 
@@ -28,4 +28,4 @@ Correct support in `>= 80%` of seeds at `1%` noise for at least one method on ea
 - 3D
 - that PySR was scored
 - a retuned bar after seeing test scores
-- a change to any v0.4 or v0.4.1 number
+- a change to any v04 or v041 number

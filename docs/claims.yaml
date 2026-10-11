@@ -31,6 +31,7 @@ scan:
     - docs/v03/*.md
     - docs/v04/*.md
     - docs/v041/*.md
+    - docs/v05/*.md
     - STAGE1_REPORT.md
     - STAGE2_REPORT.md
     - STAGE3_REPORT.md
@@ -50,6 +51,7 @@ scan:
     - docs/demo/result.md
     - docs/demo/index.html
     - docs/v02/*.md
+    - docs/v05/*.md
   number_ignore:
     - 'Python 3\.\d+'
     - '\b3\.1[12]\b'
@@ -93,6 +95,9 @@ leaf_documents:
       - docs/v041/validation.json
       - docs/v04/scores.json
       - docs/v04/protocol.json
+  - file: docs/v05/protocol.md
+    evidence:
+      - docs/v05/protocol.json
 
 claims:
   - id: number-0_41pct
@@ -2376,3 +2381,36 @@ claims:
           path: problems/ns2d/bars/checks/warm_vs_cold_time/pass
         right:
           literal: false
+
+  - id: number-v05-bar-rate
+    class: numeric
+    numbers:
+      - token: "0.8"
+        files:
+          - docs/v05/protocol.md
+        evidence: docs/v05/protocol.json
+        path: pass_bars/min_seed_success_rate
+  - id: number-v05-bar-noise
+    class: numeric
+    numbers:
+      - token: "0.01"
+        files:
+          - docs/v05/protocol.md
+        evidence: docs/v05/protocol.json
+        path: pass_bars/noise
+  - id: number-v05-noise-0_02
+    class: numeric
+    numbers:
+      - token: "0.02"
+        files:
+          - docs/v05/protocol.md
+        evidence: docs/v05/protocol.json
+        path: noise/fractions/2
+  - id: number-v05-noise-0_05
+    class: numeric
+    numbers:
+      - token: "0.05"
+        files:
+          - docs/v05/protocol.md
+        evidence: docs/v05/protocol.json
+        path: noise/fractions/3

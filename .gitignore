@@ -41,3 +41,6 @@ artifacts/v04_pilot/
 
 # v0.4.1 pilots and checkpoints. Manifests live in docs/v041/.
 artifacts/v041_pilot/
+
+# v0.5 law-discovery pilots and denoiser checkpoints. Manifests live in docs/v05/.
+artifacts/v05_pilot/
