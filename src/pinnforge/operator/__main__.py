@@ -89,6 +89,8 @@ def main(argv: list[str] | None = None) -> int:
             return _stage_e_stress(args)
         if args.command == "strong-baselines":
             return _strong_baselines(args)
+        if args.command == "warmstart":
+            return _warmstart(args)
     except ValueError as exc:
         parser.error(str(exc))
     parser.error(f"unknown command {args.command}")
@@ -345,6 +347,33 @@ def build_parser() -> argparse.ArgumentParser:
     strong.add_argument("--manifest", type=Path, default=Path("docs/stage_a/pilot_manifest.json"))
     strong.add_argument("--output", type=Path, default=Path("docs/research/strong_baselines_scores.json"))
     strong.add_argument("--report", type=Path, default=Path("docs/research/strong_baselines.md"))
+    warm = subparsers.add_parser(
+        "warmstart",
+        help="FNO first guess, then a bounded solver-in-the-loop viscosity fit with conformal intervals",
+        description=(
+            "validate reads the validation split only and writes the selection record. "
+            "test requires the frozen protocol and scores the test split. "
+            "report re-renders the note from the scores JSON. "
+            "smoke runs every step on a synthetic field with random-weight operators."
+        ),
+    )
+    warm.add_argument("part", choices=("validate", "test", "report", "smoke"))
+    warm.add_argument("--protocol", type=Path, default=Path("docs/v03/warmstart_protocol.json"))
+    warm.add_argument("--pilot", type=Path, default=Path("artifacts/burgers_hard_pilot"))
+    warm.add_argument("--manifest", type=Path, default=Path("docs/stage_a/pilot_manifest.json"))
+    warm.add_argument("--validation-record", type=Path, default=Path("docs/v03/warmstart_validation.json"))
+    warm.add_argument("--rows-dir", type=Path, default=None, help="per-instance row cache (default under runs/v03)")
+    warm.add_argument("--output", type=Path, default=Path("docs/v03/warmstart_scores.json"))
+    warm.add_argument("--report", type=Path, default=Path("docs/v03/warmstart.md"))
+    warm.add_argument("--workers", type=int, default=4)
+    warm.add_argument(
+        "--family",
+        action="append",
+        choices=("full", "restricted"),
+        default=None,
+        help="validate only these checkpoint families (default: both, then select)",
+    )
+    warm.add_argument("--smoke-dir", type=Path, default=Path("runs/v03/smoke"))
     return parser
 
 
@@ -1031,6 +1060,47 @@ def _strong_baselines(args: argparse.Namespace) -> int:
         output=args.output,
         report_path=args.report,
     )
+    return 0
+
+
+def _warmstart(args: argparse.Namespace) -> int:
+    if args.workers < 1:
+        raise ValueError("--workers must be >= 1")
+    if args.part == "smoke":
+        from pinnforge.operator.warmstart_run import run_smoke, warm_view
+
+        row = run_smoke(args.smoke_dir, families=tuple(args.family or ("full",)))
+        view = warm_view(row, "full/hybrid_1e-2/ensemble", 3)
+        print(f"smoke cold nu_hat={row['cold']['nu_hat']:.16g} seconds={row['cold']['seconds']:.3f}")
+        print(f"smoke warm nu_hat={view['nu_hat']:.16g} seconds={view['seconds']:.3f} solves={view['n_evaluations']}")
+        return 0
+    if args.part == "validate":
+        from pinnforge.operator.warmstart_run import FAMILIES, run_validation
+
+        run_validation(
+            pilot_dir=args.pilot,
+            manifest_path=args.manifest,
+            record_path=args.validation_record,
+            rows_dir=args.rows_dir or Path("runs/v03/val"),
+            workers=args.workers,
+            families=tuple(args.family or FAMILIES),
+        )
+        return 0
+    from pinnforge.operator.warmstart_report import render_report_file, run_warmstart_test
+
+    if args.part == "test":
+        run_warmstart_test(
+            protocol_path=args.protocol,
+            pilot_dir=args.pilot,
+            manifest_path=args.manifest,
+            rows_dir=args.rows_dir or Path("runs/v03/test"),
+            output=args.output,
+            report_path=args.report,
+            workers=args.workers,
+        )
+        return 0
+    render_report_file(args.output, args.report)
+    print(f"report: {Path(args.report).as_posix()}")
     return 0
 
 

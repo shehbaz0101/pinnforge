@@ -95,6 +95,7 @@ Other plots: [relative error](docs/demo/relative_error.png), [first test field a
 | F | out-of-distribution viscosity | [STAGE_F_REPORT.md](STAGE_F_REPORT.md) | [docs/v02/stage_f_scores.json](docs/v02/stage_f_scores.json) |
 | G | claim-to-evidence checker | [docs/v02/stage_g_claims.md](docs/v02/stage_g_claims.md) | [docs/claims.yaml](docs/claims.yaml) |
 | research | weak-form and solver-in-the-loop baselines | [docs/research/strong_baselines.md](docs/research/strong_baselines.md) | [docs/research/strong_baselines_scores.json](docs/research/strong_baselines_scores.json) |
+| v0.3 | FNO-warm-started solver fit with calibrated intervals and an abstain flag | [docs/v03/warmstart.md](docs/v03/warmstart.md) | [docs/v03/warmstart_scores.json](docs/v03/warmstart_scores.json) |
 
 ## What is NOT claimed
 

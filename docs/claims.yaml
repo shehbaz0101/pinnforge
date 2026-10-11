@@ -28,6 +28,7 @@ scan:
     - docs/demo/index.html
     - docs/research/strong_baselines.md
     - docs/v02/*.md
+    - docs/v03/*.md
     - STAGE1_REPORT.md
     - STAGE2_REPORT.md
     - STAGE3_REPORT.md
@@ -62,6 +63,11 @@ leaf_documents:
     evidence:
       - docs/research/strong_baselines_scores.json
       - docs/research/strong_baselines_protocol.json
+  - file: docs/v03/warmstart.md
+    evidence:
+      - docs/v03/warmstart_scores.json
+      - docs/v03/warmstart_protocol.json
+      - docs/v03/warmstart_validation.json
 
 claims:
   - id: number-0_41pct
@@ -1908,3 +1914,218 @@ claims:
         right:
           evidence: docs/research/strong_baselines_scores.json
           path: fno/arms/data_only/slices/hard_ood/mean_rel_error
+
+  - id: v03-warmstart-passes-bars
+    class: comparison
+    locations:
+      - file: docs/v03/warmstart.md
+        pattern: 'passes every preregistered bar'
+      - file: CHANGELOG.md
+        pattern: 'passes all three preregistered bars'
+      - file: docs/README.md
+        pattern: 'passes all three preregistered bars'
+    comparisons:
+      - label: warm hybrid hard_ood mean rel <= protocol error limit
+        op: "<="
+        left:
+          evidence: docs/v03/warmstart_scores.json
+          path: pass_bars/error/value
+        right:
+          evidence: docs/v03/warmstart_protocol.json
+          path: pass_bars/error/limit
+      - label: scored error equals the seed mean
+        op: "=="
+        left:
+          evidence: docs/v03/warmstart_scores.json
+          path: pass_bars/error/value
+        right:
+          evidence: docs/v03/warmstart_scores.json
+          path: clean/arms/hybrid_1e-2/slices/hard_ood/mean_rel_error/mean
+      - label: warm / cold hard_ood time ratio <= protocol limit
+        op: "<="
+        left:
+          evidence: docs/v03/warmstart_scores.json
+          path: pass_bars/time/value
+        right:
+          evidence: docs/v03/warmstart_protocol.json
+          path: pass_bars/time/limit_ratio
+      - label: full_test coverage >= protocol low
+        op: ">="
+        left:
+          evidence: docs/v03/warmstart_scores.json
+          path: pass_bars/coverage/value
+        right:
+          evidence: docs/v03/warmstart_protocol.json
+          path: pass_bars/coverage/range/0
+      - label: full_test coverage <= protocol high
+        op: "<="
+        left:
+          evidence: docs/v03/warmstart_scores.json
+          path: pass_bars/coverage/value
+        right:
+          evidence: docs/v03/warmstart_protocol.json
+          path: pass_bars/coverage/range/1
+      - label: all bars passed
+        op: "=="
+        left:
+          evidence: docs/v03/warmstart_scores.json
+          path: pass_bars/all_passed
+        right:
+          literal: true
+
+  - id: v03-cold-reproduced
+    class: comparison
+    locations:
+      - file: docs/v03/warmstart.md
+        pattern: 're-run cold estimates are identical to the committed strong-baseline estimates'
+    comparisons:
+      - label: identical cold estimates == instances
+        op: "=="
+        left:
+          evidence: docs/v03/warmstart_scores.json
+          path: cold_reproduction/n_identical
+        right:
+          evidence: docs/v03/warmstart_scores.json
+          path: cold_reproduction/n_instances
+      - label: largest cold difference == 0
+        op: "=="
+        left:
+          evidence: docs/v03/warmstart_scores.json
+          path: cold_reproduction/max_abs_difference
+        right:
+          literal: 0
+
+  - id: v03-noise-warm-error-vs-cold
+    class: comparison
+    locations:
+      - file: docs/v03/warmstart.md
+        pattern: 'higher `hard_ood` mean relative error than the cold search on the same noisy fields at noise fractions 0\.02 and 0\.05'
+      - file: CHANGELOG.md
+        pattern: 'At 2% and 5% noise the warm start has higher `hard_ood` error than the cold search'
+    comparisons:
+      - label: noise 0.01 warm hybrid <= cold
+        op: "<="
+        left:
+          evidence: docs/v03/warmstart_scores.json
+          path: noise/noise0p01/arms/hybrid_1e-2/slices/hard_ood/mean_rel_error/mean
+        right:
+          evidence: docs/v03/warmstart_scores.json
+          path: noise/noise0p01/cold/hard_ood/mean_rel_error
+      - label: noise 0.02 warm hybrid > cold
+        op: ">"
+        left:
+          evidence: docs/v03/warmstart_scores.json
+          path: noise/noise0p02/arms/hybrid_1e-2/slices/hard_ood/mean_rel_error/mean
+        right:
+          evidence: docs/v03/warmstart_scores.json
+          path: noise/noise0p02/cold/hard_ood/mean_rel_error
+      - label: noise 0.05 warm hybrid > cold
+        op: ">"
+        left:
+          evidence: docs/v03/warmstart_scores.json
+          path: noise/noise0p05/arms/hybrid_1e-2/slices/hard_ood/mean_rel_error/mean
+        right:
+          evidence: docs/v03/warmstart_scores.json
+          path: noise/noise0p05/cold/hard_ood/mean_rel_error
+
+  - id: v03-noise-coverage
+    class: comparison
+    locations:
+      - file: docs/v03/warmstart.md
+        pattern: 'Its interval coverage falls below 0\.85 at noise fraction 0\.05'
+    comparisons:
+      - label: noise 0.01 coverage >= low
+        op: ">="
+        left:
+          evidence: docs/v03/warmstart_scores.json
+          path: noise/noise0p01/arms/hybrid_1e-2/slices/hard_ood/coverage/mean
+        right:
+          evidence: docs/v03/warmstart_protocol.json
+          path: pass_bars/coverage/range/0
+      - label: noise 0.02 coverage >= low
+        op: ">="
+        left:
+          evidence: docs/v03/warmstart_scores.json
+          path: noise/noise0p02/arms/hybrid_1e-2/slices/hard_ood/coverage/mean
+        right:
+          evidence: docs/v03/warmstart_protocol.json
+          path: pass_bars/coverage/range/0
+      - label: noise 0.05 coverage < low
+        op: "<"
+        left:
+          evidence: docs/v03/warmstart_scores.json
+          path: noise/noise0p05/arms/hybrid_1e-2/slices/hard_ood/coverage/mean
+        right:
+          evidence: docs/v03/warmstart_protocol.json
+          path: pass_bars/coverage/range/0
+
+  - id: v03-stage-f-restricted
+    class: comparison
+    locations:
+      - file: docs/v03/warmstart.md
+        pattern: 'With the restricted FNO data loss first guess, the `hard_ood` warm-start error is above the error bar limit and its coverage is below 0\.85\. With the restricted FNO hybrid loss first guess, the `hard_ood` warm-start error is above the error bar limit and its coverage is below 0\.85'
+      - file: CHANGELOG.md
+        pattern: 'with restricted-range operators'
+    comparisons:
+      - label: restricted data warm hard_ood error > error limit
+        op: ">"
+        left:
+          evidence: docs/v03/warmstart_scores.json
+          path: stage_f/arms/data_only/slices/hard_ood/mean_rel_error/mean
+        right:
+          evidence: docs/v03/warmstart_protocol.json
+          path: pass_bars/error/limit
+      - label: restricted data warm hard_ood coverage < low
+        op: "<"
+        left:
+          evidence: docs/v03/warmstart_scores.json
+          path: stage_f/arms/data_only/slices/hard_ood/coverage/mean
+        right:
+          evidence: docs/v03/warmstart_protocol.json
+          path: pass_bars/coverage/range/0
+      - label: restricted data warm hard_ood error > cold
+        op: ">"
+        left:
+          evidence: docs/v03/warmstart_scores.json
+          path: stage_f/arms/data_only/slices/hard_ood/mean_rel_error/mean
+        right:
+          evidence: docs/v03/warmstart_scores.json
+          path: stage_f/cold/hard_ood/mean_rel_error
+      - label: restricted hybrid warm hard_ood error > error limit
+        op: ">"
+        left:
+          evidence: docs/v03/warmstart_scores.json
+          path: stage_f/arms/hybrid_1e-2/slices/hard_ood/mean_rel_error/mean
+        right:
+          evidence: docs/v03/warmstart_protocol.json
+          path: pass_bars/error/limit
+      - label: restricted hybrid warm hard_ood coverage < low
+        op: "<"
+        left:
+          evidence: docs/v03/warmstart_scores.json
+          path: stage_f/arms/hybrid_1e-2/slices/hard_ood/coverage/mean
+        right:
+          evidence: docs/v03/warmstart_protocol.json
+          path: pass_bars/coverage/range/0
+      - label: restricted hybrid warm hard_ood error > cold
+        op: ">"
+        left:
+          evidence: docs/v03/warmstart_scores.json
+          path: stage_f/arms/hybrid_1e-2/slices/hard_ood/mean_rel_error/mean
+        right:
+          evidence: docs/v03/warmstart_scores.json
+          path: stage_f/cold/hard_ood/mean_rel_error
+
+  - id: v03-changelog-noise-levels
+    class: numeric
+    numbers:
+      - token: "2%"
+        files: [CHANGELOG.md]
+        evidence: docs/v03/warmstart_scores.json
+        path: noise/noise0p02/noise_fraction
+        scale: 100
+      - token: "5%"
+        files: [CHANGELOG.md]
+        evidence: docs/v03/warmstart_scores.json
+        path: noise/noise0p05/noise_fraction
+        scale: 100

@@ -4,6 +4,11 @@
 
 Changes on `main` after the `v0.2.2` tag. The version string stays `0.2.2`, and no tag is created for them yet.
 
+### v0.3 warm-start study
+
+- `python -m pinnforge.operator warmstart {validate,test,report,smoke}` refines an FNO first guess with a capped Gauss-Newton solver fit in log viscosity, then adds split-conformal intervals and an abstain flag. The solve cap, interval scale, and abstain statistic were chosen on validation. The protocol [docs/v03/warmstart_protocol.json](docs/v03/warmstart_protocol.json) was committed before the test split was scored. The networks were retrained with the frozen Stage B, C, and F commands because the published checkpoints are not committed.
+- On `hard_ood` the FNO hybrid warm start passes all three preregistered bars: error within the limit set from the sensor-lift solver, wall clock against the cold search re-timed in the same run, and full-test coverage. The re-run cold search matches the committed strong-baseline estimates. At 2% and 5% noise the warm start has higher `hard_ood` error than the cold search, and so does the warm start with restricted-range operators. The note is [docs/v03/warmstart.md](docs/v03/warmstart.md). The scores are [docs/v03/warmstart_scores.json](docs/v03/warmstart_scores.json).
+
 ### Strong baselines
 
 - `python -m pinnforge.operator strong-baselines` scores a weak-form identifier and two solver-in-the-loop fits, one from a sensor-lifted initial condition and one from the true initial field (a ceiling), on the Stage D `sensors32_bursts` mask. The protocol [docs/research/strong_baselines_protocol.json](docs/research/strong_baselines_protocol.json) was frozen before the test scores. The FNO rows are the committed Stage D estimates and were not retrained.
