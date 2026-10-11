@@ -19,6 +19,13 @@ def build_parser() -> argparse.ArgumentParser:
     val = sub.add_parser("validate", help="Compare the numpy solver to The Well")
     val.add_argument("--dt", type=float, default=0.002)
     val.add_argument("--traj", type=int, default=3)
+    gen = sub.add_parser("generate", help="Generate continuous-Sc training trajectories")
+    gen.add_argument("--workers", type=int, default=4)
+    sub.add_parser("pack-well", help="Pack The Well late_9 test window")
+    score = sub.add_parser("score", help="Train FNO seeds, then score the frozen methods")
+    score.add_argument("--workers", type=int, default=None)
+    score.add_argument("--checkpoint", default=None)
+    sub.add_parser("report", help="Write docs/v062/report.md")
     sub.add_parser("smoke", help="Tiny synthetic fixture; no dataset download")
     return parser
 
@@ -42,6 +49,32 @@ def main(argv: list[str] | None = None) -> int:
         if not payload["overall_pass"]:
             write_stop_report(payload)
             return 2
+        return 0
+    if args.command == "generate":
+        from pinnforge.v062.generate import run_generate
+
+        record = run_generate(n_workers=int(args.workers))
+        print(json.dumps({"n_sim": record["n_sim"]}))
+        return 0
+    if args.command == "pack-well":
+        from pinnforge.v062.study import run_pack_well
+
+        record = run_pack_well()
+        print(json.dumps({"n_instances": record["n_instances"]}))
+        return 0
+    if args.command == "score":
+        from pinnforge.v062.study import run_score
+
+        scores = run_score(
+            workers=args.workers,
+            checkpoint=None if args.checkpoint is None else Path(args.checkpoint),
+        )
+        print("overall", "PASS" if scores["bars"]["overall"] else "FAIL")
+        return 0
+    if args.command == "report":
+        from pinnforge.v062.report import write_report
+
+        print(write_report())
         return 0
     if args.command == "smoke":
         return _smoke()
