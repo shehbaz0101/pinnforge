@@ -44,5 +44,5 @@ All of these use the Stage A harder periodic Burgers pilot and its frozen `hard_
 ## Package
 
 - [architecture.md](architecture.md): modules, optional extras, the localhost API, and the path sandbox.
-- [CHANGELOG.md](../CHANGELOG.md): release history and the unreleased section.
+- [CHANGELOG.md](../CHANGELOG.md): release history.
 - `pinnforge --help` lists the commands. `pinnforge fno --help` lists the stage study commands.

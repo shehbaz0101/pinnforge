@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-Changes on `main` after the `v0.2.2` tag. The version string stays `0.2.2`, and no tag is created for them yet.
+## 0.3.0 (2026-10-11)
+
+Release of the work on `main` after the `v0.2.2` tag. The package version is `0.3.0`. Tag `v0.3.0` is cut on the merge of this pull request. The measured scores below were not recomputed or edited for this release.
 
 ### v0.3 warm-start study
 

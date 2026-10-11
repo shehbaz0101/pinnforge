@@ -3,7 +3,7 @@
 Recover the hidden viscosity `ν` of 1D viscous Burgers from sparse, noisy sensor readings.
 Measure when a learned operator beats running the solver, and when it doesn't.
 
-PINNForge is a CPU research sandbox: a dealiased Fourier/ETDRK4 Burgers reference, a small 1D Fourier neural operator (FNO) trained with a data loss or a hybrid physics-informed loss, a frozen protocol and a committed score file for every study stage, and a claim checker (`pinnforge claims check`) that ties the numbers and comparisons in this README to those files. The latest tag is `v0.2.2`; `main` also carries the unreleased work listed in [CHANGELOG.md](CHANGELOG.md). A coordinate-MLP PINN trainer and a localhost API from v0.1.0 are still included.
+PINNForge is a CPU research sandbox: a dealiased Fourier/ETDRK4 Burgers reference, a small 1D Fourier neural operator (FNO) trained with a data loss or a hybrid physics-informed loss, a frozen protocol and a committed score file for every study stage, and a claim checker (`pinnforge claims check`) that ties the numbers and comparisons in this README to those files. The latest tag is `v0.3.0`. A coordinate-MLP PINN trainer and a localhost API from v0.1.0 are still included.
 
 ## Results on `hard_ood`, `sensors32_bursts`
 

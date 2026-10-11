@@ -5,7 +5,7 @@ ODE and PDE residuals. It trains a small network on the residual, scores a
 checkpoint against an analytical or manufactured field, and serves that path
 on localhost. An offline demo trains a checked-in sample on CPU.
 
-**Status:** The package version in this tree is 0.2.2. The v0.2 releases are tagged `v0.2.0`, `v0.2.1`, and `v0.2.2`, on the merge commits of PRs #22, #23, and #25. `main` also carries the unreleased strong baselines, Stage G, and Stage H listed in [CHANGELOG.md](CHANGELOG.md). v0.1.0 is the sandbox freeze (Days 1–10). The stage reports below were written while the version string was still 0.1.0. Their score tables were not edited for 0.2.0. [docs/README.md](docs/README.md) maps every report and score file. See [README.md](README.md), [CHANGELOG.md](CHANGELOG.md), [STAGE1_REPORT.md](STAGE1_REPORT.md), [STAGE2_REPORT.md](STAGE2_REPORT.md), [STAGE3_REPORT.md](STAGE3_REPORT.md), [STAGE4_REPORT.md](STAGE4_REPORT.md), [STAGE5_REPORT.md](STAGE5_REPORT.md), [STAGE_A_REPORT.md](STAGE_A_REPORT.md), [STAGE_B_REPORT.md](STAGE_B_REPORT.md), [STAGE_C_REPORT.md](STAGE_C_REPORT.md), [STAGE_D_REPORT.md](STAGE_D_REPORT.md), [STAGE_E_REPORT.md](STAGE_E_REPORT.md), and [STAGE_F_REPORT.md](STAGE_F_REPORT.md).
+**Status:** The package version in this tree is 0.3.0. The v0.3.0 release packages the strong baselines, Stage G, Stage H, and the v0.3 warm-start study listed in [CHANGELOG.md](CHANGELOG.md). The v0.2 releases remain tagged `v0.2.0`, `v0.2.1`, and `v0.2.2`, on the merge commits of PRs #22, #23, and #25. v0.1.0 is the sandbox freeze (Days 1–10). The stage reports below were written while the version string was still 0.1.0. Their score tables were not edited for 0.2.0 or 0.3.0. [docs/README.md](docs/README.md) maps every report and score file. See [README.md](README.md), [CHANGELOG.md](CHANGELOG.md), [STAGE1_REPORT.md](STAGE1_REPORT.md), [STAGE2_REPORT.md](STAGE2_REPORT.md), [STAGE3_REPORT.md](STAGE3_REPORT.md), [STAGE4_REPORT.md](STAGE4_REPORT.md), [STAGE5_REPORT.md](STAGE5_REPORT.md), [STAGE_A_REPORT.md](STAGE_A_REPORT.md), [STAGE_B_REPORT.md](STAGE_B_REPORT.md), [STAGE_C_REPORT.md](STAGE_C_REPORT.md), [STAGE_D_REPORT.md](STAGE_D_REPORT.md), [STAGE_E_REPORT.md](STAGE_E_REPORT.md), [STAGE_F_REPORT.md](STAGE_F_REPORT.md), and [docs/v03/warmstart.md](docs/v03/warmstart.md).
 
 ## Days 1–10
 
@@ -163,7 +163,11 @@ Out-of-distribution viscosity. [STAGE_F_REPORT.md](STAGE_F_REPORT.md) has the pr
 
 ## Stages G and H
 
-Stage G adds `python -m pinnforge.claims check` and [docs/claims.yaml](docs/claims.yaml) ([docs/v02/stage_g_claims.md](docs/v02/stage_g_claims.md)). Stage H rewrites the README around the `hard_ood` results, adds the docs map, gives every CLI subcommand a one-line help, and adds `pinnforge claims check`. Neither stage bumps the version or creates a tag.
+Stage G adds `python -m pinnforge.claims check` and [docs/claims.yaml](docs/claims.yaml) ([docs/v02/stage_g_claims.md](docs/v02/stage_g_claims.md)). Stage H rewrites the README around the `hard_ood` results, adds the docs map, gives every CLI subcommand a one-line help, and adds `pinnforge claims check`. Both ship in the 0.3.0 release.
+
+## v0.3 warm-started solver fit
+
+[docs/v03/warmstart.md](docs/v03/warmstart.md) starts the sensor-lift solver fit from an FNO first guess, caps the refinement solves, and adds split-conformal intervals and an abstain flag calibrated on validation. On `hard_ood` the FNO hybrid warm start passes all three preregistered bars (error, wall clock against the cold search re-timed in the same run, and full-test coverage). At 2% and 5% noise the warm start has higher `hard_ood` error than the cold search, and so does the warm start with restricted-range operators. The protocol was committed before the test split was scored. No Stage A through F or strong-baseline number was edited.
 
 ## Known limits
 
