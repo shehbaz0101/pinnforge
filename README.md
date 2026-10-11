@@ -1,3 +1,7 @@
+Live demo: https://pinnforge.onrender.com
+
+PINNForge recovers Burgers viscosity from 32 sparse sensors: 3.4% error vs 34.9% for closed form on 30 hard out-of-distribution cases.
+
 ---
 title: PINNForge
 emoji: 🌊
@@ -25,9 +29,9 @@ The page opens on results. Prediction-versus-reference plots for the harmonic os
 
 **Live demo:** https://pinnforge.onrender.com
 
-The YAML block at the top of this file is Gradio metadata. Render ignores it. The service is [render.yaml](render.yaml), with Python 3.12 from [.python-version](.python-version).
+The YAML block after the opening lines is Gradio metadata. Render ignores it. The service is [render.yaml](render.yaml), with Python 3.12 from [.python-version](.python-version).
 
-Create a Blueprint from this repository and branch `cursor/hf-live-demo-6f9a` (Dashboard → New → Blueprint). The file sets:
+Create a Blueprint from this repository and branch `main` (Dashboard → New → Blueprint). The file sets:
 
 | Setting | Value |
 | --- | --- |
@@ -36,7 +40,7 @@ Create a Blueprint from this repository and branch `cursor/hf-live-demo-6f9a` (D
 | Runtime | Python |
 | Plan | `free` (0.1 CPU, 512 MB RAM) |
 | Region | Oregon |
-| Branch | `cursor/hf-live-demo-6f9a` |
+| Branch | `main` |
 | Python | `3.12` via `.python-version` (Render's latest 3.12 patch). Leave `PYTHON_VERSION` unset. |
 | Build command | `pip install --upgrade pip && pip install "torch==2.14.1+cpu" --index-url https://download.pytorch.org/whl/cpu && pip install -r requirements.txt` |
 | Start command | `python app.py` |

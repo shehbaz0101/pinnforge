@@ -120,7 +120,13 @@ def test_gallery_is_a_real_run_and_the_page_says_so() -> None:
 
 def test_readme_points_at_the_render_demo() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    assert readme.startswith("---\n")
+    lines = readme.splitlines()
+    assert lines[0] == "Live demo: https://pinnforge.onrender.com"
+    assert lines[1] == ""
+    assert lines[2] == (
+        "PINNForge recovers Burgers viscosity from 32 sparse sensors: "
+        "3.4% error vs 34.9% for closed form on 30 hard out-of-distribution cases."
+    )
     assert "sdk: gradio" in readme
     assert 'sdk_version: "5.50.0"' in readme
     assert 'python_version: "3.12"' in readme
@@ -149,7 +155,7 @@ def test_render_blueprint_is_the_free_python_service() -> None:
     assert service["name"] == "pinnforge"
     assert service["runtime"] == "python"
     assert service["plan"] == "free"
-    assert service["branch"] == "cursor/hf-live-demo-6f9a"
+    assert service["branch"] == "main"
     assert service["healthCheckPath"] == HEALTH_PATH
     assert service["startCommand"] == "python app.py"
     assert "torch==2.14.1+cpu" in service["buildCommand"]
