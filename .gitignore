@@ -50,3 +50,7 @@ docs/v05/score_cases.jsonl
 # v0.5.1 sensor-density pilots and library-matrix JSONL. Manifests live in docs/v051/.
 artifacts/v051_pilot/
 docs/v051/score_cases.jsonl
+
+# v0.5.2 NS WSINDy-fix pilots and library-matrix JSONL. Manifests live in docs/v052/.
+artifacts/v052_pilot/
+docs/v052/score_cases.jsonl

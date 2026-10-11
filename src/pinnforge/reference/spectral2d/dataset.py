@@ -27,6 +27,7 @@ def load_protocol(path: Path | None = None) -> dict[str, Any]:
         "pinnforge.v041_2d_inverse_protocol.v1",
         "pinnforge.v05_law_discovery_protocol.v1",
         "pinnforge.v051_sensor_density_protocol.v1",
+        "pinnforge.v052_ns_wsindy_fix_protocol.v1",
     }:
         raise ValueError("2D study protocol format is not recognized")
     return document
