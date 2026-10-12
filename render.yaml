@@ -1,0 +1,28 @@
+# Free web service: 0.1 CPU, 512 MB RAM.
+# Python 3.12 is selected by .python-version (latest 3.12 patch Render ships).
+# Native Python, not Docker: the running process stays under 512 MB, and the
+# CPU torch wheel is pinned in requirements.txt.
+services:
+  - type: web
+    name: pinnforge
+    runtime: python
+    plan: free
+    region: oregon
+    branch: main
+    autoDeployTrigger: commit
+    buildCommand: pip install --upgrade pip && pip install "torch==2.14.1+cpu" --index-url https://download.pytorch.org/whl/cpu && pip install -r requirements.txt
+    startCommand: python app.py
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: MALLOC_ARENA_MAX
+        value: "2"
+      - key: OMP_NUM_THREADS
+        value: "1"
+      - key: MKL_NUM_THREADS
+        value: "1"
+      - key: OPENBLAS_NUM_THREADS
+        value: "1"
+      - key: NUMEXPR_NUM_THREADS
+        value: "1"

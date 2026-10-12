@@ -1,3 +1,22 @@
+Live demo: https://pinnforge.onrender.com
+
+PINNForge recovers Burgers viscosity from 32 sparse sensors: 3.4% error vs 34.9% for closed form on 30 hard out-of-distribution cases.
+
+---
+title: PINNForge
+emoji: 🌊
+colorFrom: blue
+colorTo: indigo
+sdk: gradio
+sdk_version: "5.50.0"
+app_file: app.py
+pinned: false
+license: mit
+python_version: "3.12"
+suggested_hardware: "cpu-basic"
+short_description: CPU PINN demo and Burgers viscosity recovery
+---
+
 # PINNForge
 
 Recover the hidden viscosity `ν` of 1D viscous Burgers from sparse, noisy sensor readings.
@@ -27,6 +46,45 @@ Wall clock per instance on one CPU: about 19 s for the sensor-lift solver fit (c
 - **Noise and sparsity (Stage E).** Both FNO arms stay under 10% mean relative error with no failures through 1% noise (of the field standard deviation). Both cross 10% and start failing at 2% noise, and at 16 clean sensors. At 5% noise the closed form wins on `hard_ood`: 0.299 against 0.750 (data loss) and 0.835 (hybrid). On the same noisy `hard_ood` cells the sensor-lift solver stays at 0.0142 (2% noise) and 0.0182 (5% noise). At 16 clean sensors that solver degrades as well (0.154, 2 failures), close to the FNO arms (0.175 and 0.161). [STAGE_E_REPORT.md](STAGE_E_REPORT.md), [docs/research/strong_baselines.md](docs/research/strong_baselines.md).
 - **Out of distribution (Stage F).** Trained only on `ν` above the `hard_ood` cut, the FNO one-step forecast error on the held-out low-viscosity slice is about 11 times its in-range error (data loss; 12 for hybrid). The viscosity inverse error on that slice rises to 0.233 (data loss) and 0.213 (hybrid). The hybrid physics loss does not close the gap: its out-of-distribution to in-range ratio is larger than the data loss, and the paired per-seed differences change sign. [STAGE_F_REPORT.md](STAGE_F_REPORT.md).
 - **Smooth data.** On the small smooth demo below, the closed form is more accurate than the FNO.
+
+## Live demo
+
+A Gradio page on a Render free web service (0.1 CPU, 512 MB RAM, spins down when idle): https://pinnforge.onrender.com
+
+The page opens on results. Prediction-versus-reference plots for the harmonic oscillator, Burgers, and Poisson are precomputed from a real run of this code, and the Stage D viscosity chart is on the page as well. The chart is read from [docs/v02/stage_d_scores.json](docs/v02/stage_d_scores.json). Nothing is trained, and PyTorch is not imported, until the secondary button. That button is labeled with the first-click wait on this free CPU: about 20 s for the harmonic oscillator, about 25 s for Poisson, and about 30 s for Burgers. The first click loads PyTorch. A later harmonic click is about 1 s.
+
+**Live demo:** https://pinnforge.onrender.com
+
+The YAML block after the opening lines is Gradio metadata. Render ignores it. The service is [render.yaml](render.yaml), with Python 3.12 from [.python-version](.python-version).
+
+Create a Blueprint from this repository and branch `main` (Dashboard → New → Blueprint). The file sets:
+
+| Setting | Value |
+| --- | --- |
+| Name | `pinnforge` |
+| Type | Web service |
+| Runtime | Python |
+| Plan | `free` (0.1 CPU, 512 MB RAM) |
+| Region | Oregon |
+| Branch | `main` |
+| Python | `3.12` via `.python-version` (Render's latest 3.12 patch). Leave `PYTHON_VERSION` unset. |
+| Build command | `pip install --upgrade pip && pip install "torch==2.14.1+cpu" --index-url https://download.pytorch.org/whl/cpu && pip install -r requirements.txt` |
+| Start command | `python app.py` |
+| Health check path | `/health` |
+| Env vars | `PYTHONUNBUFFERED=1`, `MALLOC_ARENA_MAX=2`, `OMP_NUM_THREADS=1`, `MKL_NUM_THREADS=1`, `OPENBLAS_NUM_THREADS=1`, `NUMEXPR_NUM_THREADS=1` |
+
+Leave `PORT` unset. Render injects it, and `app.py` binds `0.0.0.0:$PORT`. A local run with `PORT` unset uses 7860. Secrets: none. `requirements.txt` installs the CPU torch wheel, Gradio 5.50.0, and this package.
+
+Same page on a laptop:
+
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+pip install -e .
+pip install "gradio==5.50.0"
+python app.py
+```
+
+Open http://127.0.0.1:7860.
 
 ## Quickstart
 

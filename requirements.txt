@@ -1,0 +1,6 @@
+# Render free web service and local runs. CPU torch only.
+# The +cpu version keeps pip off the default CUDA build.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.14.1+cpu
+gradio==5.50.0
+.
